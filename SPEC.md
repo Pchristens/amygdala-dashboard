@@ -813,3 +813,38 @@ prop choice, cap and view guards are pure functions. No API or MCP behavior chan
 `dailyTurnBudget` gates only automatic life turns. Orders from the human run regardless of it and don't count
 against it. Steward orders have their own daily cap (`AMYGDALA_STEWARD_ORDERS`, default 40). Provider usage
 guards still apply to every order.
+
+## v0.28: hero apprentices
+
+Confirmed village heroes may have visual apprentices for running sub-agents. These spend no turns,
+issue no orders and never move their resident. Human snapshots alone add worker `apprentices`:
+`[{key,resident|null,agentType,since}]`, capped at twelve. Keys are opaque SHA-256 hashes; `since`
+is the first observation of uninterrupted activity. Resident and visitor snapshots omit the field;
+public showcase captures omit heroes and never render apprentices.
+
+Claude discovery reads only `agent-*.meta.json` under the transcript's sibling session/subagents
+folder. The pure parser allows only model, agentType and finished; descriptions and prompts are
+never retained or emitted. JSONL content is never read by this scanner: its mtime must be less than
+ten minutes old and finished must not be true. Metadata is statted before reading, capped at 16 KiB,
+and each scan examines at most 96 metadata candidates and emits twelve agents. Scans run at most
+once per fifteen seconds per hero. Running agent-deck children also qualify, using their tool/model.
+
+Scanning denies access before any filesystem operation unless the server has confirmed a village
+hero; private, isle-tagged, quarantined and sealed heroes are excluded. Node helpers use the latest
+`/node/report` response's village session-id allowlist. Optional report `apprentices` contains only
+`[{heroId,subagents:[{key,model,agentType}]}]`, at most 500 heroes and twelve agents each. Keys are
+64 lowercase hexadecimal characters; model and agentType are strings of at most 160 characters.
+Unknown fields are rejected. Session metadata may additionally include model (160 characters) and
+private/quarantined/sealed booleans. The server rechecks ownership and village eligibility on receipt
+and snapshot. Reports, scan caches and echoes remain ephemeral.
+
+Model ownership matches roster models case-insensitively, exact first then family (including Claude
+aliases and named GPT/Codex lineages), then repeats with the hero model, finally using the hero's
+own echo. Disabled residents still own echoes. An otherwise matching private or isle resident is
+replaced by the hero echo, without revealing its identity.
+
+The client reuses the apprentice lifecycle, threads, three-figure cap and +N tag badge. Echoes walk
+from their owning resident to the hero, work beside it, then return and fade; hero echoes start and
+return at the hero. Explore carries a scroll, Plan an amphora, general-purpose a hammer, other types
+a basket. Clicking selects the hero. Human-only `?apprentices=demo` also supplies four synthetic
+apprentices to one village hero, with no server mutation or model usage.

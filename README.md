@@ -264,3 +264,16 @@ and open its order in Orders. Up to three appear per resident; a `+N` name badge
 They walk to work and return when finished. Visitors and public showcase shots never show them.
 For a client-only art preview use `?shot=1&apprentices=demo` (or add `mock=1&still=1` for the fixture).
 The preview fakes four orders for two residents without starting turns or changing server state.
+
+Heroes running sub-agents also have visual apprentices in the 3D human view. The echo belongs to
+whichever villager matches the sub-agent's model (including disabled villagers); it walks over,
+works beside the hero, then returns and fades. Clicking selects the hero. At most three echoes
+appear per hero, with a +N badge for the rest. Explore/Plan/general-purpose agents carry a
+scroll/amphora/hammer; other types carry a basket. `?apprentices=demo` includes one hero preview.
+
+Discovery checks Claude sub-agent metadata and running agent-deck children every fifteen seconds.
+It never reads sub-agent transcript content or retains descriptions or prompts. Stale Claude activity
+expires after ten minutes. Only server-confirmed village heroes qualify; private, quarantined,
+sealed and Isle-tagged sessions are excluded before scanning. Update the node helper checkout too:
+helpers use the server's village allowlist and report only opaque keys, models and agent types.
+This feature spends no model usage and launches no resident turns.

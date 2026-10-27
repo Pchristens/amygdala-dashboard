@@ -9,3 +9,5 @@ export function apprenticeFade(s, dt, present, arrived) {
   return s.phase;
 }
 export function apprenticesAllowed(state, params) { return params.get('public') !== '1' && !state.visitor && (Array.isArray(state.world?.activeTurns) || Array.isArray(state.orders) || params.get('mock') === '1'); }
+
+export const heroApprenticeProp = type => ({ explore: 'scroll', plan: 'amphora', 'general-purpose': 'hammer' })[String(type).toLowerCase()] || 'basket';

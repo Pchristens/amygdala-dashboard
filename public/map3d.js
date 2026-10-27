@@ -1,4 +1,4 @@
-import { apprenticeProp, apprenticeCap, apprenticeFade, apprenticesAllowed } from './apprentice.js';
+import { heroApprenticeProp, apprenticeProp, apprenticeCap, apprenticeFade, apprenticesAllowed } from './apprentice.js';
 import { createMist } from './mist3d.js';
 let villageState = 'awake';
 export function getVillageState() { return villageState; }
@@ -578,22 +578,53 @@ export async function createMap3D(container, opts = {}) {
         if (a.tx !== tx || a.ty !== ty || a.phase === 'return' || a.phase === 'out') { a.tx = tx; a.ty = ty; a.path = route(graph, { x: a.x, y: a.y }, { x: tx, y: ty }); a.pathI = 1; }
       }
     }
+    let heroDemo = 0;
+    for (const w of state.workers || []) {
+      const master = figures.get(figureKey('god', w.id)); if (!master) continue;
+      const safe = allowed && w.zone === 'village' && !w.private && !w.sealed && !w.quarantined && !w.isleTagged;
+      if (safe) safeMasters.add(master);
+      let agents = safe ? w.apprentices || [] : [];
+      if (safe && apprenticeParams.get('apprentices') === 'demo' && heroDemo++ === 0) agents = ['Explore', 'Plan', 'general-purpose', 'other'].map((agentType, i) => ({ key: `demo-hero-${i}`, resident: (state.residents || []).find(r => r.zone === 'village')?.name || null, agentType }));
+      const capped = apprenticeCap(agents.map(a => ({ ...a, orderId: a.key })));
+      master.F.label.querySelector('.apprentice-count')?.remove();
+      if (capped.badge) { const badge = document.createElement('span'); badge.className = 'apprentice-count'; badge.textContent = `+${capped.badge}`; master.F.label.append(badge); }
+      for (let i = 0; i < capped.orders.length; i++) {
+        const agent = capped.orders[i], r = (state.residents || []).find(r => r.name === agent.resident && r.zone === 'village' && !r.private && !r.sealed && !r.quarantined && !r.isleTagged), origin = r ? figures.get(figureKey('resident', r.name)) : master;
+        if (!origin) continue;
+        const key = JSON.stringify(['hero', w.id, agent.key]); seen.add(key);
+        let a = apprentices.get(key);
+        if (a && a.origin !== origin) { removeApprentice(a, key); a = null; }
+        if (!a) {
+          if ([...apprentices.values()].filter(a => a.master === master).length >= 3) { const old = [...apprentices].find(([k, a]) => a.master === master && !capped.orders.some(o => o.key === a.orderId)); if (old) removeApprentice(old[1], old[0]); }
+          const F = createApprentice(r || { color: TOOL_COLORS[w.tool] || TOOL_COLORS.other }, heroApprenticeProp(agent.agentType), agent.key), color = F.color;
+          F.hit.userData.pick = { type: 'worker', id: w.id };
+          if (!threadMats.has(color)) threadMats.set(color, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.22, depthWrite: false }));
+          const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3)); const thread = new THREE.Line(geometry, threadMats.get(color)); thread.frustumCulled = false; thread.visible = false; scene.add(thread, F.root);
+          a = { F, master, origin, hero: true, orderId: agent.key, x: origin.pos.x, y: origin.pos.y, tx: 0, ty: 0, alpha: 0, phase: 'in', thread, path: null, pathI: 1 }; apprentices.set(key, a);
+        }
+        a.present = true; a.near = true; a.offset = 14 + i * 8; a.hoverMaster = `worker:${w.id}`; a.hoverEcho = a.hoverMaster; a.followKey = figureKey('god', w.id);
+      }
+    }
     for (const [key, a] of apprentices) {
-      if (!safeMasters.has(a.master) || !allowed || !figures.has(figureKey('resident', a.master.id)) || a.master.zone !== 'village') { removeApprentice(a, key); continue; }
-      if (!seen.has(key)) { if (a.present) { a.path = route(graph, { x: a.x, y: a.y }, a.master.pos); a.pathI = 1; } a.present = false; }
+      if (!safeMasters.has(a.master) || !allowed || !figures.has(figureKey(a.hero ? 'god' : 'resident', a.master.id)) || (a.hero && a.origin.zone !== 'village') || a.master.zone !== 'village') { removeApprentice(a, key); continue; }
+      if (!seen.has(key)) { if (a.present) { a.path = route(graph, { x: a.x, y: a.y }, (a.origin || a.master).pos); a.pathI = 1; } a.present = false; }
     }
   }
   function tickApprentices(dt, time, night) {
     let movingAny = false;
     for (const [key, a] of apprentices) {
-      const m = a.master;
-      if (a.present && a.near) { a.tx = m.pos.x + a.offset; a.ty = m.pos.y + 22; a.path = null; }
+      const m = a.master, home = (a.origin || m).pos;
+      if (a.present && a.near) {
+        const tx = m.pos.x + a.offset, ty = m.pos.y + 22;
+        if (a.hero && (Math.hypot(a.tx - tx, a.ty - ty) > 12 || a.phase === 'return' || a.phase === 'out')) { a.path = route(graph, { x: a.x, y: a.y }, { x: tx, y: ty }); a.pathI = 1; }
+        a.tx = tx; a.ty = ty; if (!a.hero) a.path = null;
+      }
       const target = a.path?.[a.pathI];
-      let tx = target?.x ?? (a.present ? a.tx : m.pos.x), ty = target?.y ?? (a.present ? a.ty : m.pos.y);
+      let tx = target?.x ?? (a.present ? a.tx : home.x), ty = target?.y ?? (a.present ? a.ty : home.y);
       const dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy), step = dt * 0.032, moving = d > 0.5;
       if (moving) { const k = Math.min(1, step / d); a.x += dx * k; a.y += dy * k; a.F.root.rotation.y = Math.atan2(dx, dy); }
       if (d <= step && target) a.pathI++;
-      const arrived = !a.present && Math.hypot(a.x - m.pos.x, a.y - m.pos.y) < 4;
+      const arrived = !a.present && Math.hypot(a.x - home.x, a.y - home.y) < 4;
       apprenticeFade(a, dt, a.present, arrived);
       if (a.phase === 'done') { removeApprentice(a, key); continue; }
       fadeApprentice(a.F, a.alpha); a.F.root.position.set(a.x, groundY(a.x, a.y), a.y);

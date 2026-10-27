@@ -1,3 +1,4 @@
+import { HeroScanner } from '../lib/hero-apprentices.js';
 import { notify } from '../lib/notify.js';
 // No transcript locations or prompt excerpts cross the node boundary.
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ export function reportSessions(sessions, village = []) {
   return sessions.filter(s => !s.archived).map(s => {
     const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = isleTagged(w);
     const signals = !tagged && village.includes(s.id) ? classifyHero({ ...w, ...extractSignals(w.transcriptPath, w.tool) }) : undefined;
-    return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, isleTagged: tagged, ...(signals && { signals }) };
+    return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, model: w.model, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
   });
 }
 export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail) {
@@ -52,6 +53,7 @@ export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (args[i] === '--no-notify') { options.noNotify = true; i--; continue; } if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
   const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
   if (!['http:', 'https:'].includes(server.protocol) || server.username || server.password || !/^hfn_[\w-]+$/.test(token)) throw new Error('Invalid node configuration.');
+  const scanner = new HeroScanner();
   let bellAck = 0;
   let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], connected = false;
   const terminals = new Map(); let output = [], pendingGrok = null;
@@ -95,8 +97,17 @@ export async function main(args = process.argv.slice(2)) {
       if (usage) usage = { id: usage.id, windows: (usage.windows || []).map(({ kind, label, used_percentage, resets_at, stale }) => ({ kind, label, used_percentage, resets_at, stale })) };
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
+      const apprentices = [];
+      for (const s of sessions.filter(s => village.includes(s.id) && !s.archived)) {
+        const w = { ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: s.zone || 'village' };
+        let children = sessions.map(c => toWorker(c, 'local'));
+        if (w.host === 'local' && scanner.due(w, village)) {
+          try { const out = JSON.parse((await exec('agent-deck', ['session', 'children', s.id, '--json'], { timeout: 15000, maxBuffer: 1 << 20 })).stdout); children = [...children, ...(Array.isArray(out) ? out : out.children || out.sessions || []).map(c => ({ ...toWorker(c, 'local'), parentId: s.id }))]; } catch {}
+        }
+        apprentices.push({ heroId: s.id, subagents: scanner.scan(w, village, children) });
+      }
       const batch = results.slice(0, 40);
-      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
+      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('Report refused.');
       const next = await response.json(); village = next.village || []; results.splice(0, batch.length);
       for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }
