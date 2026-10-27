@@ -41,7 +41,7 @@ class ConPty {
    CloseHandle(ir);ir=IntPtr.Zero;CloseHandle(ow);ow=IntPtr.Zero;
    IntPtr size=IntPtr.Zero;InitializeProcThreadAttributeList(IntPtr.Zero,1,0,ref size);list=Marshal.AllocHGlobal(size);Check(InitializeProcThreadAttributeList(list,1,0,ref size));
    Check(UpdateProcThreadAttribute(list,0,new IntPtr(0x00020016),hpc,new IntPtr(IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
-   var si=new StartupEx();si.info.cb=Marshal.SizeOf(typeof(StartupEx));si.attributes=list;
+   var si=new StartupEx();si.info.cb=Marshal.SizeOf(typeof(StartupEx));si.info.flags=0x100;si.attributes=list;
    var cmd=new StringBuilder();foreach(string a in args){if(cmd.Length>0)cmd.Append(' ');cmd.Append(Quote(a));}
    Check(CreateProcess(args[0],cmd,IntPtr.Zero,IntPtr.Zero,false,0x00080004,IntPtr.Zero,null,ref si,out pi));
    job=CreateJobObject(IntPtr.Zero,null);Check(job!=IntPtr.Zero);var limits=new ExtendedLimit();limits.basic.flags=0x2000;Check(SetInformationJobObject(job,9,ref limits,(uint)Marshal.SizeOf(typeof(ExtendedLimit))));Check(AssignProcessToJobObject(job,pi.process));ResumeThread(pi.thread);

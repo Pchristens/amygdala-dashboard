@@ -42,10 +42,10 @@ export function termSession(term, sessions, village) {
   if (!w || isleTagged(w) || s.quarantined || s.sealed || !village.includes(s.id) || !s.tmux_session || s.remote_name || s.ssh_host) throw new Error('Terminal is private or unavailable.');
   return s;
 }
-export function openNodeTerm(term, requested, sessions, village, start = spawn) {
+export function openNodeTerm(term, requested, sessions, village, start = spawn, tmux = () => bin('tmux')) {
   if (!requested.includes(term) || term.open !== true) throw new Error('Unrequested terminal.');
   const s = termSession(term, sessions, village);
-  return start('python3', ['-I', fileURLToPath(new URL('./ptybridge.py', import.meta.url)), bin('tmux'), 'attach-session', '-t', s.tmux_session], { stdio: ['pipe', 'pipe', 'ignore'] });
+  return start('python3', ['-I', fileURLToPath(new URL('./ptybridge.py', import.meta.url)), tmux(), 'attach-session', '-t', s.tmux_session], { stdio: ['pipe', 'pipe', 'ignore'] });
 }
 export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }

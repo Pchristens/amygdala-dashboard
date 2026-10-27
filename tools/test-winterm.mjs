@@ -42,7 +42,7 @@ const term = { id: 't', sessionId: 's', open: true }, sessions = [{ id: 's', tmu
 assert.throws(() => openNodeTerm(term, [], sessions, ['s'], fake), /Unrequested/);
 assert.throws(() => openNodeTerm(term, [term], sessions, [], fake));
 assert.throws(() => openNodeTerm(term, [term], [{ ...sessions[0], group: 'isle' }], ['s'], fake));
-assert(openNodeTerm(term, [term], sessions, ['s'], fake));
+assert(openNodeTerm(term, [term], sessions, ['s'], fake, () => 'tmux'));
 const report = { hostname: 'test', os: 'macos', deckAvailable: true, sessions: [], results: [], usage: { id: 'grok', secret: 'discard', windows: [{ kind: 'seven_day', used_percentage: 32, extra: 'discard' }] } };
 const clean = validateReport(report); assert.equal(clean.usage.id, 'grok'); assert(!JSON.stringify(clean).includes('discard'));
 assert.throws(() => validateReport({ ...report, usage: { id: 'grok', windows: [{ kind: 'weekly', used_percentage: 101 }] } }));
