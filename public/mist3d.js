@@ -5,7 +5,7 @@ import { groundHeight } from './scene3d.js';
 export class VillageClock {
   constructor(now=0) { this.lastActive=now; this.state='awake'; this.wakeAt=-Infinity; this.wake={x:440,y:420}; this.wasActive=false; }
   update(snapshot,now) {
-    const turn=snapshot?.world?.activeTurn;
+    const turn=snapshot?.world?.activeTurns?.[0]||snapshot?.world?.activeTurn;
     const hero=(snapshot?.workers||[]).find(w=>w.status==='running');
     const active=!!turn||!!hero;
     if(active) {

@@ -638,7 +638,7 @@ export function createMap(svg, opts = {}) {
     g.classList.toggle('hooded', !!hooded);
     if (hooded) g.querySelector('.cloak-rune').textContent = laGlyphs(r.name, 1);
     g.classList.toggle('disabled', r.enabled === false);
-    g.classList.toggle('active', !!activeName && activeName === r.name);
+    g.classList.toggle('active', !!activeName && activeName.has(r.name));
     g.classList.toggle('committed', !!hasCommitment);
     const rank = r.rank === 'high' || r.rank === 'low' || r.rank === 'priest' ? r.rank : '';
     g.setAttribute('data-rank', rank);
@@ -728,7 +728,7 @@ export function createMap(svg, opts = {}) {
     const zones = Array.isArray(state.zones) ? state.zones : [];
     const sites = Array.isArray(state.sites) ? state.sites : [];
     const phase = state.world?.phase || 'morning';
-    const active = state.world?.activeTurn?.resident || null;
+    const active = new Set((state.world?.activeTurns || [state.world?.activeTurn].filter(Boolean)).map(t => t.resident));
 
     const hasIsle = zones.some((z) => z && z.id === 'isle') || (+state.world?.width || 0) > 1000;
     if (hasIsle) ensureIsle();

@@ -213,20 +213,23 @@ export function createPanel(opts) {
   function renderOrders() {
     const root = document.getElementById('orders'); if (!root || !state.orders) return;
     if (!root._form) {
-      const to = h('select', { 'aria-label': 'Resident' }), headline = h('input', { placeholder: 'Headline (optional)', maxLength: 180, 'aria-label': 'Headline' }), brief = h('textarea', { placeholder: 'Private brief', maxLength: 12000, required: true, 'aria-label': 'Private brief' });
+      const to = h('select', { 'aria-label': 'Residents', multiple: true, size: 5 }), headline = h('input', { placeholder: 'Headline (optional)', maxLength: 180, 'aria-label': 'Headline' }), brief = h('textarea', { placeholder: 'Private brief', maxLength: 12000, required: true, 'aria-label': 'Private brief' });
       const submit = h('button', { class: 'btn btn-primary', type: 'submit', text: 'Give an order' }), error = h('div', { class: 'dim-note' });
-      const form = h('form', { class: 'order-form' }, h('h3', { text: 'Give an order' }), to, headline, brief, submit, error);
-      form.addEventListener('submit', async e => { e.preventDefault(); submit.disabled = true; const result = await opts.api('/api/orders', { to: to.value, headline: headline.value, brief: brief.value }); submit.disabled = false; error.textContent = result?.error || ''; if (result?.id) { brief.value = ''; headline.value = ''; } });
+      const form = h('form', { class: 'order-form' }, h('h3', { text: 'Give an order' }), h('label', { text: 'Recipients (select several or Whole village)' }), to, headline, brief, submit, error);
+      form.addEventListener('submit', async e => { e.preventDefault(); submit.disabled = true; const result = await opts.api('/api/orders', { to: [...to.selectedOptions].some(o => o.value === 'all') ? 'all' : [...to.selectedOptions].map(o => o.value), headline: headline.value, brief: brief.value }); submit.disabled = false; error.textContent = result?.error || ''; if (result?.id) { brief.value = ''; headline.value = ''; } });
       root._form = form; root._to = to; root._list = h('div'); root.append(form, root._list);
     }
     const residents = (state.residents || []).filter(r => r.zone === 'village' && r.enabled && !r.hibernate);
-    const key = residents.map(r => r.name).join('|'); if (root._key !== key) { const selected = root._to.value; root._to.textContent = ''; for (const r of residents) root._to.append(h('option', { value: r.name, text: r.name })); if (residents.some(r => r.name === selected)) root._to.value = selected; root._key = key; }
+    const key = residents.map(r => r.name).join('|'); if (root._key !== key) { const selected = root._to.value; root._to.textContent = ''; root._to.append(h('option', { value: 'all', text: 'Whole village' })); for (const r of residents) root._to.append(h('option', { value: r.name, text: r.name })); if (residents.some(r => r.name === selected)) root._to.value = selected; root._key = key; }
     const next = JSON.stringify(state.orders); if (ordersKey === next) return; ordersKey = next; root._list.textContent = '';
-    for (const o of [...state.orders].reverse()) {
-      const card = h('article', { class: 'order-card' }, h('div', { class: 'dim-note', text: `${o.to} · ${o.status}` }), h('h3', { text: o.headline }), h('p', { text: o.chat || o.error || '' }));
+    const groups = new Map(); for (const o of state.orders) { const key = o.group || o.id; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(o); }
+    for (const members of [...groups.values()].reverse()) {
+      const o = members[0];
+      const card = h('article', { class: 'order-card' }, h('div', { class: 'dim-note', text: members.map(m => `${m.to} · ${m.status}`).join(' | ') }), h('h3', { text: o.headline }), h('p', { text: o.chat || o.error || '' }));
+      if (o.group) { const chips = h('div', { class: 'card-row' }); for (const m of members) chips.append(h('span', { class: 'badge', text: `${m.to}: ${m.status}` })); card.append(chips); }
       const details = h('details', {}, h('summary', { text: 'Brief and report' })), content = h('div'); details.append(content);
-      details.addEventListener('toggle', async () => { if (!details.open) return; const full = await opts.api(`/api/orders/${encodeURIComponent(o.id)}`, null, 'GET'); content.textContent = ''; if (!full?.id) { content.textContent = full?.error || 'Could not load order.'; return; } for (const [label, value] of [['Brief', full.brief], ['Report', full.report], ['Data', full.data ? JSON.stringify(full.data, null, 2) : '']]) if (value) content.append(h('h4', { text: label }), h('pre', { text: value })); });
-      card.append(details); if (['queued', 'working'].includes(o.status)) card.append(h('button', { class: 'btn btn-xs', text: 'Cancel', onClick: () => opts.api(`/api/orders/${encodeURIComponent(o.id)}/cancel`, {}) })); root._list.append(card);
+      details.addEventListener('toggle', async () => { if (!details.open) return; const full = await opts.api(o.group ? `/api/orders/group/${encodeURIComponent(o.group)}` : `/api/orders/${encodeURIComponent(o.id)}`, null, 'GET'); content.textContent = ''; if (!full?.id) { content.textContent = full?.error || 'Could not load order.'; return; } for (const member of full.members || [full]) { if (full.members) content.append(h('h3', { text: member.to })); for (const [label, value] of [['Brief', member.brief], ['Chat', member.chat], ['Report', member.report], ['Data', member.data ? JSON.stringify(member.data, null, 2) : '']]) if (value) content.append(h('h4', { text: label }), h('pre', { text: value })); } });
+      card.append(details); for (const m of members) if (['queued', 'working'].includes(m.status)) card.append(h('button', { class: 'btn btn-xs', text: `Cancel ${m.to}`, onClick: () => opts.api(`/api/orders/${encodeURIComponent(m.id)}/cancel`, {}) })); root._list.append(card);
     }
   }
 
@@ -639,7 +642,7 @@ export function createPanel(opts) {
   let isleDivider = null;
   function renderResidents() {
     const list = (state.residents || []).filter((r) => r && r.name);
-    const active = state.world?.activeTurn?.resident || null;
+    const active = new Set((state.world?.activeTurns || [state.world?.activeTurn].filter(Boolean)).map(t => t.resident));
     const names = new Set();
     const ordered = [...list.filter((r) => zoneOf(r) === 'village'), ...list.filter((r) => zoneOf(r) === 'isle')];
     const isleCount = list.filter((r) => zoneOf(r) === 'isle').length;
@@ -695,7 +698,7 @@ export function createPanel(opts) {
     row.classList.toggle('off', r.enabled === false);
     row.classList.toggle('sealed', r.mood === 'sealed');
     row._avatar.style.background = safeCssColor(r.color);
-    const isActive = active === r.name;
+    const isActive = active.has(r.name);
     if (isActive && !row._dot.isConnected) row._name.appendChild(row._dot);
     if (!isActive && row._dot.isConnected) row._dot.remove();
     const chipKey = `${r.agent}|${r.model}|${zoneOf(r)}|${r.rank}`;

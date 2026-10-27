@@ -198,7 +198,7 @@ function buildCard(info) {
       r.persona ? h('div', { class: 'card-quote', text: String(r.persona) }) : null,
       r.appearance && (r.appearance.self_description || r.appearance.motto) ? h('div', { class: 'own-words' }, String(r.appearance.self_description || '').slice(0, 240), r.appearance.motto ? h('span', { class: 'motto', text: `“${String(r.appearance.motto).slice(0, 70)}”` }) : null) : (r.appearance === null && r.persona ? h('div', { class: 'card-row dim-note', text: 'Not yet sculpted — still plain clay.' }) : null),
       h('div', { class: 'card-row' }, h('b', { text: capitalize(r.mood || '—') }), ` · ${sealedR ? 'beyond the seal' : r.doing || 'idle'}`),
-      h('div', { class: 'card-row' }, `${+r.turns || 0} turns`, r.enabled === false ? ' · asleep (disabled)' : '', state.world?.activeTurn?.resident === r.name ? ' · taking a turn now' : ''),
+      h('div', { class: 'card-row' }, `${+r.turns || 0} turns`, r.enabled === false ? ' · asleep (disabled)' : '', (state.world?.activeTurns || [state.world?.activeTurn].filter(Boolean)).some(t => t.resident === r.name) ? ' · taking a turn now' : ''),
     ];
     if (lastPost && !sealedR) out.push(h('div', { class: 'card-row' }, h('b', { text: 'Last post: ' }), String(lastPost.text || '').slice(0, 160), h('span', { class: 'post-time', text: ` · ${relTime(lastPost.ts)}` })));
     const mine = (state.commitments || []).filter((c) => c && c.ownerId === r.name && c.status === 'active');

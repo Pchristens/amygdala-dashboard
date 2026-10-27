@@ -434,7 +434,7 @@ export async function createMap3D(container, opts = {}) {
     const residents = Array.isArray(state.residents) ? state.residents : [];
     const workers = Array.isArray(state.workers) ? state.workers : [];
     const locked = !!(state.seal?.enabled && state.seal.locked);
-    const active = state.world?.activeTurn?.resident || null;
+    const active = new Set((state.world?.activeTurns || [state.world?.activeTurn].filter(Boolean)).map(t => t.resident));
     const committed = new Set((state.commitments || []).filter((c) => c && c.status === 'active').map((c) => c.ownerId));
     const seen = new Set();
     const pending = residents.filter((r) => r?.pendingNaming === true).map((r) => r.name).sort();
@@ -515,8 +515,8 @@ export async function createMap3D(container, opts = {}) {
       rec.F.root.visible = true;
       rec.disabled = r.enabled === false;
       rec.F.body.traverse((o) => { if (o.material) o.material.transparent = false; });
-      rec.F.root.userData.active = active === r.name;
-      setThinking(rec.F, active === r.name);
+      rec.F.root.userData.active = active.has(r.name);
+      setThinking(rec.F, active.has(r.name));
       rec.flag = committed.has(r.name);
       rec.placeKind = (state.places || []).find((p) => p && p.id === r.placeId)?.kind || '';
       rec.dim = r.enabled === false;

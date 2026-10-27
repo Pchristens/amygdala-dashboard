@@ -43,7 +43,7 @@ startDeckSync(world);
 conductor.lookFor = mcp.lookFor;
 conductor.setAgyUrl = url => writeAgyUrl(url || `${BASE}/mcp`);
 // Sealing stops any isle turn in progress before the isle's data leaves memory.
-world.lockHooks = [reason => { termHub.closeIsle(); if (conductor.turn && world.zoneOf(conductor.turn.name) === 'isle') conductor.abort(`the isle was sealed (${reason})`); }];
+world.lockHooks = [reason => { termHub.closeIsle(); for (const t of conductor.running.values()) if (world.zoneOf(t.name) === 'isle') conductor.abort(`the isle was sealed (${reason})`, t); }];
 process.on('unhandledRejection', e => console.error('unhandled rejection', e));
 ensureAgyConfig();
 
@@ -152,6 +152,11 @@ const server = http.createServer(async (req, res) => {
       return mcp(req, res, body, m ? m[1] : null);
     }
     if (p.startsWith('/api/') && !tokenOk(req, url)) return json(res, 401, { ok: false, error: 'missing or wrong page token — reload the page' });
+    const groupRoute = p.match(/^\/api\/orders\/group\/([^/]+)(\/wait)?$/);
+    if (groupRoute && req.method === 'GET') {
+      const controller = new AbortController(); res.on('close', () => controller.abort());
+      return json(res, 200, groupRoute[2] ? await world.orders.waitGroup(groupRoute[1], url.searchParams.get('timeout') ?? 600, controller.signal) : world.orders.group(groupRoute[1]));
+    }
     const orderRoute = p.match(/^\/api\/orders\/([^/]+)(\/wait|\/cancel)?$/);
     if (orderRoute && req.method === 'GET' && orderRoute[2] !== '/cancel') {
       const controller = new AbortController(); res.on('close', () => controller.abort());
