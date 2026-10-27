@@ -1247,3 +1247,4 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .card .card-place { display: table; margin: 0 0 8px; padding: 1px 8px; border-radius: 7px; background: rgba(40, 44, 54, 0.76); color: #F4EAD8; font-family: var(--font-sc); font-size: 11.5px; letter-spacing: 0.08em; border: 1px solid rgba(232, 217, 181, 0.28); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
 
 .petition-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.shot-public #lamp-glyph { display: none !important; }   /* a showcase capture shows no live allowance state */

@@ -6,6 +6,18 @@ almond tree that grows with finished work, and review your code at the Temple. Y
 from [agent-deck](https://github.com/asheshgoplani/agent-deck)) appear on the map at the site that fits their task,
 and flag when they're waiting for you.
 
+![The island by day](docs/screenshots/overview-day.png)
+
+| Twilight | Night |
+| --- | --- |
+| ![Twilight](docs/screenshots/overview-twilight.png) | ![Night](docs/screenshots/overview-night.png) |
+| **The Green**: the Almond and its theatre | **The Temple** at dawn |
+| ![The Green](docs/screenshots/green.png) | ![The Temple](docs/screenshots/temple.png) |
+
+![Starwatch at twilight, its armillary following the real sun](docs/screenshots/starwatch.png)
+
+The sky follows the real sun where you live (set `HEARTHFIELD_LATLON`): dawn, day, twilight and night light the island in turn.
+
 ## The island
 
 - **The Green**: the village square, with the Almond at its centre and theatre tiers wrapped around it.

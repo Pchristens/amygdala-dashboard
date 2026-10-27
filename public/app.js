@@ -1048,6 +1048,7 @@ setInterval(() => {
 // stripped from every list, the isle renders as sealed, and the Happening-now feed is hidden.
 const SHOT = params.get('shot') === '1';
 if (SHOT) document.documentElement.classList.add('shot');
+if (SHOT && params.get('public') === '1') document.documentElement.classList.add('shot-public');
 // ?phase=dawn|morning|afternoon|twilight|night: freeze the light for screenshots (overrides the real sun).
 const PHASE_OVERRIDE = params.get('phase');
 // The title is independent of state delivery: snapshots keep flowing during the camera journey.
@@ -1127,6 +1128,8 @@ function stripIsle(s) {
   for (const [k, v] of Object.entries(s)) out[k] = Array.isArray(v) ? v.filter((x) => !isIsle(x)) : v;
   delete out.petitions;
   out.workshops = [];
+  // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.
+  if (params.get('public') === '1') { out.workers = []; out.visitors = []; out.heroPasses = []; out.visitorPasses = []; out.petitions = []; }
   if (out.usage?.isle) { out.usage = { ...out.usage }; delete out.usage.isle; }
   out.seal = { ...(s.seal || {}), enabled: true, locked: true };
   return out;
