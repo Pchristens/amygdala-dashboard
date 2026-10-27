@@ -91,11 +91,11 @@ export function createPanel(opts) {
         } }));
       };
       snippet('token', token);
-      if (hero) snippet('PowerShell launcher', `.\\hearthfield-hero.ps1 -Pass ${token} -Title "My labour" grok`);
+      if (hero) snippet('PowerShell launcher', `.\\amygdala-hero.ps1 -Pass ${token} -Title "My labour" grok`);
       else {
         const base = `${state.gateUrl || 'http://<this-machine-tailscale-ip>:8795'}/visit`;
-        snippet('Grok CLI', `grok mcp add --transport http hearthfield-visit ${base}/mcp --header "Authorization: Bearer ${token}"`);
-        snippet('MCP JSON', JSON.stringify({ mcpServers: { 'hearthfield-visit': { type: 'http', url: `${base}/mcp`, headers: { Authorization: `Bearer ${token}` } } } }, null, 2));
+        snippet('Grok CLI', `grok mcp add --transport http amygdala-visit ${base}/mcp --header "Authorization: Bearer ${token}"`);
+        snippet('MCP JSON', JSON.stringify({ mcpServers: { 'amygdala-visit': { type: 'http', url: `${base}/mcp`, headers: { Authorization: `Bearer ${token}` } } } }, null, 2));
         snippet('curl REST', `curl -X POST ${base}/api/look -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d '{}'`);
       }
       form.append(h('div', { class: 'dialog-actions' }, h('button', { class: 'btn btn-primary', type: 'button', text: 'Done', onClick: close })));

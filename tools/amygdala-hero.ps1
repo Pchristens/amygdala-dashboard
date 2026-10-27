@@ -1,12 +1,12 @@
 <#
-  hearthfield-hero.ps1 — run an agent (e.g. Grok) as a Amygdala hero from a Windows machine, no WSL needed.
+  amygdala-hero.ps1 — run an agent (e.g. Grok) as an Amygdala hero from a Windows machine, no WSL needed.
   It runs the agent normally in this window and reports only its status (running / stopped) to Amygdala over
   Tailscale, with a heartbeat every 30 s. No files or transcripts are sent.
 
   Usage:
-    .\hearthfield-hero.ps1 -Server http://100.x.y.z:8795 -Pass hfh_XXXX -Title "isle: my project" -Project my-project grok
-    .\hearthfield-hero.ps1 -Pass hfh_XXXX -Title "isle: my project" grok --model grok-4.7
-  If PowerShell refuses to run it:  powershell -ExecutionPolicy Bypass -File .\hearthfield-hero.ps1 ...
+    .\amygdala-hero.ps1 -Server http://100.x.y.z:8795 -Pass hfh_XXXX -Title "isle: my project" -Project my-project grok
+    .\amygdala-hero.ps1 -Pass hfh_XXXX -Title "isle: my project" grok --model grok-4.7
+  If PowerShell refuses to run it:  powershell -ExecutionPolicy Bypass -File .\amygdala-hero.ps1 ...
 #>
 param(
   [Parameter(Mandatory)][string]$Pass,
