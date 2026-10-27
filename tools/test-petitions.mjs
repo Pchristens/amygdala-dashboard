@@ -33,6 +33,9 @@ try {
   assert.equal(w.snapshot({ human: true }).petitions[0].triage.suggest, 'Atlas');
   assert(w.snapshot({ human: true }).petitions[0].answerers.some(r => r.name === 'Gem' && r.tier === 'deep'));
   assert.equal(first.status, 'pending'); assert.equal(w.s.petitions.length, 2);
+  // Each petition rings the keeper's bell at once, without the question.
+  const rung = w.s.bells.filter(b => b.kind === 'petition'); assert.equal(rung.length, 2); assert.equal(rung[0].severity, 'attention');
+  assert(!JSON.stringify(w.s.bells).includes('PRIVATE QUESTION') && !JSON.stringify(w.s.bells).includes('Family'));
   assert.throws(ask, /2 pending/);
   assert.throws(() => rpc(a.token, 'ask_guidance', { question: 'x'.repeat(2001) }), /2000/);
   assert.throws(() => rpc(b.token, 'ask_guidance', { question: 'test', about: 'x'.repeat(81) }), /80/);

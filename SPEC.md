@@ -910,3 +910,51 @@ purchase, checkout, payment), `stripe` commands and checkout/billing URLs. Publi
 deploy commands, plus making a repository public. Messaging matches send/post MCP tools, `sendmail`, `mail -s` and SMTP.
 Audit bells are not part of the Watch's daily six, so they have their own limits: one per hero and rule an hour,
 twelve a day. A review batch holds at most 40 hits.
+
+## v0.30: isle ghosts
+
+Isle sub-agents have a separate human-only path. Village apprentices, audits, Watchtower reviews, Temple reviewers,
+resident and visitor context never receive ghost records. No model runs are used. Collection requires a server-confirmed
+isle hero and an existing drop-box public key; village heroes and SSH-only sources cannot produce ghosts.
+
+The next successful seal unlock creates an X25519 pair when absent. The private PKCS8 key lives inside the sealed isle
+portion; the public SPKI key lives in seal metadata. Keys are never generated while locked. Each box uses ephemeral
+X25519, HKDF-SHA256 (empty salt, versioned AAD as info), and AES-256-GCM. AAD binds the version, kind `isle-ghost`,
+SHA-256 hero binding and opaque per-ghost slot. A box is `{v:1,binding,slot,ephemeral,payload}` (base64 DER public key;
+base64 payload is 12-byte IV, 16-byte tag, ciphertext). Authentication failure yields no record.
+
+A separate scanner on the hero's machine discovers Claude `agent-*.meta.json` files using the v0.28 metadata bounds
+and ten-minute running gate. Existing ghosts can subsequently report completion. Each record contains opaque `key`,
+model/type, observation `startedAt`, finished, the first newly observed user prompt (4000 characters), last fifty tool
+calls `{tool,summary,ts}` (summary is command or path, 200 characters), and keyword hits. v0.29 redaction runs before
+clipping all text. Offsets start at EOF on discovery, rotation and truncation; old prompts and actions are not recovered.
+Each file reads at most 1 MiB per scan. Partial lines are buffered, and the collector's retained prompt/action buffers
+are encrypted with an ephemeral in-memory collector key. Losing eligibility clears those buffers. Local lock hooks clear
+collector state. Collection and encryption continue without the seal key; neither transport nor persisted inbox holds
+plaintext prompts, actions or hits. Unknown sub-agent transcript formats are skipped.
+
+`/node/report` responses add `isle:[sessionId]`, `islePublicKey` (or null), and `isleHeroPrefix`, alongside `village`.
+Optional request `isleGhosts:[{heroId,boxes:[box]}]` contains ciphertext only: at most 500 unique heroes, twelve boxes each,
+192000 base64 characters per payload, 2 MiB aggregate; unknown fields and malformed encodings are rejected. The server
+rechecks the previous isle allowlist and current classification, node ownership and box binding. Metadata continues to
+use the existing node session report; ghost transcript locations never cross the boundary.
+
+The last 200 boxes are retained, replacing an existing opaque hero/ghost slot without decrypting it. On save/lock,
+boxes join the sealed isle portion. Boxes arriving while locked occupy a bounded ciphertext inbox until next unlock;
+only hashes and ciphertext are kept there. Private keys and opened records never enter snapshots or public storage.
+Boxes are opened only when building an unlocked human snapshot, with no server plaintext cache. That snapshot alone
+adds `isleGhosts:[{heroId,key,resident|null,model,agentType,startedAt,finished,prompt,actions}]`; ownership uses v0.28
+matching against isle residents only. Ghosts of absent or no-longer-isle heroes are omitted. Locked and non-human
+snapshots omit the field. Screenshot stripping removes it outright. Critical keyword hits may ring the existing
+redacted isle bell when the human opens the view, globally at most once per hour; no excerpt or identity enters a bell,
+feed, board, audit or model prompt.
+
+The 3D human view shows at most three pale translucent, faceless, prop-free ghosts per isle hero plus a +N badge.
+Ghosts drift within their hero's isle radius, bob, and use the apprentice fade lifecycle. Clicking opens a ghost card
+with model, type, observation time, status, prompt and actions. Public, visitor, locked and screenshot views omit them.
+`?mock=1&apprentices=demo` supplies synthetic ghosts only for an existing unlocked mock isle hero.
+
+### v0.29.2: petition bells
+Every accepted `ask_guidance` rings the keeper's bell at once (`kind: "petition"`, attention). It's rung by code, not
+by the Watch, so it isn't part of the Watch's six a day. The bell reaches nodes like any other. Its text names only
+the visitor, never the question or topic. Petitions still wait for the keeper's explicit allow or deny.
