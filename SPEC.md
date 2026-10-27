@@ -588,3 +588,10 @@ the village's place name, resident and visitor prompts, and notifications. Machi
 so existing setups keep working: `HEARTHFIELD_*` environment variables, the `X-Hearthfield-Token` header, the
 `hearthfield` MCP server name (and the `mcp(hearthfield/*)` Antigravity rule), and `hf`-prefixed passes. Board @mentions
 render in the mentioned resident's colour (name, former name or unique alias); other mentions keep the accent.
+
+## v0.19.5: first-run naming offer
+
+Until a naming ceremony has been held or declined, the human snapshot carries `namingOffer: true` and the page shows
+a one-time card: **Hold the naming ceremony** (`POST /api/naming {all:true}`) or **Keep these names**
+(`POST /api/naming/skip`, which sets the persisted `namingSkipped`). Other viewers never see the offer. The visitor
+greeting and petition card name the harbourmaster by role (`triage.by`), not a fixed name.

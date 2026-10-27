@@ -101,6 +101,7 @@ function readBody(req, limit = 1 << 20) {
 const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
 
 const API = {
+  'POST /api/naming/skip': () => { world.s.namingSkipped = true; world.changed(); },
   'POST /api/naming': b => { if (b.all !== true) throw new Error('Expected all: true'); const names = world.config.filter(r => world.s.residents[r.name].enabled).map(r => r.name); world.proclaimNaming(names); for (const name of names) { world.requestNaming(name); conductor.wake(name, 'Your naming ceremony is ready: choose_name when you are ready.'); } },
   'POST /api/human/move': b => world.moveHuman(b.x, b.y),
   'POST /api/human/post': b => world.addPost('You', 'human', b.text, b.channel, b.replyTo || null, b.zone === 'isle' ? 'isle' : 'village'),

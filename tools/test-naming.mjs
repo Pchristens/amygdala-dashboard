@@ -16,6 +16,10 @@ try {
   const file = path.join(dir, 'residents.json');
   fs.writeFileSync(file, JSON.stringify(config));
   w = new World(dir, config, file);
+  // First run: the human is offered a ceremony; others never see the offer, and declining hides it.
+  assert.equal(w.snapshot({ human: true }).namingOffer, true);
+  assert.equal(w.snapshot().namingOffer, undefined);
+  w.s.namingSkipped = true; assert.equal(w.snapshot({ human: true }).namingOffer, undefined); delete w.s.namingSkipped;
   const old = 'Juniper';
   w.s.posts.push({ author: old, text: 'Historical Juniper', channel: 'projects' });
   w.s.exhibits.push({ author: old }); w.s.objects.push({ author: old });
@@ -89,6 +93,7 @@ try {
   w.endTurn('Kleio');
   // An island-wide ceremony announces once and completes after both identities migrate.
   w.proclaimNaming(['Daphne']);
+  assert.equal(w.snapshot({ human: true }).namingOffer, undefined);
   w.requestNaming('Daphne'); w.requestNaming('Kleio');
   const opening = 'The bell rings across the island: the naming ceremony begins. One by one the townsfolk climb the theatre tiers to take their names.';
   assert.equal(w.s.feed.filter(f => f.text === opening).length, 1);

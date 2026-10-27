@@ -1105,6 +1105,7 @@ function maybeIntro() {
 const pannedCeremonies = new Set();
 let ceremonyTimer = null;
 function updateCeremony() {
+  $('naming-offer').hidden = !state?.namingOffer || SHOT;
   clearTimeout(ceremonyTimer);
   const banner = $('ceremony-proclamation'), c = state?.ceremony;
   banner.hidden = true;
@@ -1553,3 +1554,7 @@ function mockApi(path, body) {
 }
 
 boot();
+
+// First-run naming offer: either choice hides it for good (the server stops sending namingOffer).
+$('naming-hold').addEventListener('click', async () => { $('naming-offer').hidden = true; await api('/api/naming', { all: true }); });
+$('naming-skip').addEventListener('click', async () => { $('naming-offer').hidden = true; await api('/api/naming/skip'); });

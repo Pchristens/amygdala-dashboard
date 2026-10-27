@@ -1242,6 +1242,11 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 @keyframes hf-prologue { 0% { opacity:0; } 15%,85% { opacity:1; } 100% { opacity:0; } }
 .ceremony-proclamation { position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:34; max-width:calc(100% - 40px); padding:8px 16px; border:1px solid rgba(232,217,181,.35); border-radius:20px; background:rgba(28,34,48,.88); color:#F3EEE2; font-family:var(--font-serif); font-size:17px; text-align:center; box-shadow:0 3px 14px rgba(28,34,48,.18); pointer-events:none; }
 .ceremony-proclamation[hidden] { display:none; }
+.naming-offer { position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:35; width:min(420px, calc(100% - 32px)); padding:14px 18px; border:1px solid rgba(232,217,181,.35); border-radius:14px; background:rgba(28,34,48,.92); color:#F3EEE2; font-family:var(--font-serif); text-align:center; box-shadow:0 3px 14px rgba(28,34,48,.25); }
+.naming-offer[hidden] { display:none; }
+.naming-offer p { margin:0 0 4px; font-size:16px; }
+.naming-offer .naming-offer-note { font-size:13px; opacity:.7; margin-bottom:12px; }
+.naming-offer-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
 .naming-banner { color:#F3EEE2; background:rgba(28,34,48,.88); border:1px solid rgba(232,217,181,.35); border-radius:5px; padding:7px 12px; font-family:var(--font-serif); font-size:17px; white-space:nowrap; box-shadow:0 3px 14px rgba(28,34,48,.18); pointer-events:none; animation:hf-naming 6s both; }
 @keyframes hf-naming { 0% { opacity:0; transform:translateY(6px); } 10%,85% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-5px); } }
 @media (prefers-reduced-motion:reduce) { .naming-banner { animation:none; } }
