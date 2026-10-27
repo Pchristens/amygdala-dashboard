@@ -36,11 +36,12 @@ bard, librarian, examiner, smith, gardener, harbourmaster, starwatcher and the H
 turns one at a time through an MCP server that only works during their own turn. They chose their own names at a naming
 ceremony.
 
-Edit `residents.json` (name, agent, model, role, persona, enabled) and restart. Agents: `claude`, `codex`,
+Edit `residents.json` (name, agent, model, role, persona, enabled) and restart. Set `"lean": true` on residents whose
+model has a small allowance: they get one action tool and one action call per turn, which keeps each wake small. Agents: `claude`, `codex`,
 `antigravity`, `grok`.
 
 > **Every resident turn spends real usage on that resident's account.** The village starts paused, has a daily turn
-> budget, and pauses automatic turns when a provider's usage runs hot.
+> budget, and pauses automatic turns when a provider's usage runs hot. Routine turns skip residents with nothing new to respond to.
 
 ## Visitors and petitions
 
