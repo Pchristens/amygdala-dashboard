@@ -82,6 +82,7 @@ const mapOpts = {
   },
   onResidentClick(name) { pinCard({ type: 'resident', id: name }); },
   onApprenticeClick(name, orderId) { panel.openOrder(orderId); setDrawer(true); },
+  onGhostClick(ghost) { pinCard({ type: 'ghost', id: ghost.key, heroId: ghost.heroId, ghost }); },
   onWorkerClick(id) { pinCard({ type: 'worker', id }); },
   onObjectClick(id) { pinCard({ type: 'object', id }); },
   onPlaceClick(id) { openPlacePane(id); },
@@ -141,7 +142,7 @@ function showCard(info, pinned) {
   const where = cardPlaceName(info);
   if (where) cardEl.append(h('div', { class: 'card-place', text: where }));
   cardEl.append(...content);
-  cardEl.classList.toggle('wide', info.type === 'tree');
+  cardEl.classList.toggle('wide', info.type === 'tree' || info.type === 'ghost');
   if (pinned) cardEl.appendChild(h('button', { class: 'btn btn-ghost btn-xs card-close', type: 'button', text: '✕', 'aria-label': 'Close' }));
   cardEl.hidden = false;
   repositionCard();
@@ -183,6 +184,12 @@ function zoneChip(item) {
 }
 function buildCard(info) {
   const { type, id } = info;
+  if (type === 'ghost') {
+    if (SHOT || state.visitor || sealLocked()) return null;
+    const g = (state.isleGhosts || []).find(g => g.key === id && g.heroId === info.heroId) || (MOCK ? info.ghost : null);
+    if (!g || !(state.workers || []).some(w => w.id === g.heroId && w.zone === 'isle' && !w.sealed)) return null;
+    return [h('div', { class: 'card-head' }, h('div', { class: 'card-name', text: 'Isle ghost' })), h('div', { class: 'card-sub', text: `${g.model} · ${g.agentType} · ${g.finished ? 'finished' : 'running'}` }), h('div', { class: 'card-row', text: new Date(g.startedAt).toLocaleString() }), h('pre', { class: 'card-row ghost-prompt', text: g.prompt }), ...(g.actions || []).map(a => h('div', { class: 'card-row ghost-action', text: `${new Date(a.ts).toLocaleTimeString()} · ${a.tool}: ${a.summary}` }))];
+  }
   if (type === 'resident') {
     const r = (state.residents || []).find((x) => x && x.name === id);
     if (!r) return null;
@@ -1142,7 +1149,7 @@ function stripIsle(s) {
   const isIsle = (x) => x && typeof x === 'object' && (x.zone === 'isle' || x.isleTagged || x.sealed);
   const out = {};
   for (const [k, v] of Object.entries(s)) out[k] = Array.isArray(v) ? v.filter((x) => !isIsle(x)) : v;
-  delete out.petitions; delete out.bells; delete out.audits; delete out.auditSettings;
+  delete out.isleGhosts; delete out.petitions; delete out.bells; delete out.audits; delete out.auditSettings;
   out.offerings = (out.offerings || []).filter(o => o.kind !== 'audit' && !o.humanOnly);
   out.workshops = [];
   // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.

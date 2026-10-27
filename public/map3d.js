@@ -636,6 +636,34 @@ export async function createMap3D(container, opts = {}) {
     }
     return movingAny;
   }
+  const ghosts = new Map();
+  function syncGhosts(state) {
+    const allowed = apprenticesAllowed(state, apprenticeParams) && !apprenticeParams.has('shot') && state.seal?.enabled && !state.seal.locked, seen = new Set();
+    for (const f of figures.values()) f.F.label.querySelector?.('.ghost-count')?.remove();
+    for (const w of state.workers || []) {
+      if (!allowed || w.zone !== 'isle' || w.sealed) continue;
+      const master = figures.get(figureKey('god', w.id)); if (!master) continue;
+      let records = (state.isleGhosts || []).filter(g => g.heroId === w.id && !g.finished);
+      if (apprenticeParams.get('mock') === '1' && apprenticeParams.get('apprentices') === 'demo') records = Array.from({ length: 4 }, (_, i) => ({ heroId: w.id, key: `demo-ghost-${i}`, model: 'synthetic', agentType: 'Explore', prompt: 'A synthetic isle ghost', startedAt: 0, finished: false, actions: [] }));
+      const capped = apprenticeCap(records.map(g => ({ ...g, orderId: g.key })));
+      master.F.label.querySelector('.ghost-count')?.remove();
+      if (capped.badge) { const b = document.createElement('span'); b.className = 'apprentice-count ghost-count'; b.textContent = `+${capped.badge}`; master.F.label.append(b); }
+      for (let i = 0; i < capped.orders.length; i++) {
+        const record = capped.orders[i], key = JSON.stringify([w.id, record.key]); seen.add(key); let g = ghosts.get(key);
+        if (!g) { if ([...ghosts.values()].filter(g => g.master === master).length >= 3) { const old = [...ghosts].find(([k, g]) => g.master === master && !capped.orders.some(r => r.key === g.record.key)); if (old) { old[1].F.root.removeFromParent(); ghosts.delete(old[0]); } } const F = createApprentice({ color: '#d8e5f4' }, 'none', key); F.hit.userData.pick = { type: 'ghost', id: record.key, heroId: w.id }; scene.add(F.root); g = { F, master, x: w.x, y: w.y, alpha: 0, phase: 'in', seed: i * 2.1 }; ghosts.set(key, g); }
+        g.record = record; g.present = true;
+      }
+    }
+    for (const [key, g] of ghosts) { if (!allowed || !figures.has(figureKey('god', g.master.id))) { g.F.root.removeFromParent(); ghosts.delete(key); } else g.present = seen.has(key); }
+  }
+  function tickGhosts(dt, time) {
+    for (const [key, g] of ghosts) {
+      apprenticeFade(g, dt, g.present, true); if (g.phase === 'done') { g.F.root.removeFromParent(); ghosts.delete(key); continue; }
+      const angle = time * 0.08 + g.seed, x = g.master.pos.x + Math.cos(angle) * 25, y = g.master.pos.y + Math.sin(angle) * 20;
+      if (isleLandAt(x, y, 8)) { g.x += (x - g.x) * Math.min(1, dt / 2500); g.y += (y - g.y) * Math.min(1, dt / 2500); }
+      fadeApprentice(g.F, g.alpha * 0.55); g.F.parts.held.visible = false; g.F.root.position.set(g.x, groundY(g.x, g.y) + 3 + Math.sin(time * 1.2 + g.seed) * 1.5, g.y);
+    }
+  }
   let seenPosts = null;
 
   // ---------- update from state ----------
@@ -655,7 +683,7 @@ export async function createMap3D(container, opts = {}) {
     rebuildStatic(places, workshops.filter((w) => zoneOf(w) === 'isle'), plots, objects, state.sites || []);
     syncTrees(Array.isArray(state.trees) ? state.trees : [], now);
     syncFigures(state, now);
-    syncApprentices(state);
+    syncApprentices(state); syncGhosts(state);
     const locked = !!(state.seal?.enabled && state.seal.locked);
     container.classList.toggle('sealed', locked);
     updateDome(locked, Array.isArray(state.seal?.runes) ? state.seal.runes : []);
@@ -748,6 +776,7 @@ export async function createMap3D(container, opts = {}) {
       if (F.anim.gesture) active = true;
       F.root.userData.moving = moving;
     }
+    if (ghosts.size) tickGhosts(dt, time); // slow drift reads fine at the ambient 20 fps
     if (apprentices.size && tickApprentices(dt, time, night)) active = true;
     let frameMotion = active; // walking and gestures need full frame rate; ambient life uses 20 fps.
     // trees
@@ -892,6 +921,7 @@ export async function createMap3D(container, opts = {}) {
     if (d.moved || e.button !== 0) return;
     const pick = pickAt(e.clientX, e.clientY);
     if (pick) {
+      if (pick.type === 'ghost') { const g = [...ghosts.values()].find(g => g.record.key === pick.id && g.record.heroId === pick.heroId); if (g) return opts.onGhostClick?.(g.record); }
       if (pick.type === 'apprentice') { follow = figureKey('resident', pick.id); opts.onResidentClick?.(pick.id); return opts.onApprenticeClick?.(pick.id, pick.orderId); }
       if (pick.type === 'resident') { follow = figureKey('resident', pick.id); return opts.onResidentClick?.(pick.id); }
       if (pick.type === 'visitor') { follow=figureKey('visitor',pick.id); const v=current?.visitors?.find(v=>v.name===pick.id); return opts.onVisitorClick?.(pick.id) ?? (v?.placeId && opts.onPlaceClick?.(v.placeId)); }

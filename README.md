@@ -293,3 +293,17 @@ wait for server confirmation before opening a transcript. Update node checkouts 
 history is scanned on startup or re-enabling. Bell notifications include the hero title and rule, never transcript
 excerpts. The pass is heuristic: it can miss obfuscated/unknown tool formats and flag harmless quoted commands. It
 provides a review signal, not enforcement of permissions or a guarantee that an unattended session is safe.
+
+### Isle ghosts
+
+After upgrading, unlock the Far Isle once to create its encrypted drop box. Update node helper checkouts too.
+While the isle is unlocked, the human's 3D map shows up to three drifting ghosts beside each isle hero, with a +N badge
+for more. Click one for its model, type, status, first newly observed prompt and recent tool commands or paths.
+Collection currently supports Claude sub-agent metadata and JSONL; other formats are skipped. Scanning starts at the
+current end of each file, so earlier prompts/actions are unavailable. It uses no model calls.
+
+Ghost records are encrypted on the hero's machine before transport. The private drop-box key stays inside the rune
+seal; boxes received while locked remain ciphertext. Locked, visitor, resident and screenshot views receive no ghosts.
+The village apprentice and Watchtower paths continue to exclude isle work. Critical keyword hits can ring only the
+redacted Far Isle bell, at most once an hour when the human views the unlocked isle. Keyword detection and redaction
+are heuristic; inspect the human-only card with the same care as other session output.

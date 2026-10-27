@@ -47,7 +47,7 @@ startDeckSync(world);
 conductor.lookFor = mcp.lookFor;
 conductor.setAgyUrl = url => writeAgyUrl(url || `${BASE}/mcp`);
 // Sealing stops any isle turn in progress before the isle's data leaves memory.
-world.lockHooks = [reason => { termHub.closeIsle(); for (const t of conductor.running.values()) if (world.zoneOf(t.name) === 'isle') conductor.abort(`the isle was sealed (${reason})`, t); }];
+(world.lockHooks ??= []).push(reason => { termHub.closeIsle(); for (const t of conductor.running.values()) if (world.zoneOf(t.name) === 'isle') conductor.abort(`the isle was sealed (${reason})`, t); });
 process.on('unhandledRejection', e => console.error('unhandled rejection', e));
 ensureAgyConfig();
 

@@ -1,5 +1,6 @@
+import { IsleScanner } from '../lib/isle-ghosts.js';
 import { AuditScanner } from '../lib/audit.js';
-import { HeroScanner } from '../lib/hero-apprentices.js';
+import { HeroScanner, scanAllowed } from '../lib/hero-apprentices.js';
 import { notify } from '../lib/notify.js';
 // Only redacted audit excerpts cross the node boundary.
 import fs from 'node:fs';
@@ -16,8 +17,8 @@ import { createInterface } from 'node:readline';
 import { probeGrok } from '../lib/fleet.js';
 export function reportSessions(sessions, village = []) {
   return sessions.filter(s => !s.archived).map(s => {
-    const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = isleTagged(w);
-    const signals = !tagged && village.includes(s.id) ? classifyHero({ ...w, ...extractSignals(w.transcriptPath, w.tool) }) : undefined;
+    const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = w.zone === 'isle' || w.isleTagged || isleTagged(w);
+    const signals = scanAllowed({ ...w, id: s.id, zone: s.zone || 'village' }, village) ? classifyHero({ ...w, ...extractSignals(w.transcriptPath, w.tool) }) : undefined;
     return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, model: w.model, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
   });
 }
@@ -54,7 +55,9 @@ export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (args[i] === '--no-notify') { options.noNotify = true; i--; continue; } if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
   const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
   if (!['http:', 'https:'].includes(server.protocol) || server.username || server.password || !/^hfn_[\w-]+$/.test(token)) throw new Error('Invalid node configuration.');
-  const scanner = new HeroScanner(), auditScanner = new AuditScanner();
+  const scanner = new HeroScanner(), auditScanner = new AuditScanner(), isleScanner = new IsleScanner();
+  const pendingGhosts = new Map();
+  let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
   let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], connected = false;
@@ -99,8 +102,17 @@ export async function main(args = process.argv.slice(2)) {
       if (usage) usage = { id: usage.id, windows: (usage.windows || []).map(({ kind, label, used_percentage, resets_at, stale }) => ({ kind, label, used_percentage, resets_at, stale })) };
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
+      for (const id of scanner.cache.keys()) if (!village.includes(id)) scanner.cache.delete(id);
       auditScanner.retain(audit.enabled ? sessions.filter(s => !s.archived && village.includes(s.id) && !audit.optOut.includes(s.id)).map(s => s.id) : []);
-      const apprentices = [], auditHits = [];
+      const apprentices = [], auditHits = [], isleGhosts = [];
+      isleScanner.retain(islePublicKey ? isle : []);
+      for (const s of sessions.filter(s => isle.includes(s.id) && !s.archived)) {
+        const w = { ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: 'isle' };
+        const boxes = isleScanner.scan(w, isle, islePublicKey, Date.now(), isleHeroPrefix + s.id); for (const box of boxes) pendingGhosts.set(box.slot, { heroId: s.id, box });
+      }
+      let ghostBytes = 0;
+      for (const [slot, g] of pendingGhosts) { if (!islePublicKey || !isle.includes(g.heroId)) { pendingGhosts.delete(slot); continue; } const size = JSON.stringify(g.box).length; if (ghostBytes + size > 768000) continue; let group = isleGhosts.find(x => x.heroId === g.heroId); if (group?.boxes.length >= 12) continue; if (!group) { group = { heroId: g.heroId, boxes: [] }; isleGhosts.push(group); } group.boxes.push(g.box); ghostBytes += size; }
+      while (pendingGhosts.size > 200) pendingGhosts.delete(pendingGhosts.keys().next().value);
       for (const s of sessions.filter(s => village.includes(s.id) && !s.archived)) {
         const w = { ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: s.zone || 'village' };
         auditHits.push(...auditScanner.scan({ ...w, auditOptOut: !audit.enabled || audit.optOut.includes(w.id) }, village));
@@ -111,13 +123,13 @@ export async function main(args = process.argv.slice(2)) {
         apprentices.push({ heroId: s.id, subagents: scanner.scan(w, village, children) });
       }
       const batch = results.slice(0, 40);
-      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, auditHits: auditHits.slice(0, 500), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
+      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, isleGhosts, auditHits: auditHits.slice(0, 500), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('Report refused.');
-      const next = await response.json(); village = next.village || []; audit = next.audit || { enabled: false, optOut: [] }; results.splice(0, batch.length);
+      const next = await response.json(); for (const g of isleGhosts) for (const b of g.boxes) pendingGhosts.delete(b.slot); village = next.village || []; isle = next.isle || []; islePublicKey = next.islePublicKey || null; isleHeroPrefix = next.isleHeroPrefix || ''; audit = next.audit || { enabled: false, optOut: [] }; results.splice(0, batch.length);
       for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }
       // Jobs run concurrently so a long wrap-up cannot interrupt heartbeats.
       for (const job of next.jobs || []) executeJob(job, next.jobs, sessions, village).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, 24000), error: '' }), () => results.push({ id: job.id, ok: false, output: '', error: 'Local node job failed; check folder and agent-deck.' }));
-    } catch { village = []; auditScanner.retain([]); console.error('Node report failed; retrying.'); }
+    } catch { village = []; isle = []; isleScanner.retain([]); auditScanner.retain([]); console.error('Node report failed; retrying.'); }
     await new Promise(resolve => setTimeout(resolve, 4000));
   }
 }
