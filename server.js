@@ -1,3 +1,4 @@
+import { Watchtower } from './lib/audit.js';
 import { notify, bellBatch } from './lib/notify.js';
 // Amygdala server: static front end, world API + SSE, MCP endpoint for residents, conductor, agent-deck sync.
 import http from 'node:http';
@@ -39,6 +40,7 @@ const world = new World(DATA, residents, path.join(ROOT, 'residents.json'));
 const termHub = new TermHub(world);
 const mcp = createMcpHandler(world);
 const conductor = new Conductor(world, { baseUrl: BASE, dataDir: DATA });
+world.watchtower = new Watchtower(world, conductor);
 world.watch = new Watch(world, conductor, DATA);
 world.starwatch = new Starwatch(world, conductor);
 startDeckSync(world);
@@ -142,6 +144,7 @@ const API = {
   'POST /api/heroes/revoke': b => world.bridge.revoke(String(b.id)),
   'POST /api/quarantine': b => world.setQuarantine(String(b.project), String(b.host), !!b.on),
   'POST /api/human/gift': b => world.addObject('You', b.kind, b.note, +b.x, +b.y),
+  'POST /api/audit/settings': b => world.watchtower.settings(b),
   'POST /api/control': b => {
     if (typeof b.paused === 'boolean') world.setPaused(b.paused);
     if (b.tickSeconds !== undefined) world.setTick(b.tickSeconds);

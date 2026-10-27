@@ -790,6 +790,18 @@ export function createPanel(opts) {
       title.appendChild(send);
     }
     els.workshop.appendChild(title);
+    if (zone === 'village' && state.auditSettings) {
+      const s = state.auditSettings, controls = h('div', { class: 'card' }, h('b', { text: 'Watchtower' }));
+      const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));
+      controls.append(h('label', {}, enabled, ' Audit autonomous heroes'));
+      for (const [key, label] of [['tier1', 'First reviewer'], ['tier2', 'Escalation reviewer']]) {
+        const select = h('select', { 'aria-label': label }); for (const r of state.residents || []) select.append(h('option', { value: r.name, text: r.name, selected: r.name === s[key] }));
+        select.value = s[key]; select.addEventListener('change', () => opts.api('/api/audit/settings', { [key]: select.value })); controls.append(h('label', {}, label, select));
+      }
+      const cap = h('input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }); cap.addEventListener('change', () => opts.api('/api/audit/settings', { dailyCap: +cap.value })); controls.append(h('label', {}, 'Daily audit runs ', cap));
+      for (const a of (state.audits || []).slice(-20).reverse()) controls.append(h('p', { text: `${a.severity} · ${a.rule} · ${a.status}: ${a.excerpt}` }));
+      els.workshop.append(controls);
+    }
     if (!workers.length) {
       els.workshop.appendChild(h('div', { class: 'empty', text: 'No heroes at the sites. Send one on a labour, or start a session in Agent Deck.' }));
       return;
@@ -866,6 +878,7 @@ export function createPanel(opts) {
         h('a', { href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
         opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
         offer,
+        state.auditSettings && zoneOf(w) === 'village' && !w.private && !w.sealed ? h('button', { class: 'btn btn-ghost btn-xs', text: state.auditSettings.optOut.includes(w.id) ? 'Audit off' : 'Audit on', onClick: () => opts.api('/api/audit/settings', { heroId: w.id, optOut: !state.auditSettings.optOut.includes(w.id) }) }) : null,
         opts.endLabourButton?.(w),
         h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => opts.onTellTale?.(w.id) }),
         zoneOf(w) !== 'isle' && !w.sealed ? h('span', { text: `at ${siteList().find(s => s.id === w.site)?.label || w.site} · ${w.siteReason || ''}` }) : null,
@@ -958,6 +971,7 @@ export function createPanel(opts) {
       close.addEventListener('click', () => opts.onCloseOffering?.(o));
       card.appendChild(h('div', { class: 'card-actions' }, cmd, close));
     }
+    if (o.kind === 'audit') for (const v of o.verdicts || []) card.append(h('p', { text: `${v.reviewer}: ${v.verdict} — ${v.summary}` }));
     const findings = findingsFor(o.id);
     if (findings.length) {
       card.appendChild(h('div', { class: 'findings-title', text: `${findings.length} finding${findings.length === 1 ? '' : 's'}` }));

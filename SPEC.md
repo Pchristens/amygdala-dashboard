@@ -848,3 +848,65 @@ from their owning resident to the hero, work beside it, then return and fade; he
 return at the hero. Explore carries a scroll, Plan an amphora, general-purpose a hammer, other types
 a basket. Clicking selects the hero. Human-only `?apprentices=demo` also supplies four synthetic
 apprentices to one village hero, with no server mutation or model usage.
+
+## v0.29: the Watchtower
+
+The Watchtower audits autonomous heroes with a free local keyword pass, then isolated model reviews only for hits.
+It is enabled by default. Only server-confirmed village heroes qualify under the v0.28 gate; private, tagged,
+quarantined, sealed, stale/unconfirmed sources and per-hero opt-outs are excluded before filesystem access.
+Local heroes are scanned on the server; node heroes on their own machine using the latest report allowlist.
+SSH-only sources are skipped. Losing eligibility clears offsets; resuming starts at the current end again.
+No backlog is read, including on first observation, rotation, truncation or restart. Offsets are byte positions,
+partial lines are buffered, and each file contributes at most 1 MiB per scan. Claude sources are the session JSONL
+and `subagents/agent-*.jsonl` files. Only tool-use names/inputs and the first observed subagent user prompt
+are matched; main user records only reset the no-human-input clock. Codex supports known function/custom-tool-call
+and exec-event records in its transcript or a rollout resolved under `resolved_codex_home/sessions` using
+`codex_session_id`; unknown records/formats are ignored.
+
+`lib/audit-rules.js` defines id, severity, tool/regex match, reason and optional contextual checks. It covers
+protected/force pushes, external recursive deletion, downloaded shell scripts, credentials and external .env reads,
+sandbox/permission changes, sudo, spending, publishing/deploys, pushes/PRs/branch deletion, database drops, external
+writes, mass deletion, messaging, subagent injection, secret-like inputs and runs exceeding three hours without
+observed human input. These are heuristic leads, not a sandbox or proof of harm. Quoted commands and wildcard
+removals can produce false positives; unknown tools, dynamic shell expansion and obfuscated actions can be missed.
+
+Each hit is `{heroId,rule,severity,ts,excerpt}`; the excerpt is redacted before clipping to 300 characters around
+the match. Redaction covers API and village passes, bearer credentials, URL passwords, environment assignments,
+and long hex/base64 strings. The scanner allows at most 30 hits per hero in a rolling hour, deduplicated by rule
+and input hash. Server acceptance repeats redaction, rate limits and deduplication. Optional node report `auditHits`
+is an array of at most 500 strictly validated hits, with known rule/severity pairs, safe integer timestamps and
+bounded hero identifiers/excerpts; unknown fields are rejected. Ownership and both the previous allowlist and
+current eligibility are rechecked. Report responses add `audit:{enabled,optOut:[sessionId]}`. Nodes default to no
+auditing until that response arrives. Raw transcripts and transcript locations do not cross the node boundary.
+
+World `audits` holds the last 1000 redacted hits plus status and tier verdicts. Human snapshots alone include
+`audits` and `auditSettings:{enabled,tier1,tier2,dailyCap,optOut}`. Human-only `POST /api/audit/settings` accepts
+`enabled`, reviewer resident names `tier1`/`tier2`, integer `dailyCap` (0–200), or `{heroId,optOut:boolean}`.
+Defaults are ON, Sable (`gpt-6-luna`), Terra (`gpt-6.1-terra`), and 20 model runs per UTC day. Reviewers use their
+current resident agent/model; unsupported or non-village/private reviewers wait without running.
+The Temple panel exposes these settings, per-hero switches, recent hits and audit offering verdicts.
+
+Batches are per hero, at most once every ten minutes. Tier 1 returns strict JSON
+`{verdict:"benign"|"concerning"|"dangerous",escalate:boolean,summary:string}` (summary at most 200 characters).
+Critical batches go directly to tier 2. For other batches, `escalate:true` or `dangerous` require tier 2 with the batch and tier 1 verdict. Both tiers use the
+existing tool-less guidance runner in an empty temporary directory and explicitly treat evidence as untrusted
+text. They reserve `conductor.isolatedRuns`; no resident turn overlaps a review, including agy's global MCP setup.
+No reviews start while paused, above provider pressure limits, or after the separate daily audit run cap. Each tier
+and failed attempt counts as one run and records audit usage. Deferred escalation retains tier 1 and retries later
+without paying for tier 1 again. Capped or pressured pending batches wait; free detection continues while paused.
+
+Critical hits immediately record an urgent bell with `kind:"audit"`, before any review/cost checks. Dangerous tier
+verdicts record attention bells. The summary contains only the redacted hero title and rule id, never the excerpt
+or model summary. Existing bell batching and notification delivery apply; audit bells have their own hit limits
+and do not consume the Watch's six daily rings. Verdicts are retained in human-only Temple offerings of kind
+`audit`, including pending escalation. Audits never enter the feed, resident board/landmark reads, visitor or hero
+snapshots, or ordinary resident Temple review queues. Quarantining or making a hero private removes its audit
+records, derived offerings and scanner cache rather than carrying audit evidence across the water.
+
+### v0.29.1: Watchtower tuning
+File-edit tools (Write, Edit, MultiEdit, NotebookEdit, apply_patch) are matched on their paths only, never on file
+contents, so words in code don't count as actions. Spending matches order and payment tools (`mcp__…place_*order`,
+purchase, checkout, payment), `stripe` commands and checkout/billing URLs. Publishing matches real publish and
+deploy commands, plus making a repository public. Messaging matches send/post MCP tools, `sendmail`, `mail -s` and SMTP.
+Audit bells are not part of the Watch's daily six, so they have their own limits: one per hero and rule an hour,
+twelve a day. A review batch holds at most 40 hits.

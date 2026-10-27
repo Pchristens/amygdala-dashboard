@@ -199,8 +199,8 @@ stale after roughly three missed reports. Commissions now have a **Machine** sel
 on that selected machine. Folder validation and launch errors appear in the commission dialog. End labour, counsel,
 site observation, and closing words run through that node. Node terminals attach to the local tmux session through the authenticated gate.
 
-The node sends metadata and a local classification, never transcript locations or prompt excerpts. Only explicitly
-requested bounded village output crosses the gate. Quarantined/Isle heroes cannot receive content-reading jobs.
+The node sends metadata, a local classification, and redacted Watchtower hits, never transcript locations or raw
+prompts. Explicitly requested bounded village output can also cross the gate. Quarantined/Isle heroes cannot receive content-reading jobs.
 Remote git offerings and git statistics in tales remain unsupported. A helper restart or lost response can lose a dispatched
 job; jobs expire after 13 minutes. Check the machine before retrying a commission to avoid launching it twice.
 
@@ -277,3 +277,19 @@ expires after ten minutes. Only server-confirmed village heroes qualify; private
 sealed and Isle-tagged sessions are excluded before scanning. Update the node helper checkout too:
 helpers use the server's village allowlist and report only opaque keys, models and agent types.
 This feature spends no model usage and launches no resident turns.
+
+### Watchtower
+
+The Temple panel's **Watchtower** audits unattended village heroes. It starts enabled, reads only newly appended
+Claude/Codex tool records on the hero's own machine, and sends redacted keyword hits for review. Sable is the first
+reviewer and Terra handles escalation and critical batches directly; choose other residents, change the default
+20-model-run daily cap, disable
+it globally, or use **Audit on/off** on a hero card. Both review tiers count toward that cap. Reviews wait while the
+village is paused or provider usage is hot; critical keyword hits still ring an urgent bell immediately. Each hero
+is reviewed at most once per ten minutes. Verdicts appear as private audit offerings in the Temple.
+
+Only server-confirmed village heroes qualify. Isle/private/quarantined/sealed heroes are excluded, and node helpers
+wait for server confirmation before opening a transcript. Update node checkouts to enable remote audits. No existing
+history is scanned on startup or re-enabling. Bell notifications include the hero title and rule, never transcript
+excerpts. The pass is heuristic: it can miss obfuscated/unknown tool formats and flag harmless quoted commands. It
+provides a review signal, not enforcement of permissions or a guarantee that an unattended session is safe.

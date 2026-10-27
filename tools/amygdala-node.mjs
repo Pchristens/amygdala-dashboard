@@ -1,6 +1,7 @@
+import { AuditScanner } from '../lib/audit.js';
 import { HeroScanner } from '../lib/hero-apprentices.js';
 import { notify } from '../lib/notify.js';
-// No transcript locations or prompt excerpts cross the node boundary.
+// Only redacted audit excerpts cross the node boundary.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -53,7 +54,8 @@ export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (args[i] === '--no-notify') { options.noNotify = true; i--; continue; } if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
   const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
   if (!['http:', 'https:'].includes(server.protocol) || server.username || server.password || !/^hfn_[\w-]+$/.test(token)) throw new Error('Invalid node configuration.');
-  const scanner = new HeroScanner();
+  const scanner = new HeroScanner(), auditScanner = new AuditScanner();
+  let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
   let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], connected = false;
   const terminals = new Map(); let output = [], pendingGrok = null;
@@ -97,9 +99,11 @@ export async function main(args = process.argv.slice(2)) {
       if (usage) usage = { id: usage.id, windows: (usage.windows || []).map(({ kind, label, used_percentage, resets_at, stale }) => ({ kind, label, used_percentage, resets_at, stale })) };
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
-      const apprentices = [];
+      auditScanner.retain(audit.enabled ? sessions.filter(s => !s.archived && village.includes(s.id) && !audit.optOut.includes(s.id)).map(s => s.id) : []);
+      const apprentices = [], auditHits = [];
       for (const s of sessions.filter(s => village.includes(s.id) && !s.archived)) {
         const w = { ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: s.zone || 'village' };
+        auditHits.push(...auditScanner.scan({ ...w, auditOptOut: !audit.enabled || audit.optOut.includes(w.id) }, village));
         let children = sessions.map(c => toWorker(c, 'local'));
         if (w.host === 'local' && scanner.due(w, village)) {
           try { const out = JSON.parse((await exec('agent-deck', ['session', 'children', s.id, '--json'], { timeout: 15000, maxBuffer: 1 << 20 })).stdout); children = [...children, ...(Array.isArray(out) ? out : out.children || out.sessions || []).map(c => ({ ...toWorker(c, 'local'), parentId: s.id }))]; } catch {}
@@ -107,13 +111,13 @@ export async function main(args = process.argv.slice(2)) {
         apprentices.push({ heroId: s.id, subagents: scanner.scan(w, village, children) });
       }
       const batch = results.slice(0, 40);
-      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
+      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, auditHits: auditHits.slice(0, 500), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('Report refused.');
-      const next = await response.json(); village = next.village || []; results.splice(0, batch.length);
+      const next = await response.json(); village = next.village || []; audit = next.audit || { enabled: false, optOut: [] }; results.splice(0, batch.length);
       for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }
       // Jobs run concurrently so a long wrap-up cannot interrupt heartbeats.
       for (const job of next.jobs || []) executeJob(job, next.jobs, sessions, village).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, 24000), error: '' }), () => results.push({ id: job.id, ok: false, output: '', error: 'Local node job failed; check folder and agent-deck.' }));
-    } catch { village = []; console.error('Node report failed; retrying.'); }
+    } catch { village = []; auditScanner.retain([]); console.error('Node report failed; retrying.'); }
     await new Promise(resolve => setTimeout(resolve, 4000));
   }
 }
