@@ -13,7 +13,7 @@ limits.providers[0].windows[0].stale = false;
 limits.providers[0].stale = true;
 assert.equal(readingDue(limits, {}, now), null);
 limits.providers[0].stale = false;
-const wakes = [], c = { queue: [], wake(name, reason) { wakes.push(name); this.queue.push({ name, reasons: [reason] }); } };
+const wakes = [], c = { queue: [], duty(role, zone, key, reason) { const name = 'Atlas'; wakes.push(name); this.queue.push({ name, reasons: [reason] }); return true; } };
 const w = { s: { residents: { Atlas: { enabled: true } } }, config: [{ name: 'Atlas', role: 'starwatcher' }], usage: { limits }, changed() {} };
 let scheduler = new Starwatch(w, c, { start: false });
 scheduler.scan(now); scheduler.scan(now + 1);
@@ -27,7 +27,7 @@ console.log('PASS: Starwatch boundaries, missing/stale windows, persistent dedup
 const { Temple } = await import('../lib/temple.js');
 const offering = { id: 'o', zone: 'village', project: 'app', host: 'local' };
 const finding = { id: 'f', offeringId: 'o', zone: 'village', status: 'decreed' };
-const tw = { s: { findings: [finding], offerings: [offering], quarantine: [] }, cfg: () => ({ role: 'smith' }), changed() {} };
+const tw = { s: { findings: [finding], offerings: [offering], quarantine: [] }, cfg: () => ({ role: 'smith' }), actsAs: (name, role) => role === 'smith', changed() {} };
 const temple = Object.create(Temple.prototype); temple.w = tw; temple.listeners = { fixReported: [() => wakes.push('smith')] };
 temple.reportFixed('f'); assert.equal(finding.status, 'awaiting_confirmation');
 temple.fixCheck('Terra', { findingId: 'f', verdict: 'holds', note: 'Fix holds.' });

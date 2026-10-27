@@ -644,9 +644,11 @@ export function createPanel(opts) {
     });
     row._wake = h('button', { class: 'btn btn-xs', type: 'button', text: 'Wake now' });
     row._wake.addEventListener('click', () => opts.onWake?.(r.name));
+    row._hibernate = h('button', { class: 'btn btn-xs', type: 'button', text: 'Hibernate' });
+    row._hibernate.addEventListener('click', () => opts.onHibernate?.(r.name, row._hibernate.dataset.on !== 'true'));
     row._identity = h('div');
     const mid = h('div', {}, row._name, row._identity, row._chips, row._meta, row._persona, row._commits);
-    const ctl = h('div', { class: 'resident-ctl' }, row._switch, row._wake);
+    const ctl = h('div', { class: 'resident-ctl' }, row._switch, row._wake, row._hibernate);
     row.append(row._avatar, mid, ctl);
     return row;
   }
@@ -668,7 +670,9 @@ export function createPanel(opts) {
         r.rank ? h('span', { class: `chip chip-rank rank-${r.rank}`, text: r.rank === 'priest' ? '☀ High Priest' : r.rank === 'high' ? '✦ high' : 'low' }) : null,
       ].filter(Boolean));
     }
+    row._hibernate.dataset.on = String(!!r.hibernate); row._hibernate.textContent = r.hibernate ? 'Clear hibernation' : 'Hibernate';
     row._meta.textContent = '';
+    if (r.hibernating) row._meta.append(h('span', { class: 'dim', text: '💤 hibernating · ' }));
     row._meta.append(
       h('span', { text: `${r.mood ? capitalize(r.mood) : '—'}` }),
       h('span', { class: 'dim', text: ' · ' }),

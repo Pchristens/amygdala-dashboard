@@ -34,7 +34,9 @@ The sky follows the real sun where you live (set `HEARTHFIELD_LATLON`): dawn, da
 Each resident is a real CLI agent with a role: the Watch (triages events and rings the steward's bell), archivist,
 bard, librarian, examiner, smith, gardener, harbourmaster, starwatcher and the High Priest of the Temple. They take
 turns one at a time through an MCP server that only works during their own turn. They chose their own names at a naming
-ceremony.
+ceremony. Residents hibernate automatically at 80% provider pressure and wake below 75%; the resident card also has a
+manual Hibernate toggle. Sleeping residents delegate duties to an available resident in the same zone, preferring
+another provider; an explicit human wake still spends usage.
 
 Edit `residents.json` (name, agent, model, role, persona, enabled) and restart. Set `"lean": true` on residents whose
 model has a small allowance: they get one action tool and one action call per turn, which keeps each wake small. Agents: `claude`, `codex`,

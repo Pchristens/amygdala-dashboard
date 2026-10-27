@@ -359,6 +359,7 @@ const panel = createPanel({
   onViewChange: syncTerminalWidth,
   onPost: ({ text, channel, replyTo, zone }) => api('/api/human/post', { text, channel, replyTo: replyTo || null, zone }),
   onToggleResident: (name, enabled) => api(`/api/residents/${encodeURIComponent(name)}`, { enabled }),
+  onHibernate: (name, on) => api(`/api/residents/${encodeURIComponent(name)}/hibernate`, { on }),
   onWake: (name) => api(`/api/residents/${encodeURIComponent(name)}/wake`, {}).then((ok) => { if (okResult(ok)) toast(`Waking ${name}…`); }),
   onQuarantine: (project, host, on) => api('/api/quarantine', { project, host, on }).then((ok) => { if (okResult(ok)) toast(on ? `${project} is quarantined on the isle.` : `${project} is back in The Works.`); }),
   onMilestone: (project, host) => openMilestone(project, host),

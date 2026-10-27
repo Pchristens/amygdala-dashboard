@@ -58,7 +58,7 @@ try {
   assert.equal(w.snapshot().residents[0].role, 'watch');
   assert.match(createMcpHandler(w).lookFor('Daphne'), /Daphne/);
   const wakes = [];
-  const watch = w.watch = new Watch(w, { wake: (...args) => wakes.push(args) }, dir, { start: false });
+  const watch = w.watch = new Watch(w, { duty: (...args) => { wakes.push(args); return true; } }, dir, { start: false });
   const now = Date.now();
   w.workers = [{ id: 'hero', status: 'waiting', waitingSince: now - 11 * 60000, title: 'Fix login' }, { id: 'sealed', sealed: true, status: 'waiting', title: 'SECRET' }];
   w.s.findings = [{ id: 'secret', zone: 'isle', status: 'omen', omenAt: now - 31 * 60000, claim: 'SECRET' }];

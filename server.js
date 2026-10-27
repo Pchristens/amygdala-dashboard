@@ -182,11 +182,12 @@ const server = http.createServer(async (req, res) => {
       }
       const petition = p.match(/^\/api\/petitions\/([^/]+)\/(allow|deny)$/);
       if (petition) { world.visitors.decide(petition[1], petition[2], b); return json(res, 200, { ok: true }); }
-      const m = p.match(/^\/api\/residents\/([^/]+)(\/wake|\/naming)?$/);
+      const m = p.match(/^\/api\/residents\/([^/]+)(\/wake|\/naming|\/hibernate)?$/);
       if (m) {
         const name = m[1];
         if (!world.cfg(name)) return json(res, 404, { ok: false, error: 'unknown resident' });
-        if (m[2] === '/naming') { world.requestNaming(name); conductor.wake(name, 'Your naming ceremony is ready: choose_name when you are ready.'); }
+        if (m[2] === '/hibernate') { if (world.seal.locked && world.zoneOf(name) === 'isle') throw new Error('The isle is sealed.'); world.setHibernate(name, b.on); }
+        else if (m[2] === '/naming') { world.requestNaming(name); conductor.wake(name, 'Your naming ceremony is ready: choose_name when you are ready.'); }
         else if (m[2]) { if (world.seal.locked && world.s.residents[name].zone === 'isle') throw new Error('The isle is sealed. Unlock it first.'); conductor.wake(name, b.reason ? `the human: ${String(b.reason).slice(0, 200)}` : undefined); }
         else {
           if (typeof b.enabled === 'boolean') world.setEnabled(name, b.enabled);
