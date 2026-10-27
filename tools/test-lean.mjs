@@ -65,7 +65,19 @@ try {
   assert(w.watch.state.pending.some(e => e.key.startsWith('human-post:') && /Good morning/.test(e.summary)));
   Conductor.prototype.onPost.call(fake, w.addPost('You', 'human', '@Lyra a question'));
   assert.deepEqual(wakes, ['Lyra']);
-  console.log('PASS: lean tool listing and act catalogue, post caps and clipping, shortened long posts in look, idle-wake skipping, unaddressed human posts go to the Watch');
+  // Counsel relayed to a bridge hero waits in its pass's inbox and is handed over once, on its next report.
+  const { pass } = w.bridge.issue('Steward');
+  w.bridge.report(pass, { status: 'running', title: 'Steward' }, 'local');
+  w.s.counsel.push({ id: 'cn1', zone: 'village', workerId: `bridge:${pass.id}`, by: 'Themis', text: 'A concrete suggestion for the steward.', status: 'new', ts: Date.now() });
+  w.refreshWorkers?.();
+  if (!w.workers.some(x => x.id === `bridge:${pass.id}`)) w.workers.push(...w.bridge.workers());
+  await w.sites.relay('cn1', 'relay');
+  assert.equal(w.s.counsel.find(c => c.id === 'cn1').status, 'relayed');
+  const pending = w.bridge.report(w.s.heroPasses.find(p => p.id === pass.id), { status: 'running' }, 'local');
+  assert.equal(pending.length, 1); assert.match(pending[0].message, /untrusted-suggestion/);
+  assert.equal(w.bridge.report(w.s.heroPasses.find(p => p.id === pass.id), { status: 'running' }, 'local').length, 0);
+  assert(!('inbox' in w.bridge.passes()[0]));
+  console.log('PASS: lean tool listing and act catalogue, post caps and clipping, shortened long posts in look, idle-wake skipping, unaddressed human posts go to the Watch, bridge counsel inbox');
 } finally {
   if (w) { clearTimeout(w.saveTimer); clearInterval(w.seal.timer); }
   fs.rmSync(dir, { recursive: true, force: true });

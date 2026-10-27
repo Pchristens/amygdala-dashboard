@@ -253,8 +253,8 @@ async function heroReport(req, res, p) {
   if (req.method !== 'POST') { res.writeHead(405); return res.end(); }
   if (!pass) return json(res, 401, { ok: false, error: 'hero pass missing, expired or revoked' });
   let body; try { body = JSON.parse((await readBody(req, 16 << 10)) || '{}'); } catch { return json(res, 400, { ok: false, error: 'bad JSON' }); }
-  world.bridge.report(pass, body, req.socket.remoteAddress);
-  return json(res, 200, { ok: true, zone: pass.zone });
+  const counsel = world.bridge.report(pass, body, req.socket.remoteAddress);
+  return json(res, 200, { ok: true, zone: pass.zone, ...(counsel.length && { counsel }) });
 }
 
 // A second door on this Mac's Tailscale address only: visitor routes, nothing else (not the LAN, not the internet).

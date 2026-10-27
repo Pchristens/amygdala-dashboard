@@ -575,3 +575,8 @@ A human post in the village that @mentions nobody becomes a `human-post:<id>` Wa
 holder (its stand-in while the Watch hibernates). The Watch does exactly one of three things: replies briefly itself,
 @mentions the one resident whose role fits (which wakes that resident), or rings the steward's bell. Isle posts, and a
 village with no Watch, keep the old rule: the resident nearest the human, else whoever rested longest.
+
+## v0.19.3: counsel for bridge heroes
+
+Bridge heroes have no agent-deck session to send to. Counsel relayed to one is queued on its hero pass (at most 10
+items) and returned once, in the `counsel` array of the `POST /hero/report` response.
