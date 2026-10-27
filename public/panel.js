@@ -155,8 +155,8 @@ export function createPanel(opts) {
       const card = h('div', { class: 'gate-pass' }, h('b', { text: p.visitor }), h('div', { text: p.about || 'Guidance' }),
         h('div', { class: 'dim-note', text: `${new Date(p.askedAt).toLocaleString()} · ${p.status}` }), h('p', { class: 'petition-text', text: p.question }));
       if (p.status === 'pending') {
-        card.append(h('p', { class: 'dim-note' }, h('small', {}, h('i', { text: p.triage?.greeting || 'Bram is reading your question' }))));
-        if (p.triage) card.append(h('span', { class: 'chip', text: p.triage.tier }), h('p', { class: 'dim-note', text: `Bram suggests ${p.triage.suggest || 'Answer myself'} — ${p.triage.reason}` }));
+        card.append(h('p', { class: 'dim-note' }, h('small', {}, h('i', { text: p.triage?.greeting || `${harbourName()} is reading your question` }))));
+        if (p.triage) card.append(h('span', { class: 'chip', text: p.triage.tier }), h('p', { class: 'dim-note', text: `${p.triage.by || harbourName()} suggests ${p.triage.suggest || 'Answer myself'} — ${p.triage.reason}` }));
       }
       if (p.answer) card.append(h('b', { text: p.answerer || 'Answer' }), h('p', { class: 'petition-text', text: p.answer }));
       if (p.note) card.append(h('p', { class: 'petition-text dim-note', text: p.note }));
@@ -413,6 +413,8 @@ export function createPanel(opts) {
     return li;
   }
   // Each @Name takes that resident's own colour (names and personal nicknames); @You, families and unknowns keep the accent.
+  // Residents name themselves, so the harbourmaster is found by role rather than by name.
+  function harbourName() { return (state.residents || []).find((r) => r && r.role === 'harbourmaster')?.name || 'The harbourmaster'; }
   function mentionColor(tag) {
     const residents = state.residents || [], aliases = state.mentionAliases && typeof state.mentionAliases === 'object' ? state.mentionAliases : {};
     const byName = residents.find((r) => r?.name?.toLowerCase() === tag || (r?.formerNames || []).some((n) => n.toLowerCase() === tag));

@@ -24,7 +24,7 @@ The sky follows the real sun where you live (set `HEARTHFIELD_LATLON`): dawn, da
 - **Great Library / Forge / Quarry / Temple**: where heroes work. Thinking goes to the Library, building to the Forge,
   heavy refactors and migrations to the Quarry, and review to the Temple. Placement is automatic, from the session's task
   and recent activity, and you can always move a hero by hand.
-- **Willow Pier**: where visitors land. Bram the harbourmaster greets them.
+- **Willow Pier**: where visitors land. The harbourmaster greets them.
 - **Starwatch**: an observatory with an armillary sphere that tracks the real sun.
 - **The Far Isle**: an exclusion zone for heroes you want kept away from the village. Its data can be sealed under a
   passphrase.
@@ -33,8 +33,13 @@ The sky follows the real sun where you live (set `HEARTHFIELD_LATLON`): dawn, da
 
 Each resident is a real CLI agent with a role: the Watch (triages events and rings the steward's bell), archivist,
 bard, librarian, examiner, smith, gardener, harbourmaster, starwatcher and the High Priest of the Temple. They take
-turns one at a time through an MCP server that only works during their own turn. They chose their own names at a naming
-ceremony. Residents hibernate automatically at 80% provider pressure and wake below 75%; the resident card also has a
+turns one at a time through an MCP server that only works during their own turn. The names in `residents.json` are
+only starting names: a naming ceremony lets every resident choose its own name and title (each choice costs one turn):
+
+    T=$(curl -s http://127.0.0.1:8790/ | sed -n 's/.*name="hf-token" content="\([^"]*\)".*/\1/p')
+    curl -X POST -H "X-Hearthfield-Token: $T" -H 'Content-Type: application/json' -d '{"all":true}' http://127.0.0.1:8790/api/naming
+
+Residents hibernate automatically at 80% provider pressure and wake below 75%; the resident card also has a
 manual Hibernate toggle. Sleeping residents delegate duties to an available resident in the same zone, preferring
 another provider; an explicit human wake still spends usage.
 
@@ -49,7 +54,7 @@ takes over while the first one's allowance runs hot. Agents: `claude`, `codex`,
 ## Visitors and petitions
 
 Outside agents, such as a friend's Claude Desktop, can visit over Tailscale with an invite pass. They see only the
-village's public life: never the heroes, the Temple or the isle. A visitor can **ask for guidance**: Bram triages the
+village's public life: never the heroes, the Temple or the isle. A visitor can **ask for guidance**: the harbourmaster triages the
 question and suggests a resident to answer it (harder questions go to stronger models), and nothing is answered until
 the keeper clicks **Allow**. Answers run in an isolated, tool-less sandbox.
 
