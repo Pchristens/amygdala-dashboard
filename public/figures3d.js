@@ -27,12 +27,14 @@ function mat(key, spec) {
   matCache.set(k, m);
   return m;
 }
+const geoCache = new Map();
 const geo = {
   box: (w, h, d) => new THREE.BoxGeometry(w, h, d),
   cyl: (rt, rb, h, s = 8) => new THREE.CylinderGeometry(rt, rb, h, s),
   sph: (r) => new THREE.IcosahedronGeometry(r, 1),
   torus: (r, t) => new THREE.TorusGeometry(r, t, 5, 12),
 };
+for (const key of Object.keys(geo)) { const make = geo[key]; geo[key] = (...args) => { const id = `${key}:${args.join(',')}`; if (!geoCache.has(id)) geoCache.set(id, make(...args)); return geoCache.get(id); }; }
 function mesh(g, m, x = 0, y = 0, z = 0) { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.castShadow = true; return o; }
 function addR(parent, o, rx = 0, ry = 0, rz = 0) { o.rotation.set(rx, ry, rz); parent.add(o); return o; }
 
@@ -168,6 +170,7 @@ function buildBody(F) {
     trowel: () => { held.add(mesh(geo.box(1.4, 0.2, 2.0), mat('iron', { color: '#8c8a80', metalness: 0.6, roughness: 0.4 }), 0, -0.6, 1.2)); held.add(mesh(geo.cyl(0.25, 0.3, 1.4, 5), mat('wood', { color: '#8A6A4A' }), 0, 0, 0)); },
     hammer: () => { held.add(mesh(geo.cyl(0.22, 0.26, 3.6, 5), mat('wood', { color: '#8A6A4A' }), 0, 0.6, 0)); held.add(mesh(geo.box(1.8, 0.9, 0.9), mat('iron', { color: '#6b655c', metalness: 0.6, roughness: 0.4 }), 0, 2.4, 0)); },
     basket: () => held.add(mesh(geo.cyl(1.1, 0.8, 1.3, 8), mat('wicker', { color: '#C9B778', roughness: 1 }), 0, -1.3, 0.3)),
+    amphora: () => { const clay = mat('cup', { color: '#C2603F' }); held.add(mesh(geo.sph(1), clay, 0, -0.5, 0.6)); held.add(mesh(geo.cyl(0.4, 0.55, 1.4), clay, 0, 0.7, 0.6)); for (const side of [-1, 1]) held.add(mesh(geo.torus(0.55, 0.14), clay, side * 0.9, 0.1, 0.6)); },
     cup: () => held.add(mesh(geo.cyl(0.6, 0.45, 1.0, 8), mat('cup', { color: '#C2603F' }), 0, -0.2, 0.5)),
     teapot: () => { held.add(mesh(geo.sph(1.0), mat('cup', { color: '#C2603F' }), 0, -0.6, 0.6)); addR(held, mesh(geo.cyl(0.15, 0.25, 1.4, 5), mat('cup', { color: '#C2603F' }), 0.9, -0.2, 0.9), 0, 0, -0.9); held.add(mesh(geo.torus(0.5, 0.1), mat('cup', { color: '#C2603F' }), -0.9, -0.5, 0.6)); },
   };
@@ -300,4 +303,24 @@ export function disposeFigure(F) {
   F.root.traverse(o => { if (o.isCSS2DObject) o.element?.remove(); });
   F.root.removeFromParent();
   clearTimeout(F.bubbleTimer);
+}
+
+// Echoes use the same articulated chiton, without overlays or appearance ornaments.
+const echoes = new Map();
+export function createApprentice(master, prop, orderId) {
+  const root = new THREE.Group(), F = { root, parts: {}, spec: { color: master.color, appearance: { garment: 'chiton', build: master.appearance?.build, held: prop } }, label: {}, bubbleObj: new THREE.Object3D(), anim: { phase: 0, breathe: 0, lookT: 5, look: 0 } };
+  buildBody(F); root.scale.setScalar(0.66);
+  F.echoMeshes = []; F.body.traverse(o => { if (o.isMesh) { o.castShadow = false; F.echoMeshes.push(o); } });
+  F.solid = new Set(); F.parts.held.traverse(o => { if (o.isMesh) F.solid.add(o); });
+  F.color = HEX.test(master.color) ? master.color : '#B8A48A';
+  F.echoMaterials = [];
+  for (let bucket = 0; bucket <= 20; bucket++) { const key = `${F.color}:${bucket}`; let m = echoes.get(key); if (!m) { m = new THREE.MeshStandardMaterial({ color: F.color, emissive: F.color, emissiveIntensity: 0.3, roughness: 0.85, flatShading: true, transparent: true, opacity: bucket / 20 * 0.55, depthWrite: false }); echoes.set(key, m); } F.echoMaterials.push(m); }
+  const hit = mesh(geo.cyl(5, 5, 16, 6), mat('hit', { color: '#ffffff' }), 0, 7, 0); hit.material = apprenticeHit; hit.userData.pick = { type: 'apprentice', id: master.name, orderId }; root.add(hit); F.hit = hit;
+  return F;
+}
+const apprenticeHit = new THREE.MeshBasicMaterial({ visible: false });
+export function fadeApprentice(F, alpha) {
+  const m = F.echoMaterials[Math.round(alpha * 20)];
+  for (let i = 0; i < F.echoMeshes.length; i++) { const o = F.echoMeshes[i]; if (!F.solid.has(o)) o.material = m; }
+  F.parts.held.visible = alpha > 0.08; F.hit.userData.pickable = alpha > 0.08;
 }

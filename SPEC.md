@@ -790,3 +790,26 @@ The loopback dashboard is treated as running on the server machine; SSH forwardi
 Visible dashboard tabs synthesize attention's single and urgent's double strike with Web Audio; info is silent.
 A user gesture enables audio. Volume and mute settings persist in guarded localStorage. BroadcastChannel elects
 one visible tab per bell. Initial snapshot history and hidden-page arrivals do not chime. Shot mode excludes bells.
+
+## v0.27: Apprentices
+
+The 3D human view renders each resident's v0.24 `parallel` orders as up to three apprentices.
+These are client-only echoes: 0.66-scale faceless chitons, resident-coloured at roughly 0.55 opacity
+with soft emission, no name, and an opaque scroll (library/default), hammer (forge), basket (quarry)
+or small amphora (temple). They fade in at their master, walk along the road network to the order's
+site, work gently, then return to the moving master and fade out. Orders without a site stay nearby.
+A faint resident-coloured thread appears only on master/apprentice hover or master selection.
+Additional orders show a `+N` badge beside the master's name. Retiring echoes yield their slots to
+new orders so the three-figure cap holds during transitions. Clicking selects the master and opens
+the order's card (including broadcast members) in Orders.
+
+Visitors and public showcase captures never render apprentices, including in demo mode. Private or
+sealed residents are excluded. `?apprentices=demo` supplies four synthetic parallel orders for each
+of two village residents in the human client only; it changes no server state and spends no turns.
+Shared geometry/material caches and the existing animation tick carry the visuals; lifecycle,
+prop choice, cap and view guards are pure functions. No API or MCP behavior changes.
+
+## v0.27.1: orders and the turn budget
+`dailyTurnBudget` gates only automatic life turns. Orders from the human run regardless of it and don't count
+against it. Steward orders have their own daily cap (`AMYGDALA_STEWARD_ORDERS`, default 40). Provider usage
+guards still apply to every order.

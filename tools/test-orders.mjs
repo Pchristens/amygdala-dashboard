@@ -43,8 +43,11 @@ try {
   assert.equal((await w.orders.wait(o.id)).report, 'PRIVATE REPORT');
   const conductor = Object.create(Conductor.prototype); Object.assign(conductor, { world: w, queue: [], pendingDuties: [], dispatchDuties() {}, lastEnd: Date.now(), run(r, reasons) { this.ran = { r, reasons }; } });
   const queued = w.orders.create({ to: 'Quill', brief: 'Check gates' }); w.isHibernating = () => true; conductor.tick(); assert(!conductor.ran);
-  w.isHibernating = () => false; w.s.dailyTurnBudget = 0; conductor.tick(); assert(!conductor.ran);
-  w.s.dailyTurnBudget = 48; conductor.tick(); assert.equal(conductor.ran.r.name, 'Quill'); assert.match(conductor.ran.reasons[0], /from you/);
+  // The human's orders are explicit commands: they run even with the daily auto-turn budget spent, and don't consume it.
+  w.isHibernating = () => false; w.s.dailyTurnBudget = 0; const autoBefore = w.autoTurnsToday(); conductor.tick(); assert.equal(conductor.ran.r.name, 'Quill'); assert.match(conductor.ran.reasons[0], /from you/); assert.equal(w.autoTurnsToday(), autoBefore);
+  w.s.dailyTurnBudget = 48;
+  // The Steward's orders have their own daily cap instead.
+  assert.equal(w.stewardOrdersToday(), 0); w.countStewardOrder(); assert.equal(w.stewardOrdersToday(), 1);
   assert.deepEqual(parseOrder(['Quill', '--brief-file', 'brief.md', '--wait', '--json', '--headline', 'Mortar']), { to: 'Quill', file: 'brief.md', wait: true, json: true, headline: 'Mortar' });
   assert.throws(() => parseOrder(['Quill', '--brief-file'])); assert.throws(() => parseOrder(['Quill', '--oops']));
   console.log('orders: ok');

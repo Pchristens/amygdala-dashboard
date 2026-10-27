@@ -81,6 +81,7 @@ const mapOpts = {
     api('/api/human/move', { x, y });
   },
   onResidentClick(name) { pinCard({ type: 'resident', id: name }); },
+  onApprenticeClick(name, orderId) { panel.openOrder(orderId); setDrawer(true); },
   onWorkerClick(id) { pinCard({ type: 'worker', id }); },
   onObjectClick(id) { pinCard({ type: 'object', id }); },
   onPlaceClick(id) { openPlacePane(id); },
@@ -1016,7 +1017,6 @@ $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: 
 const updateBells = createBells($('gear-pop'));
 const bellPageId = crypto.randomUUID();
 const bellPresence = () => { if (!SHOT && !MOCK) void api('/api/bells/presence', { id: bellPageId, visible: !document.hidden }); };
-setInterval(bellPresence, 10000); document.addEventListener('visibilitychange', bellPresence); bellPresence();
 $('gear-btn').addEventListener('click', () => { const g = $('gear-pop'); g.hidden = !g.hidden; });
 document.addEventListener('pointerdown', (e) => { const g = $('gear-pop'); if (!g.hidden && !g.contains(e.target) && e.target !== $('gear-btn')) g.hidden = true; });
 $('pace').addEventListener('change', (e) => api('/api/control', { tickSeconds: +e.target.value }));
@@ -1062,6 +1062,8 @@ setInterval(() => {
 const SHOT = params.get('shot') === '1';
 if (SHOT) document.documentElement.classList.add('shot');
 if (SHOT && params.get('public') === '1') document.documentElement.classList.add('shot-public');
+// Presence starts here, not at bellPresence's definition: SHOT and MOCK are declared above, so this avoids the TDZ.
+setInterval(bellPresence, 10000); document.addEventListener('visibilitychange', bellPresence); bellPresence();
 // ?phase=dawn|morning|afternoon|twilight|night: freeze the light for screenshots (overrides the real sun).
 const PHASE_OVERRIDE = params.get('phase');
 // The title is independent of state delivery: snapshots keep flowing during the camera journey.

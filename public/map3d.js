@@ -1,3 +1,4 @@
+import { apprenticeProp, apprenticeCap, apprenticeFade, apprenticesAllowed } from './apprentice.js';
 import { createMist } from './mist3d.js';
 let villageState = 'awake';
 export function getVillageState() { return villageState; }
@@ -18,7 +19,7 @@ import { ISLE, SEA_X, isleLandAt } from './isle.js';
 import { Builder, P, makeMaterials, buildTerrain, buildIsleTerrain, buildPlace, buildIsleWorkshop, buildObject, makeTreeInstances, isRiverAt, BRIDGE, groundHeight, THEATRE } from './scene3d.js';
 import { placeAssets } from './assets3d.js';
 import { createTree3D, drawTree3D, tickTree3D } from './tree3d.js';
-import { createFigure, setFigureSpec, setStatus, tickFigure, say, setThinking, setWaiting, gesture, disposeFigure, FIGURE_H } from './figures3d.js';
+import { createApprentice, fadeApprentice, createFigure, setFigureSpec, setStatus, tickFigure, say, setThinking, setWaiting, gesture, disposeFigure, FIGURE_H } from './figures3d.js';
 import { buildGraph, route, sampleQuad, polyLen } from './nav.js';
 import { treeSignature } from './trees.js';
 
@@ -545,6 +546,65 @@ export async function createMap3D(container, opts = {}) {
     }
     seenPosts = new Set(posts.filter((p) => p && p.id).map((p) => p.id));
   }
+  const apprentices = new Map(), apprenticeParams = new URLSearchParams(location.search), threadMats = new Map();
+  function removeApprentice(a, key) { a.F.root.removeFromParent(); a.thread.removeFromParent(); a.thread.geometry.dispose(); apprentices.delete(key); }
+  function syncApprentices(state) {
+    const allowed = apprenticesAllowed(state, apprenticeParams), seen = new Set(), safeMasters = new Set();
+    let demo = 0;
+    for (const r of state.residents || []) {
+      const master = figures.get(figureKey('resident', r.name)); if (!master) continue;
+      const safe = allowed && r.zone === 'village' && !r.isleTagged && !r.quarantined && !r.sealed && r.mood !== 'sealed';
+      if (safe) safeMasters.add(master);
+      let parallel = safe ? r.parallel : [];
+      if (safe && apprenticeParams.get('apprentices') === 'demo' && demo++ < 2) parallel = ['library', 'forge', 'quarry', 'temple'].map((site, i) => ({ orderId: `demo-${r.name}-${i}`, headline: `Apprentice at the ${site}`, site, startedAt: 0 }));
+      const capped = apprenticeCap(parallel);
+      master.F.label.querySelector('.apprentice-count')?.remove();
+      if (capped.badge) { const badge = document.createElement('span'); badge.className = 'apprentice-count'; badge.textContent = `+${capped.badge}`; master.F.label.append(badge); }
+      for (let i = 0; i < capped.orders.length; i++) {
+        const order = capped.orders[i], key = JSON.stringify([r.name, order.orderId]); seen.add(key);
+        let a = apprentices.get(key);
+        if (!a) {
+          // Retiring echoes yield their slot immediately when another order starts.
+          if ([...apprentices.values()].filter(a => a.master === master).length >= 3) { const old = [...apprentices].find(([k, a]) => a.master === master && !capped.orders.some(o => o.orderId === a.orderId)); if (old) removeApprentice(old[1], old[0]); }
+          const F = createApprentice(r, apprenticeProp(order.site), order.orderId), color = F.color;
+          if (!threadMats.has(color)) threadMats.set(color, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.22, depthWrite: false }));
+          const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3)); const thread = new THREE.Line(geometry, threadMats.get(color)); thread.frustumCulled = false; thread.visible = false; scene.add(thread, F.root);
+          a = { F, master, orderId: order.orderId, x: master.pos.x, y: master.pos.y, tx: 0, ty: 0, alpha: 0, phase: 'in', present: true, thread, path: null, pathI: 1 }; apprentices.set(key, a);
+        }
+        a.present = true; a.hoverMaster = `resident:${master.id}`; a.hoverEcho = `apprentice:${master.id}`; a.followKey = figureKey('resident', master.id);
+        const site = (state.sites || []).find(s => s.id === order.site), place = order.site && (state.places || []).find(p => p.zone !== 'isle' && p.id === (site?.placeId || order.site));
+        a.near = !place; a.offset = 14 + i * 8;
+        const tx = (place?.x ?? master.pos.x) + 14 + i * 8, ty = (place?.y ?? master.pos.y) + 22;
+        if (a.tx !== tx || a.ty !== ty || a.phase === 'return' || a.phase === 'out') { a.tx = tx; a.ty = ty; a.path = route(graph, { x: a.x, y: a.y }, { x: tx, y: ty }); a.pathI = 1; }
+      }
+    }
+    for (const [key, a] of apprentices) {
+      if (!safeMasters.has(a.master) || !allowed || !figures.has(figureKey('resident', a.master.id)) || a.master.zone !== 'village') { removeApprentice(a, key); continue; }
+      if (!seen.has(key)) { if (a.present) { a.path = route(graph, { x: a.x, y: a.y }, a.master.pos); a.pathI = 1; } a.present = false; }
+    }
+  }
+  function tickApprentices(dt, time, night) {
+    let movingAny = false;
+    for (const [key, a] of apprentices) {
+      const m = a.master;
+      if (a.present && a.near) { a.tx = m.pos.x + a.offset; a.ty = m.pos.y + 22; a.path = null; }
+      const target = a.path?.[a.pathI];
+      let tx = target?.x ?? (a.present ? a.tx : m.pos.x), ty = target?.y ?? (a.present ? a.ty : m.pos.y);
+      const dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy), step = dt * 0.032, moving = d > 0.5;
+      if (moving) { const k = Math.min(1, step / d); a.x += dx * k; a.y += dy * k; a.F.root.rotation.y = Math.atan2(dx, dy); }
+      if (d <= step && target) a.pathI++;
+      const arrived = !a.present && Math.hypot(a.x - m.pos.x, a.y - m.pos.y) < 4;
+      apprenticeFade(a, dt, a.present, arrived);
+      if (a.phase === 'done') { removeApprentice(a, key); continue; }
+      fadeApprentice(a.F, a.alpha); a.F.root.position.set(a.x, groundY(a.x, a.y), a.y);
+      tickFigure(a.F, dt, time, moving, 32, 0, night);
+      if (!moving) { a.F.parts.armR.rotation.x = -1.1 + Math.sin(time * 3) * 0.14; a.F.parts.head.rotation.x = 0.18; }
+      a.thread.visible = hovered === a.hoverMaster || hovered === a.hoverEcho || follow === a.followKey;
+      if (a.thread.visible) { const p = a.thread.geometry.attributes.position; p.setXYZ(0, m.pos.x, m.F.root.position.y + 6, m.pos.y); p.setXYZ(1, a.x, a.F.root.position.y + 4, a.y); p.needsUpdate = true; }
+      if (moving || a.phase === 'in' || a.phase === 'out') movingAny = true;
+    }
+    return movingAny;
+  }
   let seenPosts = null;
 
   // ---------- update from state ----------
@@ -564,6 +624,7 @@ export async function createMap3D(container, opts = {}) {
     rebuildStatic(places, workshops.filter((w) => zoneOf(w) === 'isle'), plots, objects, state.sites || []);
     syncTrees(Array.isArray(state.trees) ? state.trees : [], now);
     syncFigures(state, now);
+    syncApprentices(state);
     const locked = !!(state.seal?.enabled && state.seal.locked);
     container.classList.toggle('sealed', locked);
     updateDome(locked, Array.isArray(state.seal?.runes) ? state.seal.runes : []);
@@ -656,6 +717,7 @@ export async function createMap3D(container, opts = {}) {
       if (F.anim.gesture) active = true;
       F.root.userData.moving = moving;
     }
+    if (apprentices.size && tickApprentices(dt, time, night)) active = true;
     let frameMotion = active; // walking and gestures need full frame rate; ambient life uses 20 fps.
     // trees
     for (const [, g] of treeGroups) if (tickTree3D(g, g.userData.tree || {}, dt, time)) active = true;
@@ -768,7 +830,7 @@ export async function createMap3D(container, opts = {}) {
   function pickAt(cx, cy) {
     raycaster.setFromCamera(ndc(cx, cy), camera);
     const targets = [];
-    scene.traverse((o) => { if (o.userData && o.userData.pick && o.isMesh) targets.push(o); });
+    scene.traverse((o) => { if (o.userData && o.userData.pick && o.userData.pickable !== false && o.isMesh) targets.push(o); });
     const hits = raycaster.intersectObjects(targets, false);
     if (hits.length) return hits[0].object.userData.pick;
     return null;
@@ -799,6 +861,7 @@ export async function createMap3D(container, opts = {}) {
     if (d.moved || e.button !== 0) return;
     const pick = pickAt(e.clientX, e.clientY);
     if (pick) {
+      if (pick.type === 'apprentice') { follow = figureKey('resident', pick.id); opts.onResidentClick?.(pick.id); return opts.onApprenticeClick?.(pick.id, pick.orderId); }
       if (pick.type === 'resident') { follow = figureKey('resident', pick.id); return opts.onResidentClick?.(pick.id); }
       if (pick.type === 'visitor') { follow=figureKey('visitor',pick.id); const v=current?.visitors?.find(v=>v.name===pick.id); return opts.onVisitorClick?.(pick.id) ?? (v?.placeId && opts.onPlaceClick?.(v.placeId)); }
       if (pick.type === 'worker') return opts.onWorkerClick?.(pick.id);
@@ -829,7 +892,7 @@ export async function createMap3D(container, opts = {}) {
     if (key === hovered) return;
     hovered = key;
     renderer.domElement.style.cursor = pick ? 'pointer' : '';
-    opts.onHover?.(pick ? { type: pick.type, id: pick.id } : null);
+    opts.onHover?.(pick ? { type: pick.type === 'apprentice' ? 'resident' : pick.type, id: pick.id } : null);
   });
   controls.addEventListener('change', () => { needsRender = true; startLoop(); opts.onViewChange?.(viewInfo()); });
 

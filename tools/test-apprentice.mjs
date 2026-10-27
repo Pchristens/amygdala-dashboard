@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { apprenticeProp, apprenticeCap, apprenticeFade, apprenticesAllowed } from '../public/apprentice.js';
+for (const [site, prop] of [['library', 'scroll'], ['forge', 'hammer'], ['quarry', 'basket'], ['temple', 'amphora'], ['constructor', 'scroll'], ['__proto__', 'scroll'], ['unknown', 'scroll'], [undefined, 'scroll']]) assert.equal(apprenticeProp(site), prop);
+for (let n = 0; n < 7; n++) { const c = apprenticeCap(Array.from({ length: n }, (_, i) => ({ orderId: String(i) }))); assert.equal(c.orders.length, Math.min(3, n)); assert.equal(c.badge, Math.max(0, n - 3)); }
+assert.deepEqual(apprenticeCap(null), { orders: [], badge: 0 });
+assert.equal(apprenticeCap([{ orderId: 'a' }, null, {}, { orderId: 'a' }]).orders.length, 1);
+const s = { alpha: 0, phase: 'in' };
+assert.equal(apprenticeFade(s, 350, true, false), 'in'); assert.equal(s.alpha, 0.5);
+apprenticeFade(s, 700, true, false); assert.equal(s.alpha, 1);
+assert.equal(apprenticeFade(s, 10, true, true), 'work');
+assert.equal(apprenticeFade(s, 5000, false, false), 'return'); assert.equal(s.alpha, 1);
+assert.equal(apprenticeFade(s, 350, false, true), 'out'); assert.equal(s.alpha, 0.5);
+apprenticeFade(s, 175, true, false); assert.equal(s.alpha, 0.75);
+apprenticeFade(s, 5000, false, true); assert.equal(s.phase, 'done'); assert.equal(s.alpha, 0);
+const human = { world: { activeTurns: [] } };
+assert.ok(apprenticesAllowed(human, new URLSearchParams('shot=1&apprentices=demo')));
+assert.ok(!apprenticesAllowed(human, new URLSearchParams('shot=1&public=1&apprentices=demo')));
+assert.ok(!apprenticesAllowed({}, new URLSearchParams('apprentices=demo')));
+assert.ok(!apprenticesAllowed({ ...human, visitor: {} }, new URLSearchParams()));
+console.log('apprentice: props, cap, fades and visibility guards passed');

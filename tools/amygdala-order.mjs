@@ -18,7 +18,7 @@ async function main() {
   const request = async (path, body) => { const r = await fetch(base + path, { method: body ? 'POST' : 'GET', headers: { 'X-Amygdala-Token': token, 'Content-Type': 'application/json' }, ...(body && { body: JSON.stringify(body) }) }); const o = await r.json(); if (!r.ok || o.ok === false) throw new Error(o.error || 'Order request failed.'); return o; };
   let o = await request('/api/orders', { to: a.to, headline: a.headline, brief, from: 'steward' });
   const route = o.members ? `/api/orders/group/${encodeURIComponent(o.id)}` : `/api/orders/${encodeURIComponent(o.id)}`;
-  while (a.wait && ['queued', 'working'].includes(o.status)) o = await request(`${route}/wait?timeout=600`);
+  while (a.wait && ['queued', 'working'].includes(o.status)) o = await request(`${route}/wait?timeout=240`);
   console.log(o.members ? (a.json ? JSON.stringify(o) : a.wait ? o.members.map(m => `## ${m.to}\n${m.report || m.error || m.status}`).join('\n\n') : `${o.id}: ${o.status}`) : a.json ? JSON.stringify({ id: o.id, status: o.status, chat: o.chat, report: o.report, data: o.data, error: o.error }) : a.wait ? o.report || o.error || o.status : `${o.id}: ${o.status}`);
   if (['failed', 'cancelled'].includes(o.status)) process.exitCode = 1;
 }

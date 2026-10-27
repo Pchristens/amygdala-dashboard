@@ -233,7 +233,7 @@ turns remain exclusive because agy uses a global MCP configuration; isolated gui
 for all resident turns. Each turn has its own capability and can answer only its assigned order.
 
 The human snapshot exposes `world.activeTurns` and each resident's extra running orders as `parallel` for
-future apprentice figures. Restart only when `world.activeTurn` is null: it remains the oldest active turn
+apprentice figures. Restart only when `world.activeTurn` is null: it remains the oldest active turn
 until **every** turn ends. A restart requeues interrupted working orders.
 
 ### Bell notifications
@@ -255,3 +255,12 @@ Delivery waits up to a minute to combine bursts: more than three rings in 60 sec
 Machines returning after six hours receive one count of missed bells. Delivery is at most once per node;
 a lost report response can lose that notification. The six-per-day bell budget remains unchanged.
 Far Isle bells always show only “🔔 A bell rang on the Far Isle”, including on lock screens.
+
+### Apprentice echoes
+
+In the 3D human view, extra parallel orders appear as small glowing apprentices carrying the site's
+prop. Hover or select one or its master to see their thread; click an apprentice to select its master
+and open its order in Orders. Up to three appear per resident; a `+N` name badge counts the rest.
+They walk to work and return when finished. Visitors and public showcase shots never show them.
+For a client-only art preview use `?shot=1&apprentices=demo` (or add `mock=1&still=1` for the fixture).
+The preview fakes four orders for two residents without starting turns or changing server state.

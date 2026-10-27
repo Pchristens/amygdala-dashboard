@@ -230,6 +230,7 @@ export function createPanel(opts) {
       if (o.group) { const chips = h('div', { class: 'card-row' }); for (const m of members) chips.append(h('span', { class: 'badge', text: `${m.to}: ${m.status}` })); card.append(chips); }
       const details = h('details', {}, h('summary', { text: 'Brief and report' })), content = h('div'); details.append(content);
       details.addEventListener('toggle', async () => { if (!details.open) return; const full = await opts.api(o.group ? `/api/orders/group/${encodeURIComponent(o.group)}` : `/api/orders/${encodeURIComponent(o.id)}`, null, 'GET'); content.textContent = ''; if (!full?.id) { content.textContent = full?.error || 'Could not load order.'; return; } for (const member of full.members || [full]) { if (full.members) content.append(h('h3', { text: member.to })); for (const [label, value] of [['Brief', member.brief], ['Chat', member.chat], ['Report', member.report], ['Data', member.data ? JSON.stringify(member.data, null, 2) : '']]) if (value) content.append(h('h4', { text: label }), h('pre', { text: value })); } });
+      card.dataset.orderIds = JSON.stringify(members.map(m => m.id));
       card.append(details); for (const m of members) if (['queued', 'working'].includes(m.status)) card.append(h('button', { class: 'btn btn-xs', text: `Cancel ${m.to}`, onClick: () => opts.api(`/api/orders/${encodeURIComponent(m.id)}/cancel`, {}) })); root._list.append(card);
     }
   }
@@ -1265,7 +1266,8 @@ export function createPanel(opts) {
     for (const t of els.posts.querySelectorAll('.post-time')) t.textContent = relTime(+t.dataset.ts);
   }
 
-  return { update, selectTab, setChannel, setZone, refreshTimes, get activeTab() { return activeTab; }, get channel() { return channel; }, get zone() { return zone; } };
+  function openOrder(id) { selectTab('orders'); const card = [...document.querySelectorAll('.order-card')].find(c => JSON.parse(c.dataset.orderIds || '[]').includes(id)); if (card) { card.querySelector('details').open = true; card.scrollIntoView({ block: 'nearest' }); } }
+  return { openOrder, update, selectTab, setChannel, setZone, refreshTimes, get activeTab() { return activeTab; }, get channel() { return channel; }, get zone() { return zone; } };
 }
 
 // ---------- WebAudio melody ----------
