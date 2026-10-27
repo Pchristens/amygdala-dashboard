@@ -6,6 +6,7 @@ import { World } from '../lib/world.js';
 import { Usage } from '../lib/usage.js';
 import { Conductor } from '../lib/conductor.js';
 import { createMcpHandler } from '../lib/mcp.js';
+import { Watch } from '../lib/watch.js';
 // No external provider processes in this unit test.
 Usage.prototype.pollDeck = () => {};
 Usage.prototype.probe = () => {};
@@ -53,7 +54,18 @@ try {
   assert.equal(c.hasNews('Lyra'), true); assert.equal(c.hasNews('Iris'), false);
   w.s.residents.Iris.lastTurnAt = Date.now() - 7 * 3600000;
   assert.equal(c.hasNews('Iris'), true);
-  console.log('PASS: lean tool listing and act catalogue, post caps and clipping, shortened long posts in look, idle-wake skipping');
+  // An unaddressed human post goes to the Watch as an event (one waker), not to a random resident; @mentions wake only those named.
+  const wakes = [], duties = [];
+  const fake = { world: w, wake: n => wakes.push(n), duty: (...d) => { duties.push(d); return true; }, current: null };
+  w.config.push({ name: 'Ione', role: 'watch', agent: 'claude', model: 'claude-haiku-5-5', persona: 'p' });
+  w.s.residents.Ione = { ...structuredClone(w.s.residents.Iris), notes: [] };
+  w.watch = new Watch(w, fake, dir, { start: false });
+  Conductor.prototype.onPost.call(fake, w.addPost('You', 'human', 'Good morning, village'));
+  assert.deepEqual(wakes, []); assert.equal(duties.length, 1); assert.equal(duties[0][0], 'watch');
+  assert(w.watch.state.pending.some(e => e.key.startsWith('human-post:') && /Good morning/.test(e.summary)));
+  Conductor.prototype.onPost.call(fake, w.addPost('You', 'human', '@Lyra a question'));
+  assert.deepEqual(wakes, ['Lyra']);
+  console.log('PASS: lean tool listing and act catalogue, post caps and clipping, shortened long posts in look, idle-wake skipping, unaddressed human posts go to the Watch');
 } finally {
   if (w) { clearTimeout(w.saveTimer); clearInterval(w.seal.timer); }
   fs.rmSync(dir, { recursive: true, force: true });
