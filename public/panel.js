@@ -791,7 +791,8 @@ export function createPanel(opts) {
     }
     els.workshop.appendChild(title);
     if (zone === 'village' && state.steward) {
-      const controls = h('div', { class: 'card' }, h('b', { text: 'Steward · reset windows' }));
+      // Not 'card': that class is the absolutely positioned map popover and floats over the page.
+      const controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Steward · reset windows' }));
       for (const [key, label] of [['enabled', 'Use spare allowance before reset'], ['festivalEnabled', 'Festival fallback']]) {
         const input = h('input', { type: 'checkbox', checked: state.steward[key] }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: input.checked })); controls.append(h('label', {}, input, label));
       }
@@ -801,7 +802,7 @@ export function createPanel(opts) {
       els.workshop.append(controls);
     }
     if (zone === 'village' && state.auditSettings) {
-      const s = state.auditSettings, controls = h('div', { class: 'card' }, h('b', { text: 'Watchtower' }));
+      const s = state.auditSettings, controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Watchtower' }));
       const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));
       controls.append(h('label', {}, enabled, ' Audit autonomous heroes'));
       for (const [key, label] of [['tier1', 'First reviewer'], ['tier2', 'Escalation reviewer']]) {

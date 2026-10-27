@@ -11,6 +11,7 @@ assert.deepEqual(parseAgentMeta('{"model":"haiku","agentType":"Explore","finishe
 assert.deepEqual(parseAgentMeta({ description: 'SECRET' }), {});
 assert.equal(parseAgentMeta('{bad'), null); assert.equal(parseAgentMeta({ model: 123 }), null);
 assert(agentRunning({}, 100, 101)); assert(!agentRunning({ finished: true }, 100, 101)); assert(!agentRunning({}, 100, 600100));
+assert(agentRunning({}, 1015, 1000)); assert(!agentRunning({}, 5000, 1000)); // small Windows mtime skew is tolerated, the far future is not
 const hero = { id: 'local:h', sessionId: 'h', host: 'local', zone: 'village', tool: 'claude', model: 'sonnet', transcriptPath: '/fixture/h.jsonl' };
 let stats = 0, reads = 0, lists = 0;
 const scanner = new HeroScanner({ readdirSync() { lists++; return ['agent-a.meta.json', 'agent-a.jsonl']; }, statSync() { stats++; return { mtimeMs: 100, size: 100, isFile: () => true }; }, readFileSync(p) { assert(p.endsWith('.meta.json')); reads++; return '{"agentType":"Explore","description":"SECRET"}'; } });

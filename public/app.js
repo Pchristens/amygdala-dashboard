@@ -890,7 +890,8 @@ function disposeTerminal() {
   terminalHeroId = null;
 }
 function canOpenTerminal(w) {
-  return w && zoneOf(w) === 'village' && !w.isleTagged && !w.quarantined && !w.sealed &&
+  // A stopped agent-deck session has no tmux session left to attach to.
+  return w && w.status !== 'stopped' && zoneOf(w) === 'village' && !w.isleTagged && !w.quarantined && !w.sealed &&
     (w.node || (!state?.world?.terminalReason && (state?.world?.hostOs === 'windows' || (w.host === 'local' && w.id?.startsWith('local:')))));
 }
 function syncTerminalWidth(name) {

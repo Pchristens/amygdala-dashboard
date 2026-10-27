@@ -1175,6 +1175,11 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .gate { padding: 12px; border-bottom: 1px solid var(--line); }
 .gate h2 { margin: 0; }
 .gate-pass { margin-top: 10px; padding: 8px; border: 1px solid var(--line-soft); border-radius: 6px; overflow-wrap: anywhere; }
+.panel-settings { margin: 0 0 12px; padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: 6px; overflow-wrap: anywhere; }
+.panel-settings label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 13px; }
+.panel-settings label:has(> input[type=checkbox]:first-child) { justify-content: flex-start; }
+.panel-settings input[type=number] { width: 72px; }
+.panel-settings p { margin: 6px 0 0; font-size: 12px; color: var(--ink-dim); }
 .pass-dialog { max-height: 90vh; overflow: auto; }
 .pass-snippet { font-family: monospace; font-size: 12px; }
 .tale-scroll { margin: 12px; padding: 18px; border: 1px solid var(--line); border-top: 4px double var(--ink-dim); border-bottom: 4px double var(--ink-dim); border-radius: 8px; background: var(--panel-2); overflow-wrap: anywhere; }
