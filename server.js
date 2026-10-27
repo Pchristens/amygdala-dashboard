@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { env } from './lib/bin.js';
 import { TermHub } from './lib/term.js';
 import { World } from './lib/world.js';
 import { createMcpHandler } from './lib/mcp.js';
@@ -14,7 +15,7 @@ import { Conductor } from './lib/conductor.js';
 import { startDeckSync } from './lib/deck.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-const PORT = +process.env.HEARTHFIELD_PORT || 8790;
+const PORT = +env('PORT') || 8790;
 const HOST = '127.0.0.1';
 const BASE = `http://${HOST}:${PORT}`;
 const DATA = path.join(ROOT, 'data');
@@ -27,7 +28,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 // a local process can fetch the page and read the token.
 const API_TOKEN = crypto.randomBytes(24).toString('base64url');
 const tokenOk = (req, url) => {
-  const got = String(req.headers['x-hearthfield-token'] || url.searchParams.get('token') || '');
+  const got = String(req.headers['x-amygdala-token'] || req.headers['x-hearthfield-token'] || url.searchParams.get('token') || '');
   return got.length === API_TOKEN.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(API_TOKEN));
 };
 
@@ -53,8 +54,8 @@ function writeAgyUrl(url) {
   let cfg = {};
   try { cfg = JSON.parse(fs.readFileSync(file, 'utf8').trim() || '{}'); } catch (e) { if (e.code !== 'ENOENT') return console.warn('Not touching unreadable', file); }
   cfg.mcpServers ??= {};
-  if (cfg.mcpServers.hearthfield?.url === url) return;
-  cfg.mcpServers.hearthfield = { url };
+  if (cfg.mcpServers.amygdala?.url === url) return;
+  cfg.mcpServers.amygdala = { url };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + '\n');
 }
@@ -68,9 +69,9 @@ function ensureAgyConfig() {
   // until it exists, Antigravity residents stay asleep instead of failing every turn.
   let allow = [];
   try { allow = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.gemini/antigravity-cli/settings.json'), 'utf8')).permissions?.allow ?? []; } catch {}
-  if (!allow.includes('mcp(hearthfield/*)')) {
+  if (!allow.includes('mcp(amygdala/*)')) {
     for (const r of residents.filter(r => r.agent === 'antigravity' && world.s.residents[r.name].enabled)) world.setEnabled(r.name, false);
-    console.warn('Antigravity residents disabled: add "mcp(hearthfield/*)" to permissions.allow in ~/.gemini/antigravity-cli/settings.json');
+    console.warn('Antigravity residents disabled: add "mcp(amygdala/*)" to permissions.allow in ~/.gemini/antigravity-cli/settings.json');
   }
 }
 
@@ -276,8 +277,8 @@ async function nodeReport(req, res) {
 
 // A second door on this Mac's Tailscale address only: visitor routes, nothing else (not the LAN, not the internet).
 const tsAddr = Object.values(os.networkInterfaces()).flat().find(i => i?.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(i.address))?.address;
-const GATE_PORT = +process.env.HEARTHFIELD_GATE_PORT || 8795;
-const gateEnabled = process.env.HEARTHFIELD_GATE === '1' && !process.env.HEARTHFIELD_NO_GATE && !!tsAddr;
+const GATE_PORT = +env('GATE_PORT') || 8795;
+const gateEnabled = env('GATE') === '1' && !env('NO_GATE') && !!tsAddr;
 world.gateUrl = gateEnabled ? `http://${tsAddr}:${GATE_PORT}` : null;   // shown to the human when issuing passes
 if (gateEnabled) {
   http.createServer(async (req, res) => {

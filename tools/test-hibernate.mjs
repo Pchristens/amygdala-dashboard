@@ -10,7 +10,7 @@ import { Watch } from '../lib/watch.js';
 import { triagePetition } from '../lib/triage.js';
 Usage.prototype.pollDeck = () => {};
 Usage.prototype.probe = () => {};
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hearthfield-hibernate-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-hibernate-'));
 let w;
 try {
   const config = [

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { spawn, bin, execFile, hostOs, deckAvailable } from '../lib/bin.js';
+import { spawn, bin, execFile, hostOs, deckAvailable, env } from '../lib/bin.js';
 import { toWorker } from '../lib/deck.js';
 import { extractSignals, classifyHero, isleTagged } from '../lib/heroclass.js';
 import { Sites, transcriptTail } from '../lib/sites.js';
@@ -49,7 +49,7 @@ export function openNodeTerm(term, requested, sessions, village, start = spawn) 
 }
 export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
-  const server = new URL(options['--server'] || process.env.AMYGDALA_SERVER), token = (process.env.AMYGDALA_NODE_PASS || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
+  const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
   if (!['http:', 'https:'].includes(server.protocol) || server.username || server.password || !/^hfn_[\w-]+$/.test(token)) throw new Error('Invalid node configuration.');
   let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], connected = false;
   const terminals = new Map(); let output = [], pendingGrok = null;

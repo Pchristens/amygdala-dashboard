@@ -1198,7 +1198,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 /* ?shot=1 screenshot mode: no feed, no isle text */
 .shot #happening, .shot .lbl-place.ws, .shot .rune-drift-3d { display: none !important; }
 
-/* BEGIN Hearthfield v0.13–v0.14 panel roles, fix checks, and end labour */
+/* BEGIN Amygdala v0.13–v0.14 panel roles, fix checks, and end labour */
 .resident-identity { min-width: 0; margin: 2px 0 5px; overflow-wrap: anywhere; }
 .resident-title { font-family: var(--font-serif); color: var(--ink-2); font-size: 14px; }
 .resident-former, .starwatch-time { font-size: 12px; color: var(--ink-dim); }
@@ -1214,12 +1214,12 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
   .resident-ctl { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; }
   .worker-sub, .card-actions { flex-wrap: wrap; }
 }
-/* END Hearthfield v0.13–v0.14 panel roles, fix checks, and end labour */
+/* END Amygdala v0.13–v0.14 panel roles, fix checks, and end labour */
 
 /* a place label yields to a resident name tag it would cover */
 .map3d .lbl-place.yield { opacity: 0 !important; }
 
-/* BEGIN Hearthfield intro and naming ceremony */
+/* BEGIN Amygdala intro and naming ceremony */
 .intro-card { position:absolute; inset:0; z-index:35; pointer-events:none; display:grid; place-items:center; color:#F3EEE2; text-align:center; background:radial-gradient(ellipse at center,transparent 20%,rgba(19,28,43,.38)); text-shadow:0 2px 18px rgba(19,28,43,.65); }
 .intro-card[hidden] { display:none; }
 .intro-copy { padding:24px; }
@@ -1250,7 +1250,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .naming-banner { color:#F3EEE2; background:rgba(28,34,48,.88); border:1px solid rgba(232,217,181,.35); border-radius:5px; padding:7px 12px; font-family:var(--font-serif); font-size:17px; white-space:nowrap; box-shadow:0 3px 14px rgba(28,34,48,.18); pointer-events:none; animation:hf-naming 6s both; }
 @keyframes hf-naming { 0% { opacity:0; transform:translateY(6px); } 10%,85% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-5px); } }
 @media (prefers-reduced-motion:reduce) { .naming-banner { animation:none; } }
-/* END Hearthfield intro and naming ceremony */
+/* END Amygdala intro and naming ceremony */
 /* The place tag at the top of a card: the map's slate label pill, inside the card so it never covers text. */
 .card .card-place { display: table; margin: 0 0 8px; padding: 1px 8px; border-radius: 7px; background: rgba(40, 44, 54, 0.76); color: #F4EAD8; font-family: var(--font-sc); font-size: 11.5px; letter-spacing: 0.08em; border: 1px solid rgba(232, 217, 181, 0.28); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
 

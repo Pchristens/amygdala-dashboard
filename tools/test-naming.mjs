@@ -9,7 +9,7 @@ import { createMcpHandler } from '../lib/mcp.js';
 // No external provider processes in this unit test.
 Usage.prototype.pollDeck = () => {};
 Usage.prototype.probe = () => {};
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hearthfield-naming-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-naming-'));
 let w;
 try {
   const config = [{ name: 'Juniper', role: 'watch', title: 'The Watch', agent: 'claude', model: 'haiku' }, { name: 'Iris', role: 'archivist', agent: 'claude' }];

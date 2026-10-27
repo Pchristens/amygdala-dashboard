@@ -11,7 +11,7 @@ import { guidanceCommand } from '../lib/guidance.js';
 import { Watch } from '../lib/watch.js';
 Usage.prototype.pollDeck = () => {};
 Usage.prototype.probe = () => {};
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hearthfield-petitions-test-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-petitions-test-'));
 let w;
 try {
   const config = [{ name: 'Lyra', agent: 'claude', model: 'claude-haiku-5-5', persona: 'Kind and thoughtful', title: 'Guide' }, { name: 'Atlas', agent: 'codex', model: 'gpt-5' }, { name: 'Other', agent: 'grok' }, { name: 'Bram', role: 'harbourmaster', agent: 'antigravity', model: 'gemini-3.8-flash-medium' }, { name: 'Moss', agent: 'grok', enabled: false }, { name: 'Gem', role: 'librarian', agent: 'antigravity', model: 'gemini-4-argon-medium' }];
@@ -110,7 +110,7 @@ try {
   assert(!JSON.stringify(watch.state).includes('PRIVATE QUESTION'));
   for (const r of [config[0], config[1], config[3]]) {
     const command = guidanceCommand(r, { visitor: 'Guest', question: 'test' }, '/tmp/empty', '/tmp/profile');
-    assert(!JSON.stringify(command).includes('hearthfield.url')); assert(!JSON.stringify(command).includes('PRIVATE QUESTION'));
+    assert(!JSON.stringify(command).includes('amygdala.url')); assert(!JSON.stringify(command).includes('PRIVATE QUESTION'));
     if (r.agent === 'claude') { assert(command.args.includes('--strict-mcp-config')); assert.equal(command.args[command.args.indexOf('--tools') + 1], ''); }
     else if (r.agent === 'antigravity') { assert.equal(command.cmd, 'agy'); assert(command.args.includes('--sandbox')); assert(command.args.includes('--disable-slash-commands')); assert(command.args.includes('--print-timeout')); }
     else { assert(command.args.includes('read-only')); assert(command.args.includes('features.shell_tool=false')); }

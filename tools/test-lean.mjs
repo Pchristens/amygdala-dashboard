@@ -10,7 +10,7 @@ import { Watch } from '../lib/watch.js';
 // No external provider processes in this unit test.
 Usage.prototype.pollDeck = () => {};
 Usage.prototype.probe = () => {};
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hearthfield-lean-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-lean-'));
 let w;
 try {
   const config = [{ name: 'Lyra', agent: 'antigravity', model: 'gemini-4-argon-medium', lean: true, persona: 'p' }, { name: 'Iris', agent: 'claude', model: 'haiku', persona: 'p' }];

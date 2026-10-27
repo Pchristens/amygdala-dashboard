@@ -7,7 +7,7 @@ import { Usage } from '../lib/usage.js';
 // No external provider processes in this unit test.
 Usage.prototype.pollDeck = () => {};
 Usage.prototype.probe = () => {};
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hearthfield-backup-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-backup-'));
 let w;
 try {
   const config = [{ name: 'Lyra', agent: 'antigravity', model: 'gemini-4-argon-medium', backup: 'claude-opus-5-5-medium', persona: 'p' }, { name: 'Iris', agent: 'claude', model: 'claude-haiku-5-5', persona: 'p' }];

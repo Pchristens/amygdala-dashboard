@@ -5,7 +5,7 @@ $StateDir = Join-Path $env:LOCALAPPDATA 'Amygdala'
 New-Item -ItemType Directory -Force $StateDir | Out-Null
 $Log = Join-Path $StateDir 'amygdala.log'
 $PidFile = Join-Path $StateDir 'amygdala.pid'
-$Port = if ($env:HEARTHFIELD_PORT) { $env:HEARTHFIELD_PORT } else { '8790' }
+$Port = if ($env:AMYGDALA_PORT) { $env:AMYGDALA_PORT } else { '8790' }
 $Base = "http://127.0.0.1:$Port"
 function Get-PageToken {
   $Page = Invoke-WebRequest -UseBasicParsing -Uri "$Base/" -TimeoutSec 3
@@ -50,7 +50,7 @@ switch ($Command) {
   'pass' {
     if (!$Name) { throw 'Usage: amygdala pass <name> [label] [hours]' }
     $Token = Get-PageToken
-    $Result = Invoke-RestMethod -Method Post -Uri "$Base/api/visitors/pass" -Headers @{ 'x-hearthfield-token' = $Token } -ContentType 'application/json' -Body (@{ name = $Name; label = $Label; hours = $Hours } | ConvertTo-Json)
+    $Result = Invoke-RestMethod -Method Post -Uri "$Base/api/visitors/pass" -Headers @{ 'x-amygdala-token' = $Token } -ContentType 'application/json' -Body (@{ name = $Name; label = $Label; hours = $Hours } | ConvertTo-Json)
     $Result.token
   }
   default { throw 'Commands: open, start, stop, status, logs, pass <name> [label] [hours]' }

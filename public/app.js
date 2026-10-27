@@ -30,7 +30,7 @@ if (params.get('debug') === '1') {
 }
 // The server injects <meta name="hf-token"> when it serves index.html; every /api call carries it.
 const TOKEN = MOCK ? "" : (document.querySelector('meta[name="hf-token"]')?.getAttribute('content') || '');
-const authHeaders = () => (TOKEN ? { 'X-Hearthfield-Token': TOKEN } : {});
+const authHeaders = () => (TOKEN ? { 'X-Amygdala-Token': TOKEN } : {});
 function sessionExpired() {
   if (expired) return;
   expired = true;
@@ -719,7 +719,7 @@ function openSeal(mode) {
   $('seal-sub').textContent = setup
     ? 'Everything Amygdala keeps about the Far Isle will be encrypted under this passphrase. The isle locks itself again after a few quiet minutes.'
     : 'Speak the passphrase and the runes become words again.';
-  if (MOCK) $('seal-sub').textContent += ' Demo only (?mock=1, client-side only): unlock with hearthfield.';
+  if (MOCK) $('seal-sub').textContent += ' Demo only (?mock=1, client-side only): unlock with amygdala.';
   $('seal-warning').hidden = !setup;
   $('seal-confirm-field').hidden = !setup;
   $('seal-confirm').required = setup;
@@ -1100,13 +1100,13 @@ function playIntro() {
   const timer = setTimeout(finish, duration);
   events.forEach((type) => window.addEventListener(type, finish, { capture: true, passive: false }));
   introCleanup = finish;
-  try { localStorage.setItem('hearthfield.intro.v2', `seen:${w.createdAt ?? 0}`); } catch (_) { /* storage may be unavailable */ }
+  try { localStorage.setItem('amygdala.intro.v2', `seen:${w.createdAt ?? 0}`); } catch (_) { /* storage may be unavailable */ }
 }
 $('replay-intro').addEventListener('click', () => { $('gear-pop').hidden = true; playIntro(); });
 function maybeIntro() {
   if (SHOT && params.get('intro') !== '1') return;
   let seen = false;
-  try { const stored = localStorage.getItem('hearthfield.intro.v2'); seen = stored?.startsWith('seen:') && Number(stored.slice(5)) >= (state.world?.createdAt ?? 0); } catch (_) { /* show once this session */ }
+  try { const stored = localStorage.getItem('amygdala.intro.v2'); seen = stored?.startsWith('seen:') && Number(stored.slice(5)) >= (state.world?.createdAt ?? 0); } catch (_) { /* show once this session */ }
   if (!seen || params.get('intro') === '1') playIntro();
 }
 const pannedCeremonies = new Set();
@@ -1221,7 +1221,7 @@ async function boot() {
 
 // ---------- Mock mode ----------
 // Demo-only passphrase for ?mock=1; client-side simulation only.
-const MOCK_PASSPHRASE = 'hearthfield';
+const MOCK_PASSPHRASE = 'amygdala';
 let mockSeq = 100;
 let mockVault = null; // isle plaintext stashed while sealed
 async function bootMock() {

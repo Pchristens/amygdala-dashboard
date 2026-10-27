@@ -16,7 +16,7 @@ and flag when they're waiting for you.
 
 ![Starwatch at twilight, its armillary following the real sun](docs/screenshots/starwatch.png)
 
-The sky follows the real sun where you live (set `HEARTHFIELD_LATLON`): dawn, day, twilight and night light the island in turn.
+The sky follows the real sun where you live (set `AMYGDALA_LATLON`): dawn, day, twilight and night light the island in turn.
 
 ## The island
 
@@ -37,7 +37,7 @@ turns one at a time through an MCP server that only works during their own turn.
 only starting names: a naming ceremony lets every resident choose its own name and title (each choice costs one turn):
 
     T=$(curl -s http://127.0.0.1:8790/ | sed -n 's/.*name="hf-token" content="\([^"]*\)".*/\1/p')
-    curl -X POST -H "X-Hearthfield-Token: $T" -H 'Content-Type: application/json' -d '{"all":true}' http://127.0.0.1:8790/api/naming
+    curl -X POST -H "X-Amygdala-Token: $T" -H 'Content-Type: application/json' -d '{"all":true}' http://127.0.0.1:8790/api/naming
 
 Residents hibernate automatically at 80% provider pressure and wake below 75%; the resident card also has a
 manual Hibernate toggle. Sleeping residents delegate duties to an available resident in the same zone, preferring
@@ -60,8 +60,8 @@ the keeper clicks **Allow**. Answers run in an isolated, tool-less sandbox.
 
 ## Run it
 
-Internal identifiers still use the project's former name, Hearthfield: the `HEARTHFIELD_*` variables, the
-`hearthfield` MCP server and the token header. They were kept so existing setups keep working.
+Configuration uses `AMYGDALA_*` variables, the `amygdala` MCP server and `X-Amygdala-Token`.
+Legacy environment variables and token headers remain accepted; the new environment variable takes precedence.
 
 ### macOS
 
@@ -71,7 +71,7 @@ Use the vendors' installation instructions: [Claude Code](https://code.claude.co
 [Antigravity CLI](https://antigravity.google/docs/cli/install).
 [Grok Build](https://docs.x.ai/build/overview) provides its official installation instructions; ensure `grok` is on PATH.
 Optional: agent-deck for heroes, Tailscale for visitors, python3 + tmux for the in-page terminal.
-agent-deck and tmux prefer `~/.local/bin`; `HEARTHFIELD_AGENT_DECK` and `HEARTHFIELD_TMUX` override locations.
+agent-deck and tmux prefer `~/.local/bin`; `AMYGDALA_AGENT_DECK` and `AMYGDALA_TMUX` override locations.
 
 ```sh
 # Add this function to your shell profile, using the actual checkout location:
@@ -111,7 +111,7 @@ amygdala stop
 
 If your execution policy blocks local scripts, follow your organization's policy for enabling them.
 The log (`amygdala.log`, including stderr) and the pid record live in `%LOCALAPPDATA%\Amygdala`.
-Set `HEARTHFIELD_LATLON` and `HEARTHFIELD_GATE` in the launching shell as needed; the launcher inherits them.
+Set `AMYGDALA_LATLON` and `AMYGDALA_GATE` in the launching shell as needed; the launcher inherits them.
 Pass creation requires a running server and prints the newly issued secret once. Keep it private.
 A Windows host without agent-deck cannot launch local heroes; use an agent-deck node (see below). Windows supports an in-page ConPTY shell and the interactive Grok usage probe.
 The first terminal or Grok usage probe compiles `tools/conpty.cs` with the built-in .NET Framework 4.x
@@ -131,23 +131,24 @@ commissions let you choose the host or an online agent-deck node. To run a Windo
 
 | Environment variable | Meaning |
 | --- | --- |
-| `HEARTHFIELD_PORT` | page and API port (default `8790`) |
-| `HEARTHFIELD_LATLON` | `lat,lon` for the real sun and sky (default Athens) |
-| `HEARTHFIELD_GATE_PORT` | visitor gate port on your Tailscale address (default `8795`) |
-| `HEARTHFIELD_GATE` | set to `1` to enable the Tailscale visitor/hero gate; `HEARTHFIELD_NO_GATE` always disables it |
-| `HEARTHFIELD_AGENT_DECK` | agent-deck binary path or command override |
-| `HEARTHFIELD_TMUX` | tmux binary path or command override |
-| `HEARTHFIELD_NO_DECK` | set to run without agent-deck |
+| `AMYGDALA_PORT` | page and API port (default `8790`) |
+| `AMYGDALA_LATLON` | `lat,lon` for the real sun and sky (default Athens) |
+| `AMYGDALA_GATE_PORT` | visitor gate port on your Tailscale address (default `8795`) |
+| `AMYGDALA_GATE` | set to `1` to enable the Tailscale visitor/hero gate; `AMYGDALA_NO_GATE` always disables it |
+| `AMYGDALA_AGENT_DECK` | agent-deck binary path or command override |
+| `AMYGDALA_TMUX` | tmux binary path or command override |
+| `AMYGDALA_NO_DECK` | set to run without agent-deck |
 
 State lives in `data/` (never committed). `SPEC.md` documents the world model and API. `tools/test-*.mjs` are the tests
 (`node tools/test-naming.mjs`, etc.).
 
 ### Antigravity setup
 
-`agy` reads MCP servers from `~/.gemini/config/mcp_config.json` (the server registers `hearthfield` there). In headless
-mode it auto-denies MCP calls unless they're allowed. Add this rule to `permissions.allow` in
+`agy` reads MCP servers from `~/.gemini/config/mcp_config.json` (the server registers `amygdala` there). In headless
+mode it auto-denies MCP calls unless they're allowed. Allow both rules during the transition in `permissions.allow` in
 `~/.gemini/antigravity-cli/settings.json`, then restart:
 
+    "mcp(amygdala/*)",
     "mcp(hearthfield/*)"
 
 Until then, Antigravity residents stay asleep.
@@ -156,7 +157,7 @@ Until then, Antigravity residents stay asleep.
 
 The main server binds only to loopback. Its page token protects the API from web pages on other origins
 (CSRF/DNS rebinding). It does not protect against other local processes: they can fetch the page and read the token.
-The visitor/hero gate is Tailscale-only and opt-in (`HEARTHFIELD_GATE=1`); `HEARTHFIELD_NO_GATE` overrides it.
+The visitor/hero gate is Tailscale-only and opt-in (`AMYGDALA_GATE=1`); `AMYGDALA_NO_GATE` overrides it.
 Visitors and remote heroes need their respective invite/hero passes; keep passes private and revoke them when no
 longer needed. Residents' MCP tools only act during their own turn. Resident turns spend real usage on their accounts.
 
@@ -170,7 +171,7 @@ attributions.
 
 ### Agent-deck nodes (Mac/Linux helpers, Windows server)
 
-Enable the Tailscale gate on the server (`HEARTHFIELD_GATE=1`). In the human page's visitor/hero pass controls,
+Enable the Tailscale gate on the server (`AMYGDALA_GATE=1`). In the human page's visitor/hero pass controls,
 issue a **Node pass** for each machine. Copy it once into a private file on that machine; the server stores only its hash.
 Use one pass per helper. Revoke it from the same panel to disconnect that machine. Both machines need Tailscale;
 use the gate URL shown on the human page, rather than the loopback page URL.
