@@ -18,7 +18,7 @@ export function forwardHeaders(headers, token, port) {
   // The dashboard checks Host against its own loopback origin, so keep the local origin the page was loaded from.
   return { ...Object.fromEntries(Object.entries(headers).filter(([k]) => !HOP.has(k))), host: `127.0.0.1:${port}`, authorization: `Bearer ${token}` };
 }
-export const localOrigin = (host, port) => [`127.0.0.1:${port}`, `localhost:${port}`].includes(String(host || '').toLowerCase());
+export const localOrigin = (host, port) => [`127.0.0.1:${port}`, `localhost:${port}`, `amygdala.localhost:${port}`].includes(String(host || '').toLowerCase());
 export function main(args = process.argv.slice(2)) {
   const { server, port, passFile } = parseArgs(args);
   const token = (process.env.AMYGDALA_NODE_PASS || fs.readFileSync(passFile, 'utf8')).trim();

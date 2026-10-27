@@ -152,7 +152,8 @@ const API = {
 const server = http.createServer(async (req, res) => {
   // Only answer to our own origin (guards against DNS rebinding from other sites).
   const host = (req.headers.host || '').toLowerCase();
-  if (host !== `127.0.0.1:${PORT}` && host !== `localhost:${PORT}`) { res.writeHead(421); return res.end(); }
+  // amygdala.localhost is the memorable name; *.localhost always resolves to loopback, so it can't be rebound.
+  if (![`127.0.0.1:${PORT}`, `localhost:${PORT}`, `amygdala.localhost:${PORT}`].includes(host)) { res.writeHead(421); return res.end(); }
   try {
     const url = new URL(req.url, BASE);
     const p = decodeURIComponent(url.pathname);

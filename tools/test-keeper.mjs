@@ -15,6 +15,7 @@ setKeeper(world, 'np1', true); assert.equal(keeperAuth(world, req('Bearer a')), 
 assert.throws(() => setKeeper(world, 'missing', true));
 
 assert(localOrigin('127.0.0.1:8790', 8790) && localOrigin('LOCALHOST:8790', 8790));
+assert(localOrigin('amygdala.localhost:8790', 8790) && !localOrigin('amygdala.localhost.evil.example:8790', 8790));
 assert(!localOrigin('evil.example:8790', 8790) && !localOrigin('127.0.0.1:9999', 8790) && !localOrigin(undefined, 8790));
 const h = forwardHeaders({ host: 'x', authorization: 'Bearer stolen', connection: 'keep-alive', 'x-amygdala-token': 't' }, 'hfn_abc', 8790);
 assert.deepEqual(h, { 'x-amygdala-token': 't', host: '127.0.0.1:8790', authorization: 'Bearer hfn_abc' });
