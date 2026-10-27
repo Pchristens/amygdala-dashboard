@@ -152,6 +152,12 @@ const server = http.createServer(async (req, res) => {
       return mcp(req, res, body, m ? m[1] : null);
     }
     if (p.startsWith('/api/') && !tokenOk(req, url)) return json(res, 401, { ok: false, error: 'missing or wrong page token — reload the page' });
+    const orderRoute = p.match(/^\/api\/orders\/([^/]+)(\/wait|\/cancel)?$/);
+    if (orderRoute && req.method === 'GET' && orderRoute[2] !== '/cancel') {
+      const controller = new AbortController(); res.on('close', () => controller.abort());
+      const order = orderRoute[2] === '/wait' ? await world.orders.wait(orderRoute[1], url.searchParams.get('timeout') ?? 600, controller.signal) : world.orders.get(orderRoute[1]);
+      return json(res, 200, order);
+    }
     if (p === '/api/state') return json(res, 200, world.snapshot({ human: true }));
     if (p === '/api/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
@@ -179,6 +185,8 @@ const server = http.createServer(async (req, res) => {
       if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
       if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
       const b = JSON.parse((await readBody(req)) || '{}');
+      if (p === '/api/orders') return json(res, 200, world.orders.create(b));
+      if (orderRoute?.[2] === '/cancel') return json(res, 200, world.orders.cancel(orderRoute[1]));
       if (terminal) {
         if (terminal[2] === 'close') termHub.close(terminal[1]);
         else if (terminal[2] === 'input') termHub.input(terminal[1], b.d);

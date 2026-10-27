@@ -680,3 +680,34 @@ configuration, tool permissions, serverInfo and session IDs use `amygdala`. Anti
 `mcp(amygdala/*)` and legacy `mcp(hearthfield/*)` during the transition before restarting.
 New seals write the Amygdala check value; verification also accepts the legacy check so existing seals unlock.
 Pass prefixes `hfv_`, `hfh_`, `hfn_` and the `hf-token` meta name remain unchanged.
+
+## v0.23: Orders
+
+The human and the local Steward can task an enabled village resident through Amygdala. Human hibernation
+refuses new orders; provider hibernation holds them queued. Orders run one at a time through the conductor,
+including while paused, respect the daily automatic turn budget and usage guards, and never start during isolated runs.
+Each turn receives only its resident's oldest open order in a delimited private prompt block. A missing answer
+is retried once, then fails. Interrupted working orders return to queued after a server restart.
+
+An order stores `id, from` (`human|steward`), `to`, `headline` (180 characters, one line), `brief` (12000),
+`status` (`queued|working|answered|failed|cancelled`), `createdAt`, `answeredAt`, `chat` (2400), `report` (24000),
+optional JSON object `data` (16384 UTF-8 bytes), and `error`. Internal fields track attempts and the board root.
+Absent headlines use the first sentence of the brief, truncated, without a model call. The last 200 orders are
+retained; terminal orders beyond the newest 50 lose their briefs, reports and data. Open orders are never evicted.
+
+Page-token authenticated endpoints:
+
+| Method/path | Body/result |
+|---|---|
+| `POST /api/orders` | `{to, headline?, brief, from?}`; defaults to human; returns full order |
+| `GET /api/orders/:id` | full order |
+| `POST /api/orders/:id/cancel` | marks open order cancelled; returns order |
+| `GET /api/orders/:id/wait?timeout=600` | returns full order on terminal status or timeout (maximum 600 seconds); disconnect releases listener |
+
+The human snapshot includes order summaries, excluding briefs, reports and data. Other snapshots omit orders.
+Order headlines create human-only board threads and feed entries; `chat` replies in that thread. These records
+are omitted from visitor and resident board reads. Briefs and reports never enter the board or feed.
+
+The mutating resident MCP action `answer_order {id, chat, report, data?}` is available only during the ordered
+resident's working turn, including through lean `act`. It validates ownership and open status before storing
+both answers. The authenticated local CLI uses `from: steward`; this label is attribution, not a separate credential.

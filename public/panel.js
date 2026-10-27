@@ -148,7 +148,8 @@ export function createPanel(opts) {
     root.append(h('button', { class: 'btn btn-xs', text: notifyPetitions ? 'Notifications on · turn off' : 'Notify me', onClick: async () => {
       if (notifyPetitions) notifyPetitions = false;
       else if (window.Notification) notifyPetitions = (await Notification.requestPermission()) === 'granted';
-      renderGate();
+      renderOrders();
+    renderGate();
     } }));
     if (!petitions.length) root.append(h('p', { class: 'dim-note', text: 'No petitions yet. Visitors can ask privately for guidance; each request needs your decision.' }));
     const active = petitions.filter(p => ['pending', 'allowed', 'answering'].includes(p.status));
@@ -206,6 +207,27 @@ export function createPanel(opts) {
       t.uncommitted ? h('div', { class: 'dim-note', text: 'Uncommitted changes remain.' }) : null,
       t.words ? h('blockquote', { text: String(t.words) }) : null,
       h('div', { class: 'tale-text', text: t.tale?.text || 'The tale is yet to be told.' })));
+  }
+
+  let ordersKey = '';
+  function renderOrders() {
+    const root = document.getElementById('orders'); if (!root || !state.orders) return;
+    if (!root._form) {
+      const to = h('select', { 'aria-label': 'Resident' }), headline = h('input', { placeholder: 'Headline (optional)', maxLength: 180, 'aria-label': 'Headline' }), brief = h('textarea', { placeholder: 'Private brief', maxLength: 12000, required: true, 'aria-label': 'Private brief' });
+      const submit = h('button', { class: 'btn btn-primary', type: 'submit', text: 'Give an order' }), error = h('div', { class: 'dim-note' });
+      const form = h('form', { class: 'order-form' }, h('h3', { text: 'Give an order' }), to, headline, brief, submit, error);
+      form.addEventListener('submit', async e => { e.preventDefault(); submit.disabled = true; const result = await opts.api('/api/orders', { to: to.value, headline: headline.value, brief: brief.value }); submit.disabled = false; error.textContent = result?.error || ''; if (result?.id) { brief.value = ''; headline.value = ''; } });
+      root._form = form; root._to = to; root._list = h('div'); root.append(form, root._list);
+    }
+    const residents = (state.residents || []).filter(r => r.zone === 'village' && r.enabled && !r.hibernate);
+    const key = residents.map(r => r.name).join('|'); if (root._key !== key) { const selected = root._to.value; root._to.textContent = ''; for (const r of residents) root._to.append(h('option', { value: r.name, text: r.name })); if (residents.some(r => r.name === selected)) root._to.value = selected; root._key = key; }
+    const next = JSON.stringify(state.orders); if (ordersKey === next) return; ordersKey = next; root._list.textContent = '';
+    for (const o of [...state.orders].reverse()) {
+      const card = h('article', { class: 'order-card' }, h('div', { class: 'dim-note', text: `${o.to} · ${o.status}` }), h('h3', { text: o.headline }), h('p', { text: o.chat || o.error || '' }));
+      const details = h('details', {}, h('summary', { text: 'Brief and report' })), content = h('div'); details.append(content);
+      details.addEventListener('toggle', async () => { if (!details.open) return; const full = await opts.api(`/api/orders/${encodeURIComponent(o.id)}`, null, 'GET'); content.textContent = ''; if (!full?.id) { content.textContent = full?.error || 'Could not load order.'; return; } for (const [label, value] of [['Brief', full.brief], ['Report', full.report], ['Data', full.data ? JSON.stringify(full.data, null, 2) : '']]) if (value) content.append(h('h4', { text: label }), h('pre', { text: value })); });
+      card.append(details); if (['queued', 'working'].includes(o.status)) card.append(h('button', { class: 'btn btn-xs', text: 'Cancel', onClick: () => opts.api(`/api/orders/${encodeURIComponent(o.id)}/cancel`, {}) })); root._list.append(card);
+    }
   }
 
   // ---- tabs ----
@@ -1214,6 +1236,7 @@ export function createPanel(opts) {
     renderExhibits();
     renderTales();
     renderResidents();
+    renderOrders();
     renderGate();
     renderWorkshop();
     renderLamps();

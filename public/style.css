@@ -1256,3 +1256,9 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 
 .petition-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .shot-public #lamp-glyph { display: none !important; }   /* a showcase capture shows no live allowance state */
+
+#orders { padding: 16px; }
+.order-form { display: grid; gap: 10px; }
+.order-form textarea { min-height: 150px; }
+.order-card { padding: 14px 0; border-bottom: 1px solid var(--ink-dim); }
+.order-card pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }

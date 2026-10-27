@@ -203,3 +203,21 @@ The node sends metadata and a local classification, never transcript locations o
 requested bounded village output crosses the gate. Quarantined/Isle heroes cannot receive content-reading jobs.
 Remote git offerings and git statistics in tales remain unsupported. A helper restart or lost response can lose a dispatched
 job; jobs expire after 13 minutes. Check the machine before retrying a commission to avoid launching it twice.
+
+### Giving orders
+
+Open **Orders** in the dashboard to choose a village resident and write an optional short headline and private
+brief. The headline appears on your board and feed; expand an order to read its brief and full report. The
+resident returns a short village reply plus a private report. Orders respect usage hibernation and the daily
+turn budget; a missing answer is retried once. You can cancel an open order from the panel.
+
+The local Steward can use either launcher (PowerShell: `tools/amygdala.ps1`; shell: `tools/amygdala.sh`):
+
+```sh
+amygdala order Quill --brief-file brief.md --headline "Quill, inspect the north wall's mortar" --wait
+amygdala order Quill --brief-file brief.md --wait --json
+```
+
+The CLI reads the local page token like `pass`. Without `--wait` it prints the order ID and status; with
+`--wait` it prints the full report, or structured JSON with `--json`. Failed or cancelled orders exit nonzero.
+The newest 200 orders are kept; private payloads are retained for the newest 50 (older open orders keep theirs).

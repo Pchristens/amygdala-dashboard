@@ -105,6 +105,7 @@
       <button class="rail-tab" data-tab="exhibits" type="button" title="Exhibits (2)"><span class="rail-glyph">❦</span><span class="rail-text">Exhibits</span></button>
       <button class="rail-tab" data-tab="residents" type="button" title="Residents (3)"><span class="rail-glyph">☺</span><span class="rail-text">Residents / Visitors</span><span class="count" id="badge-petitions" aria-label="Pending petitions" hidden>0</span></button>
       <button class="rail-tab" data-tab="workshop" type="button" title="Temple (4)"><span class="rail-glyph">⛩</span><span class="rail-text">Temple</span><span class="rail-dot" id="rail-dot-temple" hidden></span></button>
+      <button class="rail-tab" data-tab="orders" type="button"><span class="rail-glyph">✉</span><span class="rail-text">Orders</span></button>
       <button class="rail-tab" data-tab="lamps" type="button" title="Lamps (5)"><span class="rail-glyph">🕯</span><span class="rail-text">Lamps</span></button>
     </nav>
     <aside class="panel drawer" id="drawer" aria-hidden="true">
@@ -114,6 +115,7 @@
         <button class="tab" role="tab" data-tab="exhibits" type="button">Exhibits <span class="count" id="count-exhibits">0</span></button>
         <button class="tab" role="tab" data-tab="residents" type="button">Residents <span class="count" id="count-residents">0</span></button>
         <button class="tab" role="tab" data-tab="workshop" type="button">Temple <span class="count" id="count-workshop">0</span><span class="badge-wait" id="badge-wait" hidden>!</span><span class="badge-omen" id="badge-omen" hidden>0</span><span class="badge-counsel" id="badge-counsel" hidden>0</span></button>
+        <button class="tab" role="tab" data-tab="orders" type="button">Orders</button>
         <button class="tab" role="tab" data-tab="lamps" type="button" title="The Lamplighter's House: usage">Lamps <span class="count" id="count-lamps">—</span></button>
         <button class="btn btn-ghost btn-xs drawer-close" id="drawer-close" type="button" title="Close (Esc)" aria-label="Close panel">✕</button>
       </nav>
@@ -173,6 +175,7 @@
         <div class="scroll" id="workshop"></div>
       </section>
 
+      <section class="tab-body" data-tab="orders" hidden><div id="orders"></div></section>
       <section class="tab-body" id="tab-terminal" data-tab="terminal" hidden></section>
       <section class="tab-body" id="tab-place" data-tab="place" hidden>
         <div class="scroll place-pane" id="place-pane"></div>

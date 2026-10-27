@@ -45,10 +45,10 @@ const hasIsle = () => !!state && (state.zones || []).some((z) => z && z.id === '
 const sealLocked = () => !!(state?.seal?.enabled && state.seal.locked);
 
 // ---------- API ----------
-async function api(path, body) {
+async function api(path, body, method = 'POST') {
   if (MOCK) return mockApi(path, body);
   try {
-    const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body || {}) });
+    const res = await fetch(path, { method, headers: { 'content-type': 'application/json', ...authHeaders() }, ...(method === 'POST' && { body: JSON.stringify(body || {}) }) });
     if (res.status === 401) { sessionExpired(); return { ok: false, error: 'Session expired — reload the page' }; }
     let data = null;
     try { data = await res.json(); } catch (_) { /* non-JSON reply */ }
