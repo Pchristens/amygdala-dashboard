@@ -595,3 +595,16 @@ Until a naming ceremony has been held or declined, the human snapshot carries `n
 a one-time card: **Hold the naming ceremony** (`POST /api/naming {all:true}`) or **Keep these names**
 (`POST /api/naming/skip`, which sets the persisted `namingSkipped`). Other viewers never see the offer. The visitor
 greeting and petition card name the harbourmaster by role (`triage.by`), not a fixed name.
+
+## v0.20: Windows host and OS labels
+
+Every worker has `os: "macos" | "windows" | "linux" | null`. Local agent-deck workers use the host OS;
+remote deck workers without OS metadata use null. `POST /hero/report` accepts optional `os` with these three
+string values or null; other values are rejected. Omission means unknown. The PowerShell hero bridge sends windows.
+
+`world.hostOs` identifies the server OS using the same values. `world.hostName` identifies where commissions start.
+`world.commissionAvailable` and `world.commissionReason` describe whether agent-deck can launch a session.
+`world.terminalReason` is null normally, or explains why the terminal is unavailable. Windows hosts have no in-page
+terminal (python3/tmux required); terminal requests fail with that reason. Missing agent-deck disables sync,
+commissions, deck usage and session wrap-up, without preventing bridge heroes. Windows skips the tmux Grok usage
+probe (pressure remains unknown). CLI npm shims resolve to Node plus their JS entry, with no shell fallback.

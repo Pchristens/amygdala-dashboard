@@ -19,7 +19,7 @@ param(
 if (-not $Command -or $Command.Count -eq 0) { $Command = @('grok') }
 
 function Send-Status([string]$Status) {
-  $body = @{ status = $Status; title = $Title; project = $Project; tool = $Tool; host = $env:COMPUTERNAME } | ConvertTo-Json -Compress
+  $body = @{ os = 'windows'; status = $Status; title = $Title; project = $Project; tool = $Tool; host = $env:COMPUTERNAME } | ConvertTo-Json -Compress
   try {
     Invoke-RestMethod -Method Post -Uri "$Server/hero/report" -Headers @{ Authorization = "Bearer $Pass" } `
       -ContentType 'application/json' -Body $body -TimeoutSec 5 | Out-Null
@@ -33,7 +33,7 @@ $heartbeat = Start-Job -ArgumentList $Server, $Pass, $Title, $Project, $Tool, $e
   param($Server, $Pass, $Title, $Project, $Tool, $HostName)
   while ($true) {
     Start-Sleep -Seconds 30
-    $body = @{ status = 'running'; title = $Title; project = $Project; tool = $Tool; host = $HostName } | ConvertTo-Json -Compress
+    $body = @{ os = 'windows'; status = 'running'; title = $Title; project = $Project; tool = $Tool; host = $HostName } | ConvertTo-Json -Compress
     try { Invoke-RestMethod -Method Post -Uri "$Server/hero/report" -Headers @{ Authorization = "Bearer $Pass" } -ContentType 'application/json' -Body $body -TimeoutSec 5 | Out-Null } catch {}
   }
 }

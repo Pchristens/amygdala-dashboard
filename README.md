@@ -63,14 +63,57 @@ the keeper clicks **Allow**. Answers run in an isolated, tool-less sandbox.
 Internal identifiers still use the project's former name, Hearthfield: the `HEARTHFIELD_*` variables, the
 `hearthfield` MCP server and the token header. They were kept so existing setups keep working.
 
-Requirements: Node.js 22+ (no npm dependencies) and the agent CLIs you want residents to use. Optional:
-agent-deck for heroes, Tailscale for visitors, and python3 + tmux only for the in-page terminal.
-agent-deck and tmux are found in `~/.local/bin` when present, otherwise on PATH;
-`HEARTHFIELD_AGENT_DECK` and `HEARTHFIELD_TMUX` override their locations.
+### macOS
+
+Install Node.js 22+ (no npm dependencies) and authenticate the CLIs you enable in `residents.json`.
+Use the vendors' installation instructions: [Claude Code](https://code.claude.com/docs/en/setup),
+[Codex CLI](https://developers.openai.com/codex/cli),
+[Antigravity CLI](https://antigravity.google/docs/cli/install).
+[Grok Build](https://docs.x.ai/build/overview) provides its official installation instructions; ensure `grok` is on PATH.
+Optional: agent-deck for heroes, Tailscale for visitors, python3 + tmux for the in-page terminal.
+agent-deck and tmux prefer `~/.local/bin`; `HEARTHFIELD_AGENT_DECK` and `HEARTHFIELD_TMUX` override locations.
 
 ```sh
-node server.js          # http://127.0.0.1:8790
+# Add this function to your shell profile, using the actual checkout location:
+amygdala() { /path/to/Amygdala/tools/amygdala.sh "$@"; }
+amygdala                 # start and open browser
+amygdala start
+amygdala status
+amygdala logs
+amygdala pass Visitor "label" 24
+amygdala stop
 ```
+
+The same launcher works on Linux (browser opening requires xdg-open). Logs and the launcher pid live in
+`${XDG_STATE_HOME:-$HOME/.local/state}/amygdala`. Direct foreground startup remains `node server.js`.
+
+### Windows
+
+Use native Windows 11 PowerShell and Node.js 22+; WSL, python3, tmux and agent-deck are not required.
+Install and authenticate your chosen CLIs using the official [Claude Code setup](https://code.claude.com/docs/en/setup),
+[Codex CLI installation](https://developers.openai.com/codex/cli), and
+[Antigravity CLI installation](https://antigravity.google/docs/cli/install), and [Grok Build installation](https://docs.x.ai/build/overview) pages. Follow any vendor prerequisites
+(such as Git for Windows); ensure the executables or standard npm `.cmd` shims are on PATH. Unsupported batch
+wrappers fail with an explanation instead of executing prompt text through a shell. Install Git for Windows for
+local repository review features. Enable only installed providers in `residents.json`.
+
+```powershell
+.\tools\install-windows.ps1   # no administrator rights; reopen PowerShell afterward
+amygdala                     # start hidden and open browser
+amygdala start
+amygdala status
+amygdala logs
+amygdala pass Visitor "label" 24
+amygdala stop
+```
+
+If your execution policy blocks local scripts, follow your organization's policy for enabling them.
+The log (`amygdala.log`, including stderr) and the pid record live in `%LOCALAPPDATA%\Amygdala`.
+Set `HEARTHFIELD_LATLON` and `HEARTHFIELD_GATE` in the launching shell as needed; the launcher inherits them.
+Pass creation requires a running server and prints the newly issued secret once. Keep it private.
+Windows cannot launch agent-deck heroes, provide the in-page terminal, or probe Grok usage through tmux.
+Bridge heroes can still report from Windows using `tools/amygdala-hero.ps1`. Cards show each hero's OS and
+commissions identify the server host where the session starts.
 
 | Environment variable | Meaning |
 | --- | --- |

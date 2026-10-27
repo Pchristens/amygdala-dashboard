@@ -1,3 +1,4 @@
+const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Side panel: Board / Exhibits / Residents / Workshop tabs, with a Village / Isle zone switch.
 import { h, agentClass, relTime, avatar, capitalize, commitmentEl, safeCssColor, runeTablet, toRunes } from './util.js';
 import { zoneOf } from './svg-util.js';
@@ -788,7 +789,7 @@ export function createPanel(opts) {
       }
     } else {
       const hosts = new Map();
-      for (const w of rest) { const host = String(w.host || 'local'); if (!hosts.has(host)) hosts.set(host, []); hosts.get(host).push(w); }
+      for (const w of rest) { const host = String(w.host || 'local') + (w.os ? ` · ${osLabel(w.os)}` : ''); if (!hosts.has(host)) hosts.set(host, []); hosts.get(host).push(w); }
       for (const [host, list] of hosts) {
         const hg = h('div', { class: 'host-group' }, h('div', { class: 'host-title' }, h('span', { class: 'h-dot' }), host));
         for (const [proj, plist] of groupByProject(sortW(list))) hg.appendChild(projectGroup(proj, plist, true));
@@ -832,7 +833,7 @@ export function createPanel(opts) {
         : h('span', { class: `pill pill-${st}`, text: st === 'waiting' ? 'needs you' : st }),
       h('div', { class: 'worker-sub' },
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }),
-        h('span', { class: w.sealed ? 'runic' : '', text: `${w.project || ''} @ ${w.host || 'local'}` }),
+        h('span', { class: w.sealed ? 'runic' : '', text: `${w.project || ''} @ ${w.host || 'local'}${w.os ? ` · ${osLabel(w.os)}` : ''}` }),
         w.sealed ? null : h('span', { class: 'worker-path', text: String(w.path || '') }),
         h('a', { href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
         opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,

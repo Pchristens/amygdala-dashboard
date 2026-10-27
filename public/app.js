@@ -1,3 +1,4 @@
+const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Amygdala front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
 // the Far Isle navigation, shared-tree cards, milestones, and the rune seal.
 import { createMap, GIFT_KINDS, giftIconSVG } from './map.js';
@@ -224,9 +225,10 @@ function buildCard(info) {
       stale ? h('div', { class: 'card-row dim-note', text: 'Agent Deck could not reach this session on its last poll. It may still be running.' }) : null,
       w.sealed ? h('div', { class: 'card-row dim-note', text: 'This hero is quarantined behind the seal; its details are encrypted.' }) : null,
       h('div', { class: 'card-row' }, h('b', { text: 'Project ' }), h('span', { class: w.sealed ? 'runic' : '', text: String(w.project || '—') })),
-      h('div', { class: 'card-row' }, h('b', { text: 'Host ' }), h('span', { class: w.sealed ? 'runic' : '', text: String(w.host || 'local') })),
+      h('div', { class: 'card-row' }, h('b', { text: 'Host ' }), h('span', { class: w.sealed ? 'runic' : '', text: String(w.host || 'local') + (w.os ? ` · ${osLabel(w.os)}` : '') })),
       w.sealed ? null : h('div', { class: 'card-row worker-path', text: String(w.path || '') }),
       stale ? null : h('div', { class: 'card-row' }, h('span', { class: 'post-time', text: `updated ${relTime(w.updatedAt)}` })),
+      state?.world?.terminalReason ? h('div', { class: 'dim-note', text: state.world.terminalReason }) : null,
       h('div', { class: 'card-actions' }, canOpenTerminal(w) ? h('button', { class: 'btn btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => openTerminal(w) }) : null, h('a', { class: 'btn btn-primary', href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }), milestone, endLabourButton(w), h('button', { class: 'btn btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => tellTale(w.id) })),
     ].filter(Boolean);
   }
@@ -464,7 +466,7 @@ function openMilestone(project, host) {
 }
 function openOffering(w) {
   openNoteDialog({
-    title: 'Lay an offering', sub: `${w.title || w.id} · ${w.project || ''} @ ${w.host || 'local'}`, placeholder: 'what should reviewers know? (optional)', submit: 'Lay it on the altar',
+    title: 'Lay an offering', sub: `${w.title || w.id} · ${w.project || ''} @ ${w.host || 'local'}${w.os ? ` · ${osLabel(w.os)}` : ''}`, placeholder: 'what should reviewers know? (optional)', submit: 'Lay it on the altar',
     text: 'Snapshots this session\u2019s current git change as an offering. Low-ranked residents may pick it up; you can command others to review it.',
     onSubmit: (note) => api('/api/temple/offer', { workerId: w.id, note }), done: 'The offering is laid. Reviewers will come.',
   });
@@ -674,9 +676,11 @@ function openCommission() {
   const sites = (state?.sites || []).filter((s) => s && s.id && s.id !== 'temple');
   const fallback = [{ id: 'library', label: 'The Great Library', purpose: 'thinking: research, design, planning, analysis' }, { id: 'forge', label: 'The Forge', purpose: 'making: building and changing code' }, { id: 'quarry', label: 'The Quarry', purpose: 'heavy lifting: migrations, refactors, long runs' }];
   for (const s of sites.length ? sites : fallback) sel.appendChild(h('option', { value: s.id, text: s.label, dataset: { purpose: s.purpose || '' } }));
-  const showPurpose = () => { $('cm-purpose').textContent = sel.selectedOptions[0]?.dataset.purpose || ''; };
+  const showPurpose = () => { $('cm-purpose').textContent = (sel.selectedOptions[0]?.dataset.purpose || '') + ` · Starts on: ${state?.world?.hostName || 'local'} (${osLabel(state?.world?.hostOs) || 'unknown OS'})`; };
   sel.onchange = showPurpose; showPurpose();
-  $('cm-error').hidden = true;
+  $('cm-error').textContent = state?.world?.commissionReason || '';
+  $('cm-error').hidden = !state?.world?.commissionReason;
+  $('cm-submit').disabled = state?.world?.commissionAvailable === false;
   $('cm-title').value = ''; $('cm-prompt').value = ''; $('cm-model').value = ''; $('cm-effort').value = '';
   const MODELS = { claude: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-haiku-5-5'], codex: ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna'], antigravity: ['gemini-4-argon-medium'], gemini: ['gemini-4-argon-medium'] };
   const fillModels = () => { const dl = $('cm-model-list'); dl.textContent = ''; for (const mm of MODELS[$('cm-tool').value] || []) dl.appendChild(h('option', { value: mm })); };
@@ -693,7 +697,7 @@ $('commission-form').addEventListener('submit', async (e) => {
   if (effort) body.effort = effort;
   const err = $('cm-error');
   err.hidden = true;
-  if (!body.path || !(body.path.startsWith('/') || body.path.startsWith('~'))) { err.textContent = 'The project folder must be an absolute path (or start with ~).'; err.hidden = false; return; }
+  if (!body.path || !(body.path.startsWith('/') || body.path.startsWith('~') || /^[A-Za-z]:[\\/]/.test(body.path) || body.path.startsWith('\\\\'))) { err.textContent = 'The project folder must be an absolute path (or start with ~).'; err.hidden = false; return; }
   if (!body.title || !body.prompt) { err.textContent = 'Give the god a title and a task.'; err.hidden = false; return; }
   $('cm-submit').disabled = true;
   const res = await api('/api/commission', body);
@@ -874,7 +878,7 @@ function disposeTerminal() {
   terminalHeroId = null;
 }
 function canOpenTerminal(w) {
-  return w?.host === 'local' && typeof w.id === 'string' && w.id.startsWith('local:') &&
+  return !state?.world?.terminalReason && w?.host === 'local' && typeof w.id === 'string' && w.id.startsWith('local:') &&
     (zoneOf(w) !== 'isle' || state?.seal?.locked === false);
 }
 function syncTerminalWidth(name) {
