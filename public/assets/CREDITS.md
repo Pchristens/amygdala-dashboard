@@ -76,3 +76,7 @@ All assets were free ($0, no login). CC0 assets need no attribution; it is given
 - `models/polypizza/dock-stairs-iaut.glb` - "Dock Stairs" by Quaternius - CC0 1.0 - https://poly.pizza/m/IaUtCxMAxg
 - `models/polypizza/bags-gzvy.glb` - "Bags" by Quaternius - CC0 1.0 - https://poly.pizza/m/gzvyAQ797z
 - `models/polypizza/bench-jlxj.glb` - "Bench" by Quaternius - CC0 1.0 - https://poly.pizza/m/jLxjFxFRpw
+
+## Brand
+
+- `brand/almond-256.png`, `brand/almond-64.png` - the Amygdala almond mark, made for this project (image generated with OpenAI Codex from a style brief) - Apache-2.0 with the code
