@@ -1,0 +1,7 @@
+data/
+node_modules/
+.DS_Store
+# private working notes
+PLAN.md
+ART.md
+public/mock-state.json
