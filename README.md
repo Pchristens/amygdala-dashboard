@@ -86,6 +86,8 @@ amygdala stop
 
 The same launcher works on Linux (browser opening requires xdg-open). Logs and the launcher pid live in
 `${XDG_STATE_HOME:-$HOME/.local/state}/amygdala`. Direct foreground startup remains `node server.js`.
+To serve heroes to another server, save a node pass in `~/.config/amygdala/node.pass`, set `AMYGDALA_SERVER`,
+and run `amygdala node`; see [agent-deck node setup](#agent-deck-nodes-maclinux-helpers-windows-server).
 
 ### Windows
 
@@ -111,9 +113,11 @@ If your execution policy blocks local scripts, follow your organization's policy
 The log (`amygdala.log`, including stderr) and the pid record live in `%LOCALAPPDATA%\Amygdala`.
 Set `HEARTHFIELD_LATLON` and `HEARTHFIELD_GATE` in the launching shell as needed; the launcher inherits them.
 Pass creation requires a running server and prints the newly issued secret once. Keep it private.
-Windows cannot launch agent-deck heroes, provide the in-page terminal, or probe Grok usage through tmux.
+A Windows host without agent-deck cannot launch local heroes; use an agent-deck node (see below). Windows has no in-page terminal or tmux Grok usage probe.
 Bridge heroes can still report from Windows using `tools/amygdala-hero.ps1`. Cards show each hero's OS and
-commissions identify the server host where the session starts.
+commissions let you choose the host or an online agent-deck node. To run a Windows node, save its pass in
+`%APPDATA%\Amygdala\node.pass`, set `$env:AMYGDALA_SERVER`, and run `amygdala node`; see
+[agent-deck node setup](#agent-deck-nodes-maclinux-helpers-windows-server).
 
 | Environment variable | Meaning |
 | --- | --- |
@@ -153,3 +157,38 @@ Code: [Apache License 2.0](LICENSE).
 Bundled third-party work keeps its own licence. three.js and xterm.js (MIT) have their licences in `public/vendor/`.
 The 3D models and HDRI are CC0 or CC-BY 3.0; see [public/assets/CREDITS.md](public/assets/CREDITS.md) for the required
 attributions.
+
+### Agent-deck nodes (Mac/Linux helpers, Windows server)
+
+Enable the Tailscale gate on the server (`HEARTHFIELD_GATE=1`). In the human page's visitor/hero pass controls,
+issue a **Node pass** for each machine. Copy it once into a private file on that machine; the server stores only its hash.
+Use one pass per helper. Revoke it from the same panel to disconnect that machine. Both machines need Tailscale;
+use the gate URL shown on the human page, rather than the loopback page URL.
+
+On macOS/Linux, save the pass in `~/.config/amygdala/node.pass` (create the directory and use `chmod 600` on the file).
+From a checkout with Node 22+ and agent-deck installed:
+
+```sh
+export AMYGDALA_SERVER='http://<server-tailscale-address>:8795'
+sh tools/amygdala.sh node
+```
+
+On Windows, save the pass in `%APPDATA%\Amygdala\node.pass` with access restricted to your user, then run:
+
+```powershell
+$env:AMYGDALA_SERVER = 'http://<server-tailscale-address>:8795'
+.\tools\amygdala.ps1 node
+```
+
+Windows helpers need agent-deck installed to launch heroes; the Windows server itself does not. Both launchers also
+accept `AMYGDALA_NODE_PASS` in the environment instead of the file. The direct command is
+`node tools/amygdala-node.mjs --server http://<gate>:8795 --pass-file <file>`; never put a pass on its command line.
+Keep the helper running. Sessions report every four seconds and show the machine OS; a disconnected helper becomes
+stale after roughly three missed reports. Commissions now have a **Machine** selector; the project folder must exist
+on that selected machine. Folder validation and launch errors appear in the commission dialog. End labour, counsel,
+site observation, and closing words run through that node. Open node terminals on the named machine.
+
+The node sends metadata and a local classification, never transcript locations or prompt excerpts. Only explicitly
+requested bounded village output crosses the gate. Quarantined/Isle heroes cannot receive content-reading jobs.
+Remote git offerings and git statistics in tales remain unsupported. A helper restart or lost response can lose a dispatched
+job; jobs expire after 13 minutes. Check the machine before retrying a commission to avoid launching it twice.

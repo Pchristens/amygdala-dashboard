@@ -38,7 +38,7 @@ const mcp = createMcpHandler(world);
 const conductor = new Conductor(world, { baseUrl: BASE, dataDir: DATA });
 world.watch = new Watch(world, conductor, DATA);
 world.starwatch = new Starwatch(world, conductor);
-if (!process.env.HEARTHFIELD_NO_DECK) startDeckSync(world);
+startDeckSync(world);
 conductor.lookFor = mcp.lookFor;
 conductor.setAgyUrl = url => writeAgyUrl(url || `${BASE}/mcp`);
 // Sealing stops any isle turn in progress before the isle's data leaves memory.
@@ -123,6 +123,8 @@ const API = {
   'POST /api/tales/complete': b => world.tales.complete(String(b.workerId)),
   // Long-running (waits for the hero's wrap-up): start it and return; progress shows in the feed.
   'POST /api/tales/end': b => { const id = String(b.workerId); if (!world.workers.some(w => w.id === id)) throw new Error('No such hero.'); world.tales.endLabour(id).catch(e => world.addFeed(null, `Ending the labour failed: ${e.message}`)); return { started: true }; },
+  'POST /api/nodes/pass': b => world.nodes.issue(b.name, b.hours),
+  'POST /api/nodes/revoke': b => world.nodes.revoke(String(b.id)),
   'POST /api/heroes/pass': b => world.bridge.issue(b.name, b.zone, b.hours, b.label),
   'POST /api/heroes/revoke': b => world.bridge.revoke(String(b.id)),
   'POST /api/quarantine': b => world.setQuarantine(String(b.project), String(b.host), !!b.on),
@@ -258,6 +260,19 @@ async function heroReport(req, res, p) {
   return json(res, 200, { ok: true, zone: pass.zone, ...(counsel.length && { counsel }) });
 }
 
+const nodeRates = new Map();
+async function nodeReport(req, res) {
+  const key = req.socket.remoteAddress, now = Date.now();
+  for (const [k, v] of nodeRates) if (now - v.at > 60000) nodeRates.delete(k);
+  const rate = nodeRates.get(key) || { at: now, count: 0 }; nodeRates.set(key, rate);
+  if (++rate.count > 120 || nodeRates.size > 4096) return json(res, 429, { ok: false, error: 'Too many node reports.' });
+  if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
+  const pass = world.nodes.auth(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+  if (!pass) return json(res, 401, { ok: false, error: 'Invalid node pass.' });
+  if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
+  return json(res, 200, { ok: true, ...world.nodes.report(pass, JSON.parse(await readBody(req, 2 << 20))) });
+}
+
 // A second door on this Mac's Tailscale address only: visitor routes, nothing else (not the LAN, not the internet).
 const tsAddr = Object.values(os.networkInterfaces()).flat().find(i => i?.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(i.address))?.address;
 const GATE_PORT = +process.env.HEARTHFIELD_GATE_PORT || 8795;
@@ -267,6 +282,7 @@ if (gateEnabled) {
   http.createServer(async (req, res) => {
     try {
       const p = decodeURIComponent(new URL(req.url, 'http://gate').pathname);
+      if (p === '/node/report') return await nodeReport(req, res);
       if (p === '/hero/report') return await heroReport(req, res, p);
       if (!p.startsWith('/visit/')) { gateLog(req, p, 404); res.writeHead(404); return res.end(); }
       await visit(req, res, p);

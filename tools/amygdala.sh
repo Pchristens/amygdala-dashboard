@@ -15,6 +15,7 @@ start() {
   i=0; until token >/dev/null 2>&1; do i=$((i+1)); [ "$i" -lt 40 ] || { echo 'Startup failed; inspect logs.' >&2; exit 1; }; sleep .25; done
 }
 case ${1:-open} in
+  node) exec node "$repo/tools/amygdala-node.mjs" --server "${AMYGDALA_SERVER:?Set AMYGDALA_SERVER to the Tailscale gate URL}" --pass-file "$HOME/.config/amygdala/node.pass";;
   start) start;;
   open) start; if [ "$(uname)" = Darwin ]; then open "$base"; else xdg-open "$base"; fi;;
   stop) if owned; then kill "$pid"; rm -f "$pidfile"; else echo 'No owned Amygdala process found.'; fi;;

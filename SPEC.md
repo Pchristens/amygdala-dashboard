@@ -608,3 +608,40 @@ string values or null; other values are rejected. Omission means unknown. The Po
 terminal (python3/tmux required); terminal requests fail with that reason. Missing agent-deck disables sync,
 commissions, deck usage and session wrap-up, without preventing bridge heroes. Windows skips the tmux Grok usage
 probe (pressure remains unknown). CLI npm shims resolve to Node plus their JS entry, with no shell fallback.
+
+## v0.21: nodes
+
+Nodes are machines running `tools/amygdala-node.mjs` from a checkout with agent-deck installed. The server may have
+no agent-deck. Existing local discovery remains enabled where available. Node credentials (`hfn_…`) are independent
+of hero credentials: human-only `POST /api/nodes/pass {name, hours?}` returns `{ok, pass, token}` once;
+`POST /api/nodes/revoke {id}` invalidates the credential and pending jobs. Only SHA-256 hashes persist.
+Names are 2–40 letters/digits/spaces/underscore/hyphen, starting with a letter; lifetime is 1–2160 hours (default 168).
+Only human snapshots include `nodes`, listing active pass metadata plus `os`, `online`, and `deckAvailable`, never hashes.
+
+`POST /node/report` exists only on the opt-in Tailscale gate, requires an Authorization Bearer node pass and JSON,
+and accepts at most 2 MiB, 500 sessions, and 40 job results. Rate limits are 120 requests/minute/source and at least
+one second between accepted reports/pass. Reports contain `{hostname, os, deckAvailable, sessions, results, usage?}`.
+OS is macos/windows/linux/null. Sessions contain `{id,title,project,path,group,status,tool,isleTagged?,signals?}`;
+no transcript path is accepted. Status and tool use the worker enums. `signals` is the locally computed classification
+`{site,confidence,reason}`, never task text or transcript excerpts. The node computes signals only for sessions listed
+in the previous report response's `village` allowlist, and never for locally Isle-tagged sessions. First reports are metadata
+only. Archived sessions are omitted. Optional usage is the Claude provider block from `agent-deck usage --json`,
+merged with existing Fable usage exactly like local polling (roughly every five minutes).
+
+Reports arrive roughly every four seconds. Heroes have `id: node:<passId>:<sessionId>`, `node`, `sessionId`, node pass
+name as `host`, and the node's `os`. Three missed reports (13 seconds) make heroes stale, without declaring work ended.
+The same placement, quarantine, sealing and zone rules apply as for local heroes. Signals are excluded from snapshots.
+
+Responses contain `{ok,jobs,village}`. Jobs are ephemeral, bounded (100 total, 20 dispatched/report), delivered once,
+and time out after 13 minutes; results are `{id,ok,error,output}` and accepted only for dispatched jobs on that pass.
+Kinds: `commission {commission}`, `send {sessionId,message,wait?}`, `tail {sessionId,maxChars}`, `stop {sessionId}`.
+Commission validates the absolute project folder on the chosen machine and uses the ordinary launch implementation.
+`POST /api/commission` accepts `node` (null/omitted means server host), waits for the result, and applies site placement
+to the returned node session. Machine choices are the host when agent-deck is available and online nodes with agent-deck.
+Tail bounds are 1–20000 characters. Send, tail and stop require a current village hero belonging to that node and session;
+private/quarantined/tagged/sealed heroes are rejected at queueing, dispatch, result acceptance, and tail consumption.
+The helper executes only jobs from its latest response and refuses tails outside that response's explicit request and
+village allowlist, or for locally Isle-tagged sessions. Transcripts stay local except explicitly requested bounded village
+tails. Long wrap-up jobs run alongside heartbeats. Failed job errors from helpers contain no local paths.
+Node terminal requests explain that the human must open the terminal on the named machine. Remote git offerings and
+git tale statistics remain unsupported, as for existing SSH heroes; node tales use requested closing words.

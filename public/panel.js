@@ -62,17 +62,17 @@ export function createPanel(opts) {
 
   // Gate credentials live only in this dialog, which is destroyed on close.
   function issuePass(kind) {
-    const hero = kind === 'heroes';
+    const hero = kind === 'heroes', node = kind === 'nodes';
     const dialog = h('dialog', { class: 'dialog pass-dialog' });
     const form = h('form', { autocomplete: 'off' });
     const name = h('input', { class: 'input', required: true, maxlength: 80 });
     const label = h('input', { class: 'input', maxlength: 160 });
-    const hours = h('input', { class: 'input', type: 'number', min: 1, max: 8760, value: 24, required: true });
+    const hours = h('input', { class: 'input', type: 'number', min: 1, max: node ? 2160 : 8760, value: 24, required: true });
     const zoneInput = h('select', { class: 'input' }, h('option', { value: 'village', text: 'Village' }), h('option', { value: 'isle', text: 'Isle' }));
     const error = h('div', { class: 'dialog-error', role: 'alert' });
     const submit = h('button', { class: 'btn btn-primary', type: 'submit', text: 'Issue pass' });
     const close = () => dialog.close();
-    form.append(h('h2', { text: `Issue a ${hero ? 'hero' : 'visitor'} pass` }),
+    form.append(h('h2', { text: `Issue a ${node ? 'node' : hero ? 'hero' : 'visitor'} pass` }),
       h('label', { class: 'field' }, 'Name', name), h('label', { class: 'field' }, 'Label', label),
       h('label', { class: 'field' }, 'Hours', hours));
     if (hero) form.append(h('label', { class: 'field' }, 'Zone', zoneInput));
@@ -92,7 +92,8 @@ export function createPanel(opts) {
         } }));
       };
       snippet('token', token);
-      if (hero) snippet('PowerShell launcher', `.\\amygdala-hero.ps1 -Pass ${token} -Title "My labour" grok`);
+      if (node) snippet('Node helper', `node tools/amygdala-node.mjs --server ${state.gateUrl || 'http://<gate>:8795'} --pass-file <private-pass-file>`);
+      else if (hero) snippet('PowerShell launcher', `.\\amygdala-hero.ps1 -Pass ${token} -Title "My labour" grok`);
       else {
         const base = `${state.gateUrl || 'http://<this-machine-tailscale-ip>:8795'}/visit`;
         snippet('Grok CLI', `grok mcp add --transport http amygdala-visit ${base}/mcp --header "Authorization: Bearer ${token}"`);
@@ -170,7 +171,7 @@ export function createPanel(opts) {
     renderPetitions(root);
     root.append(h('h2', { text: 'Visitors' }));
     const date = (ts) => ts ? new Date(ts).toLocaleString() : 'never';
-    for (const [kind, key, title] of [['visitors', 'visitorPasses', 'Visitor'], ['heroes', 'heroPasses', 'Hero']]) {
+    for (const [kind, key, title] of [['visitors', 'visitorPasses', 'Visitor'], ['heroes', 'heroPasses', 'Hero'], ['nodes', 'nodes', 'Node']]) {
       root.append(h('div', { class: 'temple-section-title', text: `${title} passes` }), h('button', { class: 'btn btn-xs', type: 'button', text: `Issue a ${title.toLowerCase()} pass…`, onClick: () => issuePass(kind) }));
       const list = state[key] || [];
       if (!list.length) root.append(h('p', { class: 'dim-note', text: 'No passes issued.' }));

@@ -41,6 +41,7 @@ child.on('spawn', () => { console.log(child.pid); child.unref(); fs.closeSync(fd
   throw 'Server did not become ready; inspect amygdala logs.'
 }
 switch ($Command) {
+  'node' { if (!$env:AMYGDALA_SERVER) { throw 'Set AMYGDALA_SERVER to the Tailscale gate URL.' }; & node (Join-Path $Repo 'tools/amygdala-node.mjs') --server $env:AMYGDALA_SERVER --pass-file (Join-Path $env:APPDATA 'Amygdala/node.pass') }
   'start' { Start-Amygdala; 'Amygdala is running.' }
   'open' { Start-Amygdala; Start-Process $Base }
   'stop' { $Proc = Get-OwnedProcess; if ($Proc) { & taskkill.exe /pid $Proc.ProcessId /T /F | Out-Null; Remove-Item $PidFile; 'Stopped.' } else { 'No owned Amygdala process found.' } }

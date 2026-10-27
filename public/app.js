@@ -228,7 +228,7 @@ function buildCard(info) {
       h('div', { class: 'card-row' }, h('b', { text: 'Host ' }), h('span', { class: w.sealed ? 'runic' : '', text: String(w.host || 'local') + (w.os ? ` · ${osLabel(w.os)}` : '') })),
       w.sealed ? null : h('div', { class: 'card-row worker-path', text: String(w.path || '') }),
       stale ? null : h('div', { class: 'card-row' }, h('span', { class: 'post-time', text: `updated ${relTime(w.updatedAt)}` })),
-      state?.world?.terminalReason ? h('div', { class: 'dim-note', text: state.world.terminalReason }) : null,
+      w.node ? h('div', { class: 'dim-note', text: `Open the terminal on ${w.host}.` }) : state?.world?.terminalReason ? h('div', { class: 'dim-note', text: state.world.terminalReason }) : null,
       h('div', { class: 'card-actions' }, canOpenTerminal(w) ? h('button', { class: 'btn btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => openTerminal(w) }) : null, h('a', { class: 'btn btn-primary', href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }), milestone, endLabourButton(w), h('button', { class: 'btn btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => tellTale(w.id) })),
     ].filter(Boolean);
   }
@@ -384,7 +384,7 @@ const panel = createPanel({
 // The endpoint acknowledges immediately; snapshots carry the eventual tale and feed errors.
 let endingLabour = null;
 function endLabourButton(w) {
-  const remote = !!w.bridge || w.host !== 'local';
+  const remote = !!w.bridge || (!w.node && w.host !== 'local');
   return h('button', { class: 'btn btn-xs', type: 'button', text: endingLabour?.id === w.id ? 'Ending labour…' : 'End labour',
     disabled: remote || !!w.sealed || (zoneOf(w) === 'isle' && sealLocked()) || w.status === 'stopped' || !!endingLabour,
     title: remote ? 'End this hero in its own window; its tale is written when it stops.' : 'Ask for a wrap-up, stop the hero, and record a tale',
@@ -676,11 +676,14 @@ function openCommission() {
   const sites = (state?.sites || []).filter((s) => s && s.id && s.id !== 'temple');
   const fallback = [{ id: 'library', label: 'The Great Library', purpose: 'thinking: research, design, planning, analysis' }, { id: 'forge', label: 'The Forge', purpose: 'making: building and changing code' }, { id: 'quarry', label: 'The Quarry', purpose: 'heavy lifting: migrations, refactors, long runs' }];
   for (const s of sites.length ? sites : fallback) sel.appendChild(h('option', { value: s.id, text: s.label, dataset: { purpose: s.purpose || '' } }));
-  const showPurpose = () => { $('cm-purpose').textContent = (sel.selectedOptions[0]?.dataset.purpose || '') + ` · Starts on: ${state?.world?.hostName || 'local'} (${osLabel(state?.world?.hostOs) || 'unknown OS'})`; };
+  const showPurpose = () => { $('cm-purpose').textContent = (sel.selectedOptions[0]?.dataset.purpose || ''); };
   sel.onchange = showPurpose; showPurpose();
-  $('cm-error').textContent = state?.world?.commissionReason || '';
-  $('cm-error').hidden = !state?.world?.commissionReason;
-  $('cm-submit').disabled = state?.world?.commissionAvailable === false;
+  const machines = $('cm-machine'); machines.textContent = '';
+  if (state?.world?.commissionAvailable) machines.appendChild(h('option', { value: '', text: `this host (${osLabel(state.world.hostOs)})` }));
+  for (const n of state?.nodes || []) if (n.online && n.deckAvailable) machines.appendChild(h('option', { value: n.id, text: `${n.name} (${osLabel(n.os) || 'unknown OS'})` }));
+  $('cm-error').textContent = machines.options.length ? '' : 'No machine with agent-deck is online.';
+  $('cm-error').hidden = !!machines.options.length;
+  $('cm-submit').disabled = !machines.options.length;
   $('cm-title').value = ''; $('cm-prompt').value = ''; $('cm-model').value = ''; $('cm-effort').value = '';
   const MODELS = { claude: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-haiku-5-5'], codex: ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna'], antigravity: ['gemini-4-argon-medium'], gemini: ['gemini-4-argon-medium'] };
   const fillModels = () => { const dl = $('cm-model-list'); dl.textContent = ''; for (const mm of MODELS[$('cm-tool').value] || []) dl.appendChild(h('option', { value: mm })); };
@@ -690,7 +693,7 @@ function openCommission() {
 }
 $('commission-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const body = { site: $('cm-site').value, path: $('cm-path').value.trim(), tool: $('cm-tool').value, title: $('cm-title').value.trim(), prompt: $('cm-prompt').value.trim() };
+  const body = { node: $('cm-machine').value || null, site: $('cm-site').value, path: $('cm-path').value.trim(), tool: $('cm-tool').value, title: $('cm-title').value.trim(), prompt: $('cm-prompt').value.trim() };
   const model = $('cm-model').value.trim();
   if (model) body.model = model;
   const effort = $('cm-effort').value;
@@ -1135,7 +1138,7 @@ function stripIsle(s) {
   delete out.petitions;
   out.workshops = [];
   // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.
-  if (params.get('public') === '1') { out.workers = []; out.visitors = []; out.heroPasses = []; out.visitorPasses = []; out.petitions = []; }
+  if (params.get('public') === '1') { out.workers = []; out.visitors = []; out.heroPasses = []; out.nodes = []; out.visitorPasses = []; out.petitions = []; }
   if (out.usage?.isle) { out.usage = { ...out.usage }; delete out.usage.isle; }
   out.seal = { ...(s.seal || {}), enabled: true, locked: true };
   return out;
