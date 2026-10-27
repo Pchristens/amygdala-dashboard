@@ -1125,6 +1125,10 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .mention-who { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mention-cost { margin-left: auto; font-size: 11px; color: var(--amber); white-space: nowrap; }
 .mention { color: var(--accent); font-weight: 700; }
+/* Resident colours are tuned for the dark sky; on the light theme they're deepened so pale ones (Themis) stay legible. */
+.mention[style] { filter: brightness(.62) saturate(1.35); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mention[style] { filter: none; } }
+:root[data-theme="dark"] .mention[style] { filter: none; }
 .bubble-called { font-size: 10.5px; color: var(--ink-dim); margin-top: 2px; font-style: italic; }
 
 /* ---------- live fixes: no text selection while panning; label contrast pills; place pane ---------- */

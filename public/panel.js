@@ -412,10 +412,23 @@ export function createPanel(opts) {
     li.appendChild(body);
     return li;
   }
+  // Each @Name takes that resident's own colour (names and personal nicknames); @You, families and unknowns keep the accent.
+  function mentionColor(tag) {
+    const residents = state.residents || [], aliases = state.mentionAliases && typeof state.mentionAliases === 'object' ? state.mentionAliases : {};
+    const byName = residents.find((r) => r?.name?.toLowerCase() === tag || (r?.formerNames || []).some((n) => n.toLowerCase() === tag));
+    if (byName) return /^#[0-9a-f]{3,8}$/i.test(byName.color || '') ? byName.color : null;
+    const owners = Object.keys(aliases).filter((n) => (aliases[n] || []).some((a) => String(a).toLowerCase() === tag));
+    const r = owners.length === 1 && residents.find((x) => x?.name === owners[0]);
+    return r && /^#[0-9a-f]{3,8}$/i.test(r.color || '') ? r.color : null;
+  }
   function mentionText(text) {
     const el = h('div', { class: 'post-text' });
     const parts = text.split(/(@[\w.-]+)/g);
-    for (const part of parts) { if (/^@[\w.-]+$/.test(part)) el.appendChild(h('span', { class: 'mention', text: part })); else if (part) el.appendChild(document.createTextNode(part)); }
+    for (const part of parts) {
+      if (!/^@[\w.-]+$/.test(part)) { if (part) el.appendChild(document.createTextNode(part)); continue; }
+      const color = mentionColor(part.slice(1).toLowerCase());
+      el.appendChild(h('span', { class: 'mention', text: part, ...(color && { style: `color:${color}` }) }));
+    }
     return el;
   }
   function renderBoard(fresh) {
