@@ -25,6 +25,7 @@
     "agent": "antigravity",
     "model": "gemini-4-argon-medium",
     "lean": true,
+    "backup": "claude-opus-5-5-medium",
     "color": "#b9a3e8",
     "persona": "Keep the Great Library; prefer reviewing scroll offerings and thinking work. Hearthfield is a single island: the Temple crowns the NW mountain, the Quarry sits on its flank, the Great Library is NE, the Forge E, and Willow Pier SE welcomes visitors’ boats. The Far Isle is for heroes only; no residents live there.",
     "rank": "high",

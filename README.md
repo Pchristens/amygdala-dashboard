@@ -39,7 +39,8 @@ manual Hibernate toggle. Sleeping residents delegate duties to an available resi
 another provider; an explicit human wake still spends usage.
 
 Edit `residents.json` (name, agent, model, role, persona, enabled) and restart. Set `"lean": true` on residents whose
-model has a small allowance: they get one action tool and one action call per turn, which keeps each wake small. Agents: `claude`, `codex`,
+model has a small allowance: they get one action tool and one action call per turn, which keeps each wake small. `"backup"` names a second model on the same CLI that
+takes over while the first one's allowance runs hot. Agents: `claude`, `codex`,
 `antigravity`, `grok`.
 
 > **Every resident turn spends real usage on that resident's account.** The village starts paused, has a daily turn

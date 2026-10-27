@@ -558,3 +558,13 @@ approved guidance answers retain their existing human-selected answerer and usag
 
 Duty and triage queues are in memory, like existing wake queues; manual flags and hibernation timestamps persist with
 resident state. A restart can lose queued wakes. Existing tale fallback to the hero's own account still applies.
+
+## v0.19.1: backup models
+
+A resident can name a `"backup"` model on the same CLI (for example `claude-opus-5-5-medium` for an Antigravity resident on
+Argon). The backup takes over when the primary model's allowance pool is running hot (80% or more), and hands back once
+the primary drops below 75%. It never switches mid-turn. The resident hibernates only when both pools are hot. While a
+backup is driving, `cfg.model` is the backup, so prompts, usage records and Temple lineage (a reviewer's provider) all
+follow the model actually behind the wheel. `residents.json` keeps the primary. Allowance pools follow the CLI account
+(`POOL`): Opus run through agy spends Antigravity's "Claude and GPT models" pool, not Claude Code's.
+The snapshot adds `primaryModel` and `onBackup`.

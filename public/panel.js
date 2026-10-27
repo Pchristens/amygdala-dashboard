@@ -673,6 +673,7 @@ export function createPanel(opts) {
     row._hibernate.dataset.on = String(!!r.hibernate); row._hibernate.textContent = r.hibernate ? 'Clear hibernation' : 'Hibernate';
     row._meta.textContent = '';
     if (r.hibernating) row._meta.append(h('span', { class: 'dim', text: '💤 hibernating · ' }));
+    if (r.onBackup) row._meta.append(h('span', { class: 'dim', text: `⇄ ${r.model} at the wheel · `, title: `Backup for ${r.primaryModel}` }));
     row._meta.append(
       h('span', { text: `${r.mood ? capitalize(r.mood) : '—'}` }),
       h('span', { class: 'dim', text: ' · ' }),
