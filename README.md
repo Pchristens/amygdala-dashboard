@@ -129,6 +129,26 @@ commissions let you choose the host or an online agent-deck node. To run a Windo
 `%APPDATA%\Amygdala\node.pass`, set `$env:AMYGDALA_SERVER`, and run `amygdala node`; see
 [agent-deck node setup](#agent-deck-nodes-maclinux-helpers-windows-server).
 
+#### Persistent heroes on the Windows server (WSL2 node)
+
+Native Windows has no tmux, so heroes started there can't outlive their console. To get Mac-style persistent heroes
+(attach from any dashboard, close the client, the work continues), run an agent-deck node inside WSL2 on the server:
+
+1. In an administrator PowerShell: `wsl --install -d Ubuntu`, reboot, and create the Linux user when Ubuntu opens.
+2. Inside Ubuntu: `curl -fsSL https://raw.githubusercontent.com/Pchristens/amygdala-dashboard/main/tools/setup-wsl.sh -o setup-wsl.sh && bash setup-wsl.sh`.
+   It installs tmux, python3, Node 24 (checksum-verified from nodejs.org), agent-deck, and the Claude, Codex,
+   Antigravity and Grok CLIs from their vendors, then clones this repo to `~/amygdala`. Rerun it to update.
+3. Log in to each CLI inside Ubuntu (separate from the Windows logins). Issue a **Node pass** for the WSL machine and
+   save it in `~/.config/amygdala/node.pass` (`chmod 600`).
+4. `AMYGDALA_SERVER=http://<server-tailscale-address>:8795 bash ~/amygdala/tools/setup-wsl.sh service` installs the
+   helper as a systemd user service with lingering, so it runs without an open terminal. It needs systemd enabled
+   in WSL (the default for new Ubuntu installs).
+
+WSL doesn't start until something launches it after a reboot, and it may stop an idle distro. A hidden logon task
+running `wsl.exe -d Ubuntu --exec sleep infinity` keeps it up. Heroes then run in WSL's tmux, which survives
+server restarts, but not a reboot of the machine. Projects on Windows drives appear under `/mnt/c`, where file
+access is slower than in the Linux home directory, so clone heavy projects inside Linux.
+
 | Environment variable | Meaning |
 | --- | --- |
 | `AMYGDALA_PORT` | page and API port (default `8790`) |
