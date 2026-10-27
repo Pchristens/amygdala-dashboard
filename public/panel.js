@@ -180,6 +180,7 @@ export function createPanel(opts) {
         const revoke = h('button', { class: 'btn btn-xs', type: 'button', text: 'Revoke', disabled: !!pass.revoked });
         revoke.addEventListener('click', async () => { revoke.disabled = true; const result = await opts.api(`/api/${kind}/revoke`, { id: pass.id }); if (result?.ok === false) revoke.disabled = false; });
         root.append(h('div', { class: 'gate-pass' }, h('b', { text: String(pass.name || 'Unnamed') }), ' ',
+          kind === 'nodes' ? h('button', { class: 'btn btn-xs', text: pass.notify === false ? 'Notifications off' : 'Notifications on', onClick: () => opts.api('/api/nodes/notify', { id: pass.id, on: pass.notify === false }) }) : null,
           kind === 'heroes' ? h('span', { class: 'chip', text: pass.zone || 'village' }) : null,
           h('div', { text: String(pass.label || '') }), h('div', { class: 'dim-note', text: `${pass.revoked ? 'Revoked · ' : ''}expires ${date(pass.expiresAt)}${kind === 'visitors' ? ` · last seen ${date(pass.lastSeen)}` : ''}` }), revoke));
       }

@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { Watch } from '../lib/watch.js';
+import { Nodes, validateReport } from '../lib/nodes.js';
+import { publicBell, bellBatch, notify } from '../lib/notify.js';
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-bell-'));
+try {
+  let changed = 0, seq = 0;
+  const w = { s: {}, id: () => `p${++seq}`, actsAs: () => true, contextTurn: () => ({}), changed() { changed++; }, refreshWorkers() {}, workers: [], usage: {} };
+  const watch = new Watch(w, {}, dir, { start: false });
+  watch.state.pending.push({ key: 'isle:test' });
+  watch.ring('Test Watch', { severity: 'urgent', summary: 'private-test', event_keys: ['isle:test'] });
+  assert.equal(w.s.bells.length, 1); assert(changed);
+  for (const value of [w.s.bells[0], publicBell(w.s.bells[0]), JSON.parse(fs.readFileSync(watch.file, 'utf8'))]) {
+    assert(!JSON.stringify(value).includes('private-test')); assert(!JSON.stringify(value).includes('Test Watch')); assert(!JSON.stringify(value).includes('isle:test'));
+    assert.equal(value.text, '🔔 A bell rang on the Far Isle');
+  }
+  for (let i = 0; i < 5; i++) watch.ring('Test Watch', { severity: 'info', summary: 'test', event_keys: [] });
+  assert.throws(() => watch.ring('Test Watch', { severity: 'info', summary: 'test', event_keys: [] }), /six times/);
+  const now = Date.now();
+  w.s.bells = Array.from({ length: 4 }, (_, i) => ({ id: i + 1, ts: now - 120000 + i * 1000, severity: 'attention', by: 'Watch', summary: 'test' })); w.s.bellSeq = 4;
+  assert.equal(bellBatch(w.s.bells, 0, now).length, 1); assert.equal(bellBatch(w.s.bells, 0, now)[0].text, '4 bells rang');
+  assert.equal(bellBatch(w.s.bells.slice(0, 3), 0, now).length, 3);
+  assert.equal(bellBatch([{ ...w.s.bells[0], ts: now }], 0, now).length, 0);
+  const nodes = new Nodes(w), a = nodes.auth(nodes.issue('Test One').token), b = nodes.auth(nodes.issue('Test Two').token);
+  a.bellCursor = b.bellCursor = 0;
+  const report = { hostname: 'test', os: 'macos', deckAvailable: false, sessions: [], results: [] };
+  assert.equal(validateReport({ ...report, bellAck: 4 }).bellAck, 4);
+  assert.throws(() => validateReport({ ...report, unknown: true })); assert.throws(() => validateReport({ ...report, bellAck: '4' }));
+  assert.equal(nodes.report(a, report).bells.length, 1);
+  nodes.live.get(a.id).at -= 2000;
+  assert.equal(nodes.report(a, report).bells.length, 0);
+  nodes.live.get(a.id).at -= 2000;
+  assert.equal(nodes.report(a, { ...report, bellAck: 4 }).bells.length, 0); assert.equal(a.bellAck, 4);
+  nodes.live.get(a.id).at -= 2000; nodes.report(a, { ...report, bellAck: 999 }); assert.equal(a.bellAck, 4);
+  b.lastReport = now - 7 * 3600000;
+  assert.equal(nodes.report(b, report).bells[0].text, '4 bells rang while you were away');
+  nodes.live.get(b.id).at -= 2000; assert.equal(nodes.report(b, report).bells.length, 0);
+  nodes.setNotify(a.id, false); w.s.bells.push({ ...w.s.bells[0], id: 5 }); w.s.bellSeq = 5;
+  nodes.live.get(a.id).at -= 2000; assert.equal(nodes.report(a, report).bells.length, 0);
+  const hostile = '" \\ $() ` & < > \'\n';
+  let captured;
+  const run = (file, args, options, done) => { captured = { file, args, options }; done(null); };
+  await notify({ severity: 'urgent', text: hostile }, { platform: 'darwin', run });
+  assert.equal(captured.file, 'osascript'); assert(captured.args[1].includes('\\"')); assert(captured.args[1].includes('\\\\')); assert(captured.args[1].includes('sound name "Sosumi"')); assert(!captured.args[1].includes('\n')); assert.equal(captured.options.shell, false);
+  await notify({ severity: 'info', text: hostile }, { platform: 'darwin', run }); assert(!captured.args[1].includes('sound name'));
+  await notify({ severity: 'urgent', text: hostile }, { platform: 'win32', run });
+  assert.equal(captured.file, 'powershell.exe'); assert(captured.args.includes('-NoProfile')); assert(!captured.args.at(-1).includes(hostile));
+  const encoded = captured.args.at(-1).match(/FromBase64String\('([^']+)'\)/)[1], xml = Buffer.from(encoded, 'base64').toString();
+  assert(xml.includes('&lt;')); assert(xml.includes('&amp;')); assert(xml.includes('Notification.Reminder'));
+  await notify({ severity: 'info', text: hostile }, { platform: 'win32', run });
+  assert(Buffer.from(captured.args.at(-1).match(/FromBase64String\('([^']+)'\)/)[1], 'base64').toString().includes('silent="true"'));
+  console.log('bell tests passed');
+} finally { fs.rmSync(dir, { recursive: true, force: true }); }

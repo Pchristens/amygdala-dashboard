@@ -1,3 +1,4 @@
+import { notify, bellBatch } from './lib/notify.js';
 // Amygdala server: static front end, world API + SSE, MCP endpoint for residents, conductor, agent-deck sync.
 import http from 'node:http';
 import fs from 'node:fs';
@@ -12,6 +13,7 @@ import { createMcpHandler } from './lib/mcp.js';
 import { Starwatch } from './lib/starwatch.js';
 import { Watch } from './lib/watch.js';
 import { Conductor } from './lib/conductor.js';
+import { KEEPER_PREFIX, keeperAuth, relay, setKeeper } from './lib/keeper.js';
 import { startDeckSync } from './lib/deck.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -76,7 +78,14 @@ function ensureAgyConfig() {
 }
 
 // ---------- SSE ----------
-const clients = new Set();
+const clients = new Set(), bellPages = new Map();
+let localBellCursor = world.s.bellSeq || 0;
+setInterval(() => {
+  for (const [id, at] of bellPages) if (Date.now() - at > 15000) bellPages.delete(id);
+  const bells = bellBatch(world.s.bells || [], localBellCursor);
+  if (bells.length) { localBellCursor = bells.at(-1).id; world.changed(); }
+  if ((process.platform === 'win32' || process.platform === 'darwin') && !bellPages.size && (env('NOTIFY_LOCAL') == null ? process.platform === 'win32' : !['0', 'false', 'off'].includes(env('NOTIFY_LOCAL').toLowerCase()))) for (const bell of bells) void notify(bell);
+}, 1000).unref();
 let pending = null;
 world.onChange(() => {
   if (pending) return;
@@ -125,7 +134,10 @@ const API = {
   // Long-running (waits for the hero's wrap-up): start it and return; progress shows in the feed.
   'POST /api/tales/end': b => { const id = String(b.workerId); if (!world.workers.some(w => w.id === id)) throw new Error('No such hero.'); world.tales.endLabour(id).catch(e => world.addFeed(null, `Ending the labour failed: ${e.message}`)); return { started: true }; },
   'POST /api/nodes/pass': b => world.nodes.issue(b.name, b.hours),
+  'POST /api/bells/presence': b => { if (typeof b.id !== 'string' || !/^[a-z0-9-]{1,80}$/i.test(b.id) || typeof b.visible !== 'boolean') throw new Error('Invalid page presence.'); if (b.visible && bellPages.size < 256) bellPages.set(b.id, Date.now()); else bellPages.delete(b.id); },
+  'POST /api/nodes/notify': b => world.nodes.setNotify(b.id, b.on),
   'POST /api/nodes/revoke': b => world.nodes.revoke(String(b.id)),
+  'POST /api/nodes/keeper': b => setKeeper(world, String(b.id), b.on === true),
   'POST /api/heroes/pass': b => world.bridge.issue(b.name, b.zone, b.hours, b.label),
   'POST /api/heroes/revoke': b => world.bridge.revoke(String(b.id)),
   'POST /api/quarantine': b => world.setQuarantine(String(b.project), String(b.host), !!b.on),
@@ -297,6 +309,8 @@ if (gateEnabled) {
   http.createServer(async (req, res) => {
     try {
       const p = decodeURIComponent(new URL(req.url, 'http://gate').pathname);
+      // A keeper pass reaches the dashboard itself (its relay prefixes paths); any other caller gets nothing here.
+      if (req.url === KEEPER_PREFIX || req.url.startsWith(KEEPER_PREFIX + '/') || req.url.startsWith(KEEPER_PREFIX + '?')) { if (!keeperAuth(world, req)) return json(res, 401, { ok: false, error: 'Invalid keeper pass.' }); const rest = req.url.slice(KEEPER_PREFIX.length); return relay(req, res, PORT, rest.startsWith('/') ? rest : '/' + rest); }
       if (p === '/node/term') {
         const pass = world.nodes.auth(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
         if (!pass) return json(res, 401, { ok: false, error: 'Invalid node pass.' });

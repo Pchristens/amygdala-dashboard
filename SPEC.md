@@ -757,3 +757,36 @@ Failed or cancelled members yield a nonzero exit after the group finishes. The p
 Whole village and one card per broadcast with member status chips and private report details. All live-turn
 indicators use the active turn array. Retention remains bounded at 200 orders; completed groups are evicted
 as a unit and active turns' records are never evicted.
+
+## v0.25: server bell notifications
+
+`ring_bell` retains its Watch turn restriction and six rings per UTC day. Every accepted ring records
+`{id,ts,severity,by,summary,isle}` in world state (`bells`, last 50; monotonic numeric `bellSeq`) and emits a change.
+An event key starting with `isle:` makes the entire ring private: its record, log entry, snapshot and all notification
+surfaces omit by, summary and keys, retaining only id, timestamp, severity, isle and the text
+`🔔 A bell rang on the Far Isle`. Village text is `🔔 <severity> — <summary> from <by>`.
+The append-only steward bell log remains the daily budget authority.
+
+Delivery collects bells for 60 seconds from the first pending ring; more than three within that window become
+one `N bells rang` notification (urgent if any ring was urgent). Otherwise each ring is delivered separately.
+Only human snapshots include the resulting ready `bells`; snapshot changes publish newly ready batches over SSE.
+Node pass metadata includes `notify` (defaults true, including existing passes).
+Human-only `POST /api/nodes/notify {id,on}` changes it. Reports additionally accept optional nonnegative safe-integer
+`bellAck`. Responses include `bells`, containing safe notification records newer than the pass's delivery cursor.
+The helper sends the highest processed id as `bellAck` in its next report. Acknowledgements cannot advance beyond
+the dispatched cursor. Dispatch and acknowledgement cursors persist separately: dispatched bells are never resent,
+even if the response is lost. Disabling notifications advances the cursor without delivery. New passes start at the
+current bell id. More than six hours since the last report (or pass creation) yields just one
+`N bells rang while you were away`, counted by sequence ids even beyond the retained 50 records.
+
+The helper supports standalone `--no-notify`. Native delivery uses shell-free execFile: macOS AppleScript notifications
+(Sosumi urgent, Glass attention), Windows built-in WinRT toast via powershell.exe -NoProfile (Reminder urgent,
+Default attention; a per-user Amygdala AppUserModelId registry entry supplies the toast identity), and Linux notify-send when installed. Info is silent. Failures do not interrupt reports.
+`AMYGDALA_NOTIFY_LOCAL` enables server toasts on Windows/macOS (Windows default on, macOS default off;
+0/false/off disables). Local delivery uses the same batching and notifier. A visible dashboard suppresses local
+toasts through authenticated `POST /api/bells/presence {id,visible}` heartbeats (10-second cadence, 15-second expiry).
+The loopback dashboard is treated as running on the server machine; SSH forwarding retains this behavior.
+
+Visible dashboard tabs synthesize attention's single and urgent's double strike with Web Audio; info is silent.
+A user gesture enables audio. Volume and mute settings persist in guarded localStorage. BroadcastChannel elects
+one visible tab per bell. Initial snapshot history and hidden-page arrivals do not chime. Shot mode excludes bells.

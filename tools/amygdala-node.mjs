@@ -1,3 +1,4 @@
+import { notify } from '../lib/notify.js';
 // No transcript locations or prompt excerpts cross the node boundary.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -48,9 +49,10 @@ export function openNodeTerm(term, requested, sessions, village, start = spawn, 
   return start('python3', ['-I', fileURLToPath(new URL('./ptybridge.py', import.meta.url)), tmux(), 'attach-session', '-t', s.tmux_session], { stdio: ['pipe', 'pipe', 'ignore'] });
 }
 export async function main(args = process.argv.slice(2)) {
-  const options = {}; for (let i = 0; i < args.length; i += 2) { if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
+  const options = {}; for (let i = 0; i < args.length; i += 2) { if (args[i] === '--no-notify') { options.noNotify = true; i--; continue; } if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
   const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
   if (!['http:', 'https:'].includes(server.protocol) || server.username || server.password || !/^hfn_[\w-]+$/.test(token)) throw new Error('Invalid node configuration.');
+  let bellAck = 0;
   let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], connected = false;
   const terminals = new Map(); let output = [], pendingGrok = null;
   let lastTermPoll = 0;
@@ -94,9 +96,10 @@ export async function main(args = process.argv.slice(2)) {
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
       const batch = results.slice(0, 40);
-      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
+      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('Report refused.');
       const next = await response.json(); village = next.village || []; results.splice(0, batch.length);
+      for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }
       // Jobs run concurrently so a long wrap-up cannot interrupt heartbeats.
       for (const job of next.jobs || []) executeJob(job, next.jobs, sessions, village).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, 24000), error: '' }), () => results.push({ id: job.id, ok: false, output: '', error: 'Local node job failed; check folder and agent-deck.' }));
     } catch { village = []; console.error('Node report failed; retrying.'); }

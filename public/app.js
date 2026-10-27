@@ -1,3 +1,4 @@
+import { createBells } from './bell.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Amygdala front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
 // the Far Isle navigation, shared-tree cards, milestones, and the rune seal.
@@ -1012,6 +1013,10 @@ function renderHeader() {
 }
 $('lamp-glyph').addEventListener('click', () => panel.selectTab('lamps'));
 $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: !state?.world?.paused }));
+const updateBells = createBells($('gear-pop'));
+const bellPageId = crypto.randomUUID();
+const bellPresence = () => { if (!SHOT && !MOCK) void api('/api/bells/presence', { id: bellPageId, visible: !document.hidden }); };
+setInterval(bellPresence, 10000); document.addEventListener('visibilitychange', bellPresence); bellPresence();
 $('gear-btn').addEventListener('click', () => { const g = $('gear-pop'); g.hidden = !g.hidden; });
 document.addEventListener('pointerdown', (e) => { const g = $('gear-pop'); if (!g.hidden && !g.contains(e.target) && e.target !== $('gear-btn')) g.hidden = true; });
 $('pace').addEventListener('change', (e) => api('/api/control', { tickSeconds: +e.target.value }));
@@ -1135,7 +1140,7 @@ function stripIsle(s) {
   const isIsle = (x) => x && typeof x === 'object' && (x.zone === 'isle' || x.isleTagged || x.sealed);
   const out = {};
   for (const [k, v] of Object.entries(s)) out[k] = Array.isArray(v) ? v.filter((x) => !isIsle(x)) : v;
-  delete out.petitions;
+  delete out.petitions; delete out.bells;
   out.workshops = [];
   // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.
   if (params.get('public') === '1') { out.workers = []; out.visitors = []; out.heroPasses = []; out.nodes = []; out.visitorPasses = []; out.petitions = []; }
@@ -1151,6 +1156,7 @@ function applyState(s) {
   const previousCreatedAt = state?.world?.createdAt;
   const firstState = !state;
   state = s;
+  if (!SHOT && !MOCK) updateBells(s.bells || []);
   updateEndLabour();
   map.update(s);
   if (firstState && !MOCK && params.get('vb')) { const [x, y, w] = params.get('vb').split(',').map(Number); map.setView({ x, y, w }); }

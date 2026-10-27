@@ -235,3 +235,23 @@ for all resident turns. Each turn has its own capability and can answer only its
 The human snapshot exposes `world.activeTurns` and each resident's extra running orders as `parallel` for
 future apprentice figures. Restart only when `world.activeTurn` is null: it remains the oldest active turn
 until **every** turn ends. A restart requeues interrupted working orders.
+
+### Bell notifications
+
+The Watch's bell reaches node machines through the server's existing Tailscale gate, without an open dashboard.
+Run `tools/amygdala-node.mjs` as usual; native notifications are enabled by default. Use the node pass's
+**Notifications on/off** button in the panel, or pass `--no-notify` to the helper to disable them locally.
+macOS uses Sosumi for urgent bells and Glass for attention; Windows uses Reminder and Default.
+Linux uses `notify-send` when available. Info notifications are silent. Permit Amygdala/osascript or PowerShell
+notifications and sounds in OS settings; Focus/Do Not Disturb can silence them.
+
+Server-local notifications default on for Windows and off for macOS; set `AMYGDALA_NOTIFY_LOCAL=1` to enable
+or `AMYGDALA_NOTIFY_LOCAL=0` to disable. A visible local dashboard suppresses the server toast and plays a
+synthesized bell instead. Click or press a key in the dashboard to enable browser audio; settings (⚙) include
+bell volume and mute. Hidden tabs stay silent; multiple visible tabs coordinate one chime.
+If viewing through an SSH tunnel, dashboard presence is still treated as local to the server.
+
+Delivery waits up to a minute to combine bursts: more than three rings in 60 seconds become one summary.
+Machines returning after six hours receive one count of missed bells. Delivery is at most once per node;
+a lost report response can lose that notification. The six-per-day bell budget remains unchanged.
+Far Isle bells always show only “🔔 A bell rang on the Far Isle”, including on lock screens.
