@@ -113,7 +113,17 @@ If your execution policy blocks local scripts, follow your organization's policy
 The log (`amygdala.log`, including stderr) and the pid record live in `%LOCALAPPDATA%\Amygdala`.
 Set `HEARTHFIELD_LATLON` and `HEARTHFIELD_GATE` in the launching shell as needed; the launcher inherits them.
 Pass creation requires a running server and prints the newly issued secret once. Keep it private.
-A Windows host without agent-deck cannot launch local heroes; use an agent-deck node (see below). Windows has no in-page terminal or tmux Grok usage probe.
+A Windows host without agent-deck cannot launch local heroes; use an agent-deck node (see below). Windows supports an in-page ConPTY shell and the interactive Grok usage probe.
+The first terminal or Grok usage probe compiles `tools/conpty.cs` with the built-in .NET Framework 4.x
+`Framework64\v4.0.30319\csc.exe`, caching it under `%LOCALAPPDATA%\Amygdala\bin`; source changes rebuild it.
+If that compiler is missing the dashboard explains why terminals are unavailable. No downloads are needed.
+Windows terminals start a new server-owned shell; Claude resume and Codex resume controls open the CLI's
+session picker. They do not attach to consoles started outside Amygdala. Detach or closing the browser tab
+keeps the session alive; **End session** kills it. Up to eight sessions retain 64 KiB of scrollback each.
+Mac node terminals still require python3 and tmux on that node, with no such requirement on the server.
+Only current public village heroes can use terminals. Node helpers also report Grok usage every 30 minutes;
+a fresh server probe takes precedence. Restarting the server ends its held terminals.
+
 Bridge heroes can still report from Windows using `tools/amygdala-hero.ps1`. Cards show each hero's OS and
 commissions let you choose the host or an online agent-deck node. To run a Windows node, save its pass in
 `%APPDATA%\Amygdala\node.pass`, set `$env:AMYGDALA_SERVER`, and run `amygdala node`; see
@@ -186,7 +196,7 @@ accept `AMYGDALA_NODE_PASS` in the environment instead of the file. The direct c
 Keep the helper running. Sessions report every four seconds and show the machine OS; a disconnected helper becomes
 stale after roughly three missed reports. Commissions now have a **Machine** selector; the project folder must exist
 on that selected machine. Folder validation and launch errors appear in the commission dialog. End labour, counsel,
-site observation, and closing words run through that node. Open node terminals on the named machine.
+site observation, and closing words run through that node. Node terminals attach to the local tmux session through the authenticated gate.
 
 The node sends metadata and a local classification, never transcript locations or prompt excerpts. Only explicitly
 requested bounded village output crosses the gate. Quarantined/Isle heroes cannot receive content-reading jobs.

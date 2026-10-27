@@ -1318,10 +1318,15 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status }),
     h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
-    h('button', { class: 'btn btn-xs', type: 'button', text: 'Close', onClick: onClose })), hint, body);
+    h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
+    h('button', { class: 'btn btn-xs', type: 'button', text: 'End session', onClick: async () => { if (!mock) await fetch(`/api/term/${encodeURIComponent(worker.id)}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Hearthfield-Token': token }, body: '{}' }); onClose(); } })), hint, body);
   if (mock) {
     body.append(h('div', { class: 'terminal-placeholder', text: `Mock terminal for ${worker.title || worker.id} — the live session appears here.` }));
     return () => { root.textContent = ''; };
+  }
+  if (worker.os === 'windows' && !worker.node) {
+    const launch = command => fetch(`/api/term/${encodeURIComponent(worker.id)}/input`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Hearthfield-Token': token }, body: JSON.stringify({ d: btoa(command + '\r') }) });
+    hint.append(' ', h('button', { class: 'btn btn-xs', text: 'Claude resume', onClick: () => launch('claude --resume') }), ' ', h('button', { class: 'btn btn-xs', text: 'Codex resume', onClick: () => launch('codex resume') }));
   }
   const mount = h('div', { class: 'terminal-mount' });
   body.append(mount);

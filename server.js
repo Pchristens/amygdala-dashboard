@@ -158,7 +158,7 @@ const server = http.createServer(async (req, res) => {
       clients.add(res); req.on('close', () => clients.delete(res));
       return;
     }
-    const terminal = p.match(/^\/api\/term\/([^/]+)\/(stream|input|resize)$/);
+    const terminal = p.match(/^\/api\/term\/([^/]+)\/(stream|input|resize|close)$/);
     if (terminal && terminal[2] === 'stream') {
       if (req.method !== 'GET') return json(res, 405, { ok: false, error: 'GET only' });
       const bridge = await termHub.open(terminal[1]);
@@ -179,7 +179,8 @@ const server = http.createServer(async (req, res) => {
       if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
       const b = JSON.parse((await readBody(req)) || '{}');
       if (terminal) {
-        if (terminal[2] === 'input') termHub.input(terminal[1], b.d);
+        if (terminal[2] === 'close') termHub.close(terminal[1]);
+        else if (terminal[2] === 'input') termHub.input(terminal[1], b.d);
         else termHub.resize(terminal[1], b.cols, b.rows);
         return json(res, 200, { ok: true });
       }
@@ -282,6 +283,12 @@ if (gateEnabled) {
   http.createServer(async (req, res) => {
     try {
       const p = decodeURIComponent(new URL(req.url, 'http://gate').pathname);
+      if (p === '/node/term') {
+        const pass = world.nodes.auth(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+        if (!pass) return json(res, 401, { ok: false, error: 'Invalid node pass.' });
+        if (req.method !== 'POST' || !(req.headers['content-type'] || '').includes('application/json')) return json(res, 405, { ok: false });
+        return json(res, 200, world.nodes.termPoll(pass, JSON.parse(await readBody(req, 256 << 10))));
+      }
       if (p === '/node/report') return await nodeReport(req, res);
       if (p === '/hero/report') return await heroReport(req, res, p);
       if (!p.startsWith('/visit/')) { gateLog(req, p, 404); res.writeHead(404); return res.end(); }

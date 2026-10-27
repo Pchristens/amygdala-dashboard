@@ -645,3 +645,31 @@ village allowlist, or for locally Isle-tagged sessions. Transcripts stay local e
 tails. Long wrap-up jobs run alongside heartbeats. Failed job errors from helpers contain no local paths.
 Node terminal requests explain that the human must open the terminal on the named machine. Remote git offerings and
 git tale statistics remain unsupported, as for existing SSH heroes; node tales use requested closing words.
+
+## v0.22: Windows terminals and node terminal relay
+
+The human page-token terminal API supports `GET /api/term/:worker/stream` (SSE base64 `o` events),
+`POST .../input {d}`, `POST .../resize {cols,rows}` and `POST .../close {}`. Close explicitly ends the
+server-held session; detaching a Windows or node viewer preserves it. There are at most eight open/opening
+terminals and each retains 64 KiB of output. Input and dimensions retain the existing bounded JSON-lines
+bridge framing: `{t:'i',d:base64}`, `{t:'r',c:cols,r:rows}`, output `{t:'o',d:base64}`.
+Windows launches a server-owned shell through ConPTY, with Claude/Codex resume controls; it does not attach
+to an existing external Windows console. Node heroes attach to their local tmux session. All terminal
+operations and output require a current village hero without private, isleTagged, quarantined or sealed flags,
+including after opening. Node terminals additionally require an online, authorized node with agent-deck.
+
+The Windows bridge is compiled lazily with the Framework64 v4.0.30319 C# compiler into
+`%LOCALAPPDATA%\Amygdala\bin\conpty.exe`; a SHA-256 source stamp invalidates the cached executable.
+`world.terminalReason` reports a missing compiler. No Python, tmux, NuGet or downloads are required on Windows.
+
+Only the Tailscale gate accepts `POST /node/term`, with a node Bearer pass and JSON `{output:[{id,d}|{id,exit:true}]}`.
+The response is `{terms:[{id,sessionId,open,input:[JSON-line,...]}]}`. Only human-requested sessions appear;
+the initial delivery has `open:true`. Output for an unknown, unsent or other node's terminal is refused.
+An omitted terminal is closed locally. The helper polls at 250 ms, checks its latest village allow-list and local
+session tags before opening and exchanging input, and closes terminals on failed authorization/communication.
+Transcript locations never enter this protocol. Server checks privacy continuously and on each poll.
+
+Node usage reports accept either Claude or Grok, retaining only `id` and windows containing `kind`, `label`,
+`used_percentage`, `resets_at`, `stale`. A server Grok probe younger than 35 minutes takes precedence over
+node usage. The Windows Grok probe runs its interactive `/usage` through ConPTY with a 30-second child
+lifetime bound, strips ANSI, reuses the weekly parser and quits without submitting a model prompt.

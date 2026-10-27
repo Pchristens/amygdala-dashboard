@@ -228,7 +228,7 @@ function buildCard(info) {
       h('div', { class: 'card-row' }, h('b', { text: 'Host ' }), h('span', { class: w.sealed ? 'runic' : '', text: String(w.host || 'local') + (w.os ? ` · ${osLabel(w.os)}` : '') })),
       w.sealed ? null : h('div', { class: 'card-row worker-path', text: String(w.path || '') }),
       stale ? null : h('div', { class: 'card-row' }, h('span', { class: 'post-time', text: `updated ${relTime(w.updatedAt)}` })),
-      w.node ? h('div', { class: 'dim-note', text: `Open the terminal on ${w.host}.` }) : state?.world?.terminalReason ? h('div', { class: 'dim-note', text: state.world.terminalReason }) : null,
+      !w.node && state?.world?.terminalReason ? h('div', { class: 'dim-note', text: state.world.terminalReason }) : null,
       h('div', { class: 'card-actions' }, canOpenTerminal(w) ? h('button', { class: 'btn btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => openTerminal(w) }) : null, h('a', { class: 'btn btn-primary', href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }), milestone, endLabourButton(w), h('button', { class: 'btn btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => tellTale(w.id) })),
     ].filter(Boolean);
   }
@@ -881,8 +881,8 @@ function disposeTerminal() {
   terminalHeroId = null;
 }
 function canOpenTerminal(w) {
-  return !state?.world?.terminalReason && w?.host === 'local' && typeof w.id === 'string' && w.id.startsWith('local:') &&
-    (zoneOf(w) !== 'isle' || state?.seal?.locked === false);
+  return w && zoneOf(w) === 'village' && !w.isleTagged && !w.quarantined && !w.sealed &&
+    (w.node || (!state?.world?.terminalReason && (state?.world?.hostOs === 'windows' || (w.host === 'local' && w.id?.startsWith('local:')))));
 }
 function syncTerminalWidth(name) {
   const wide = name === 'terminal';
