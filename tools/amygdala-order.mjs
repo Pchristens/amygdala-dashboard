@@ -15,7 +15,7 @@ async function main() {
   const a = parseOrder(process.argv.slice(2)), brief = fs.readFileSync(a.file, 'utf8'), base = `http://127.0.0.1:${process.env.AMYGDALA_PORT || 8790}`;
   const page = await (await fetch(base)).text(), token = page.match(/<meta name="hf-token" content="([^"]+)">/)?.[1];
   if (!token) throw new Error('Amygdala did not return a page token.');
-  const request = async (path, body) => { const r = await fetch(base + path, { method: body ? 'POST' : 'GET', headers: { 'X-Amygdala-Token': token, 'Content-Type': 'application/json' }, ...(body && { body: JSON.stringify(body) }) }); const o = await r.json(); if (!r.ok || o.ok === false) throw new Error(o.error || 'Order request failed.'); return o; };
+  const request = async (path, body) => { const r = await fetch(base + path, { method: body ? 'POST' : 'GET', headers: { 'X-Amygdala-Token': token, 'X-Amygdala-Source': 'steward', 'Content-Type': 'application/json' }, ...(body && { body: JSON.stringify(body) }) }); const o = await r.json(); if (!r.ok || o.ok === false) throw new Error(o.error || 'Order request failed.'); return o; };
   let o = await request('/api/orders', { to: a.to, headline: a.headline, brief, from: 'steward' });
   const route = o.members ? `/api/orders/group/${encodeURIComponent(o.id)}` : `/api/orders/${encodeURIComponent(o.id)}`;
   while (a.wait && ['queued', 'working'].includes(o.status)) o = await request(`${route}/wait?timeout=240`);

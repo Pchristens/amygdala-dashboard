@@ -790,6 +790,16 @@ export function createPanel(opts) {
       title.appendChild(send);
     }
     els.workshop.appendChild(title);
+    if (zone === 'village' && state.steward) {
+      const controls = h('div', { class: 'card' }, h('b', { text: 'Steward · reset windows' }));
+      for (const [key, label] of [['enabled', 'Use spare allowance before reset'], ['festivalEnabled', 'Festival fallback']]) {
+        const input = h('input', { type: 'checkbox', checked: state.steward[key] }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: input.checked })); controls.append(h('label', {}, input, label));
+      }
+      for (const [key, label] of [['idleHours', 'Human idle hours'], ['sevenDayHours', 'Weekly hours left'], ['sevenDaySpare', 'Weekly spare %'], ['fiveHourHours', 'Five-hour hours left'], ['fiveHourSpare', 'Five-hour spare %']]) {
+        const input = h('input', { type: 'number', min: '0', max: key.endsWith('Spare') ? '90' : '168', step: '0.5', value: state.steward[key], 'aria-label': label }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: +input.value })); controls.append(h('label', {}, label, input));
+      }
+      els.workshop.append(controls);
+    }
     if (zone === 'village' && state.auditSettings) {
       const s = state.auditSettings, controls = h('div', { class: 'card' }, h('b', { text: 'Watchtower' }));
       const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));

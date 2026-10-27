@@ -1,3 +1,4 @@
+if ($args.Count -gt 0 -and $args[0] -eq 'steward-wait') { $WaitArgs = @($args | Select-Object -Skip 1); & node (Join-Path $PSScriptRoot 'amygdala-steward.mjs') @WaitArgs; exit $LASTEXITCODE }
 if ($args.Count -gt 0 -and $args[0] -eq 'order') { $OrderArgs = @($args | Select-Object -Skip 1); & node (Join-Path $PSScriptRoot 'amygdala-order.mjs') @OrderArgs; exit $LASTEXITCODE }
 $Command = if ($args.Count) { $args[0] } else { 'open' }; $Name = $args[1]; $Label = if ($args.Count -gt 2) { $args[2] } else { '' }; $Hours = if ($args.Count -gt 3) { [double]$args[3] } else { 24 }
 $ErrorActionPreference = 'Stop'

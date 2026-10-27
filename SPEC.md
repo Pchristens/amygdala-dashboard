@@ -1003,3 +1003,64 @@ The 3D human view shows at most three pale translucent, faceless, prop-free runn
 Ghosts drift within their hero's isle radius, bob, and use the apprentice fade lifecycle; completion fades them out.
 Clicking opens a ghost card with model, type, observation time, status, prompt and actions. Public, visitor, locked and
 screenshot views omit them. `?mock=1&apprentices=demo` supplies synthetic ghosts only for an existing unlocked mock isle hero.
+
+## v0.31: use-it-or-lose-it reset windows and the Steward
+
+The Watch's code scan evaluates fresh Claude `seven_day` and `five_hour` allowance windows every ten minutes.
+`spare = 90 - used_percentage`; `hoursLeft = (resets_at * 1000 - now) / 3600000`. Missing/stale readings or
+readings older than one hour cannot authorize work. Weekly windows qualify at hoursLeft <= 12 and spare >= 15;
+five-hour windows qualify at hoursLeft <= 1.5 and spare >= 30. The human must have made no dashboard input and
+no hero may have been running for at least two hours. Dashboard mutations and interactive API reads count as input, excluding bell presence
+heartbeats and requests identified as Steward automation. Passive snapshots, SSE and Steward polls do not count.
+A newly started server without activity history waits the full idle period. Running hero observations refresh the
+idle clock; unknown time is never credited as idleness. Hero running status contributes only to the activity clock,
+never private candidate content.
+
+State `steward` defaults to `{enabled:true,festivalEnabled:true,idleHours:2,sevenDayHours:12,sevenDaySpare:15,
+fiveHourHours:1.5,fiveHourSpare:30}`. Human-only `POST /api/steward/settings` accepts partial updates; boolean
+fields require booleans, hours range 0–168, spare thresholds 0–90. The Heroes panel edits these settings. Only
+human snapshots include settings. Persisted `resetWindows` deduplicates by window plus exact reset timestamp,
+including after restart, independently of the Watch's ordinary two-hour deduplication.
+
+A `reset_window` Watch candidate contains up to eight current village heroes, each with id, title, project,
+host/node, tool, status and idleMinutes only. Private, quarantined, isle-tagged and sealed heroes are excluded;
+paths are omitted and path-like text is redacted. No transcript is read. The Watch triages on its next duty turn:
+`ring_bell` accepts optional `pick` (candidate hero id); for a pending reset event this is required and must be
+reachable through an online node with agent-deck. The summary is the one-line reason. Accepted reset bells have
+`kind:"reset_window"`, `windowKey`, `pick`, `budget:{window,resets_at,spare,hoursLeft,stopAt:90}` and candidates.
+Existing Watch capability checks and six-per-day bell limit apply. Completing the triage without a reset bell
+is a decline. A reset report cannot be mixed with isle events.
+
+Human page-token endpoints:
+
+| Method/path | Contract |
+|---|---|
+| `GET /api/steward/wait?timeout=3000` | Wait up to 3000 seconds for the next bell of any kind; 200 with the bell, 204 on timeout. Shared persisted delivery cursor advances once per delivered bell. Disconnect releases the listener. Isle bells retain existing redaction. |
+| `GET /api/steward/budget` | `{windows:[{window,resets_at,spare,hoursLeft,stopAt:90}]}` from live fresh allowance data; unavailable readings return an empty array. |
+| `POST /api/steward/claim` | `{key:windowKey,pick:heroId|residentName|"direct"}` claims an open belled window. Current recipient eligibility is checked. |
+| `POST /api/steward/summary` | `{key,summary}` records a summary up to 1000 characters for an open claimed window. |
+
+`amygdala steward-wait [--json]` obtains the local human page token, polls once, exits 0 with the bell or 2 on
+timeout (1 on error). The outside Claude Code Steward runs it as a background task; completion wakes that session.
+Waiting alone does not claim a window. Claim explicitly within thirty minutes of the bell. Check the budget before
+work and repeatedly during work. Stop when usage reaches 90%, the reset timestamp changes, or live data is unavailable.
+Work on a local branch. No pushes, PRs, merges, deletions or publishing. Leave a summary. These are instructions
+for the outside Steward; the village cannot control its shell or git operations.
+
+Use Orders with `from:"steward"` and optional `windowKey` for attribution. Orders created during a claimed window
+are automatically associated with it; an explicit closed key is refused. Resident orders keep existing eligibility,
+hibernation, concurrency and cost guards and recheck the window before starting. A hero recipient is accepted only
+for a claimed window's eligible node candidate; it sends a fixed "continue your current task" nudge through the
+node's `send` job. No arbitrary brief is sent to heroes. Privacy and window eligibility are rechecked at queueing
+and dispatch; node privacy checks also apply at result acceptance. Delivery success means the nudge was delivered,
+not that the task finished. Use `X-Amygdala-Source: steward` for automated Orders requests so they do not count as
+human dashboard input. At closure the server cancels outstanding window orders, aborts associated resident order
+turns where possible, and posts a village board summary of the pick, order ids/statuses and submitted summary.
+Outside hero work must obey the supplied stop rules itself.
+
+If the Watch declines, none of the candidates is reachable, or no Steward claims within thirty minutes, the server
+opens a festival when enabled and the human remains idle. The feed announces its opening and closing in the village's
+voice. Ordinary village life turns use half the usual interval and may wake for social or tree-tending reasons even
+without new news. Life stays serial, respects pause, the daily automatic budget, manual/provider hibernation and
+all provider 95% guards. A festival closes at spare <= 5 (85% used), at reset, on stale/missing usage, on human or
+hero activity, or when either relevant enable toggle is disabled. No reset identity opens a second festival.

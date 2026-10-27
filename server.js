@@ -1,3 +1,4 @@
+import { Steward, stewardGet } from './lib/steward.js';
 import { Watchtower } from './lib/audit.js';
 import { notify, bellBatch } from './lib/notify.js';
 // Amygdala server: static front end, world API + SSE, MCP endpoint for residents, conductor, agent-deck sync.
@@ -42,6 +43,7 @@ const mcp = createMcpHandler(world);
 const conductor = new Conductor(world, { baseUrl: BASE, dataDir: DATA });
 world.watchtower = new Watchtower(world, conductor);
 world.watch = new Watch(world, conductor, DATA);
+world.steward = new Steward(world);
 world.starwatch = new Starwatch(world, conductor);
 startDeckSync(world);
 conductor.lookFor = mcp.lookFor;
@@ -168,6 +170,12 @@ const server = http.createServer(async (req, res) => {
       return mcp(req, res, body, m ? m[1] : null);
     }
     if (p.startsWith('/api/') && !tokenOk(req, url)) return json(res, 401, { ok: false, error: 'missing or wrong page token — reload the page' });
+    if (p.startsWith('/api/') && (req.method === 'POST' || req.method === 'GET' && !['/api/state', '/api/events'].includes(p) && !p.endsWith('/wait')) && (!p.startsWith('/api/steward/') || p === '/api/steward/settings') && p !== '/api/bells/presence' && req.headers['x-amygdala-source'] !== 'steward') world.steward.activity();
+    if (req.method === 'GET' && ['/api/steward/budget', '/api/steward/wait'].includes(p)) {
+      const controller = new AbortController(); res.on('close', () => controller.abort());
+      const result = await stewardGet(world.steward, p, url.searchParams, controller.signal);
+      return json(res, result.status, result.body);
+    }
     const groupRoute = p.match(/^\/api\/orders\/group\/([^/]+)(\/wait)?$/);
     if (groupRoute && req.method === 'GET') {
       const controller = new AbortController(); res.on('close', () => controller.abort());
@@ -206,7 +214,10 @@ const server = http.createServer(async (req, res) => {
       if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
       if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
       const b = JSON.parse((await readBody(req)) || '{}');
-      if (p === '/api/orders') return json(res, 200, world.orders.create(b));
+      if (p === '/api/steward/settings') return json(res, 200, world.steward.settings(b));
+      if (p === '/api/steward/claim') return json(res, 200, world.steward.claim(b));
+      if (p === '/api/steward/summary') return json(res, 200, world.steward.summary(b));
+      if (p === '/api/orders') return json(res, 200, await world.orders.create(b));
       if (orderRoute?.[2] === '/cancel') return json(res, 200, world.orders.cancel(orderRoute[1]));
       if (terminal) {
         if (terminal[2] === 'close') termHub.close(terminal[1]);

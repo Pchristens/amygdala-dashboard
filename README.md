@@ -204,6 +204,35 @@ prompts. Explicitly requested bounded village output can also cross the gate. Qu
 Remote git offerings and git statistics in tales remain unsupported. A helper restart or lost response can lose a dispatched
 job; jobs expire after 13 minutes. Check the machine before retrying a commission to avoid launching it twice.
 
+### Steward
+
+The Watch can offer an outside Claude Code session useful work before unused Claude allowance resets. Enable
+**Steward · reset windows** in Heroes (on by default); edit its idle period, weekly/five-hour thresholds and festival
+toggle there. Defaults require two hours without dashboard input or running heroes, then either a weekly reset
+within 12 hours with at least 15% spare below 90%, or a five-hour reset within 1.5 hours with at least 30% spare.
+
+Run `amygdala steward-wait --json` as a background task in the Steward session. Its exit wakes the session:
+0 prints the next bell, 2 means timeout (re-arm it), and 1 means an error. Both launchers support it. It waits up
+to 3000 seconds, reads all bell kinds, and never starts a model itself. Reset bells include `windowKey`, recommended
+`pick`, safe candidate metadata and a live allowance estimate.
+
+For a reset bell, use the human page token (`x-amygdala-token`) to POST `/api/steward/claim` with
+`{key: windowKey, pick: heroId}` (or a village resident name or `"direct"`). Claim within thirty minutes. Poll
+`GET /api/steward/budget` before and during work; stop at 90%, when the reset changes, or if readings disappear.
+Work on a local branch. **No pushes, PRs, merges, deletions or publishing.** Leave a summary with
+`POST /api/steward/summary {key,summary}` before the window closes.
+
+Route work through `POST /api/orders {to,from:"steward",windowKey,brief}` for residents, or select a candidate
+hero id to deliver a fixed “continue your current task” nudge through its online node. For direct work the Steward
+records its pick and summary. Automated Orders calls should include `X-Amygdala-Source: steward` (the order CLI
+does this). Node nudges and order starts recheck privacy and budget. The outside session must enforce its own
+stop and git rules; the village cannot police its shell. A board summary records the pick and order outcomes when
+the window closes; nudge delivery is not proof the hero completed its task.
+
+If the Watch declines, no candidate node is reachable, or the Steward does not claim, a festival lets ordinary
+village life happen about twice as often, favouring conversation and tending the tree. Existing pause, daily budget,
+hibernation and provider guards still apply. It ends at 85% usage, reset, human activity or unavailable usage data.
+
 ### Giving orders
 
 Open **Orders** in the dashboard to select one or more village residents, or **Whole village**, and write an
