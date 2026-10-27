@@ -1,4 +1,4 @@
-// Reset Hearthfield to a blank slate. Run with the server STOPPED:  node tools/reset-world.mjs
+// Reset Amygdala to a blank slate. Run with the server STOPPED:  node tools/reset-world.mjs
 // Archives everything in data/ (except archive/, homes/, codex-home/) to data/archive/<timestamp>/, then writes a fresh
 // world.json that keeps only operations: usage history, active hero/visitor passes, and residents' self-chosen
 // appearances. The story (posts, exhibits, tree, tales, omens, commitments, built places, memories) starts over.

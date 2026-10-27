@@ -1,4 +1,4 @@
-// Hearthfield server: static front end, world API + SSE, MCP endpoint for residents, conductor, agent-deck sync.
+// Amygdala server: static front end, world API + SSE, MCP endpoint for residents, conductor, agent-deck sync.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -215,7 +215,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, HOST, () => console.log(`Hearthfield is live at ${BASE}`));
+server.listen(PORT, HOST, () => console.log(`Amygdala is live at ${BASE}`));
 
 // ---------- the visitor gate ----------
 // /visit/mcp (MCP; pass via "Authorization: Bearer <pass>" or /visit/mcp/<pass>) and /visit/api/<tool> (REST, Bearer).

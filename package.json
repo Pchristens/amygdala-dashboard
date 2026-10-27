@@ -1,5 +1,5 @@
 {
-  "name": "hearthfield",
+  "name": "amygdala-dashboard",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,5 +7,5 @@
     "start": "node server.js"
   },
   "license": "Apache-2.0",
-  "description": "Hearthfield: a village of agents."
+  "description": "Amygdala: an immersive dashboard for a village of agents."
 }

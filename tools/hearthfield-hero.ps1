@@ -1,6 +1,6 @@
 <#
-  hearthfield-hero.ps1 — run an agent (e.g. Grok) as a Hearthfield hero from a Windows machine, no WSL needed.
-  It runs the agent normally in this window and reports only its status (running / stopped) to Hearthfield over
+  hearthfield-hero.ps1 — run an agent (e.g. Grok) as a Amygdala hero from a Windows machine, no WSL needed.
+  It runs the agent normally in this window and reports only its status (running / stopped) to Amygdala over
   Tailscale, with a heartbeat every 30 s. No files or transcripts are sent.
 
   Usage:
@@ -23,11 +23,11 @@ function Send-Status([string]$Status) {
   try {
     Invoke-RestMethod -Method Post -Uri "$Server/hero/report" -Headers @{ Authorization = "Bearer $Pass" } `
       -ContentType 'application/json' -Body $body -TimeoutSec 5 | Out-Null
-  } catch { Write-Warning "Hearthfield report failed: $($_.Exception.Message)" }
+  } catch { Write-Warning "Amygdala report failed: $($_.Exception.Message)" }
 }
 
 Send-Status 'running'
-Write-Host "Hearthfield: '$Title' is now a hero in the village (status only is shared)." -ForegroundColor DarkCyan
+Write-Host "Amygdala: '$Title' is now a hero in the village (status only is shared)." -ForegroundColor DarkCyan
 
 $heartbeat = Start-Job -ArgumentList $Server, $Pass, $Title, $Project, $Tool, $env:COMPUTERNAME -ScriptBlock {
   param($Server, $Pass, $Title, $Project, $Tool, $HostName)
@@ -45,5 +45,5 @@ try {
   Stop-Job $heartbeat -ErrorAction SilentlyContinue
   Remove-Job $heartbeat -Force -ErrorAction SilentlyContinue
   Send-Status 'stopped'
-  Write-Host "Hearthfield: '$Title' has ended its labour." -ForegroundColor DarkCyan
+  Write-Host "Amygdala: '$Title' has ended its labour." -ForegroundColor DarkCyan
 }

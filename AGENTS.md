@@ -1,4 +1,4 @@
-# AGENTS.md: guidance for coding agents working on Hearthfield
+# AGENTS.md: guidance for coding agents working on Amygdala
 
 Humans should start with [README.md](README.md). This file is for AI coding agents (Claude Code, Codex, Gemini/Antigravity,
 and others) that change this repository. Read it fully before editing.

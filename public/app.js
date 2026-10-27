@@ -1,4 +1,4 @@
-// Hearthfield front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
+// Amygdala front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
 // the Far Isle navigation, shared-tree cards, milestones, and the rune seal.
 import { createMap, GIFT_KINDS, giftIconSVG } from './map.js';
 import { createMap3D } from './map3d.js';
@@ -710,7 +710,7 @@ function openSeal(mode) {
   const setup = mode === 'setup';
   $('seal-title').textContent = setup ? 'Seal the isle in runes' : 'Break the seal';
   $('seal-sub').textContent = setup
-    ? 'Everything Hearthfield keeps about the Far Isle will be encrypted under this passphrase. The isle locks itself again after a few quiet minutes.'
+    ? 'Everything Amygdala keeps about the Far Isle will be encrypted under this passphrase. The isle locks itself again after a few quiet minutes.'
     : 'Speak the passphrase and the runes become words again.';
   if (MOCK) $('seal-sub').textContent += ' Demo only (?mock=1, client-side only): unlock with hearthfield.';
   $('seal-warning').hidden = !setup;
@@ -955,8 +955,8 @@ $('credits-btn').addEventListener('click', async () => {
 const statusEl = $('status');
 function renderHeader() {
   const w = state?.world || {};
-  $('world-name').textContent = String(w.name || 'Hearthfield');
-  document.title = String(w.name || 'Hearthfield');
+  $('world-name').textContent = String(w.name || 'Amygdala');
+  document.title = String(w.name || 'Amygdala');
   const st = expired ? 'expired' : !connected ? 'reconnecting' : w.paused ? 'paused' : 'live';
   statusEl.dataset.state = st;
   $('status-text').textContent = st === 'expired' ? 'Session expired — reload' : st === 'reconnecting' ? 'reconnecting…' : st === 'paused' ? 'paused' : MOCK ? 'live (mock)' : 'live';

@@ -101,7 +101,7 @@ try {
   assert.deepEqual(w.s.ceremony.names, ['Laurel', 'Clio']);
   assert.deepEqual(w.s.ceremony.done, ['Laurel', 'Clio']);
   assert.equal(w.snapshot().world.createdAt, w.s.createdAt);
-  assert(w.snapshot().world.prologue.includes('Hearthfield was founded.'));
+  assert(w.snapshot().world.prologue.includes('Amygdala was founded.'));
   w.s.residents.Clio.zone = 'isle';
   assert.deepEqual(w.snapshot().ceremony.names, ['Laurel']);
   assert.deepEqual(w.snapshot().ceremony.done, ['Laurel']);

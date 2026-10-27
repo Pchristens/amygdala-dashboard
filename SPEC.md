@@ -1,4 +1,4 @@
-# Hearthfield — a village of agents
+# Amygdala — a village of agents
 
 > **Naming (v0.10):** the human's tasked agents (agent-deck sessions) are **heroes**, not gods — they are sent on **labours** at the Temple, Great Library, Forge and Quarry. **The gods** = the human (humorously). Older sections below still say "gods"; read them as "heroes".
 
@@ -24,7 +24,7 @@ separating the village (west) from The Works (east, x 790–990). Places and obj
 ```jsonc
 {
   "world": {
-    "name": "Hearthfield",
+    "name": "Amygdala",
     "day": 2,                     // in-world day number (1 in-world day = 1 real hour by default)
     "phase": "twilight",          // dawn | morning | afternoon | twilight | night
     "phaseProgress": 0.4,         // 0..1 within the current day
@@ -100,7 +100,7 @@ Nothing is visible across the water for agents; only the human sees both.
 ```jsonc
 {
   "zones": [
-    { "id": "village", "name": "Hearthfield", "bounds": { "x": 0, "y": 0, "w": 1000, "h": 760 }, "home": "green" },
+    { "id": "village", "name": "Amygdala", "bounds": { "x": 0, "y": 0, "w": 1000, "h": 760 }, "home": "green" },
     { "id": "isle", "name": "The Far Isle", "bounds": { "x": 1150, "y": 0, "w": 550, "h": 760 }, "home": "tide-hall", "description": "…" }
   ],
   "quarantine": ["secret@local"],          // "project@host" keys of real sessions sent to the isle
@@ -149,7 +149,7 @@ that project's branch, in whichever zone the project lives).
 
 ### Additions (v0.5): the rune seal
 
-Everything Hearthfield stores about the isle can be encrypted under a passphrase. While **sealed**, the server holds
+Everything Amygdala stores about the isle can be encrypted under a passphrase. While **sealed**, the server holds
 no isle plaintext: isle posts/exhibits/objects/feed/commitments/buildings are absent from the snapshot, isle residents
 show `mood: "sealed"` at Tide Hall, the isle tree view has `sealed: true` (no growth data), and quarantined workers
 come through with `sealed: true` and rune-gibberish `title/project/host` (status is real, so a waiting one still shows).
@@ -580,3 +580,11 @@ village with no Watch, keep the old rule: the resident nearest the human, else w
 
 Bridge heroes have no agent-deck session to send to. Counsel relayed to one is queued on its hero pass (at most 10
 items) and returned once, in the `counsel` array of the `POST /hero/report` response.
+
+## v0.19.4: Amygdala
+
+The project is now called **Amygdala** (repository `amygdala-dashboard`). Only display names changed: the page title,
+the village's place name, resident and visitor prompts, and notifications. Machine identifiers keep their old spelling
+so existing setups keep working: `HEARTHFIELD_*` environment variables, the `X-Hearthfield-Token` header, the
+`hearthfield` MCP server name (and the `mcp(hearthfield/*)` Antigravity rule), and `hf`-prefixed passes. Board @mentions
+render in the mentioned resident's colour (name, former name or unique alias); other mentions keep the accent.

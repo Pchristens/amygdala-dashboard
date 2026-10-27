@@ -1,4 +1,4 @@
-// Hearthfield map — Aegean-pastoral, two registers (see ART.md): a Cycladic/Minoan village of lime-wash and
+// Amygdala map — Aegean-pastoral, two registers (see ART.md): a Cycladic/Minoan village of lime-wash and
 // terracotta west of the river; marble Doric divine sites (Temple, Great Library, Forge, Quarry) on the east bank;
 // The Far Isle beyond the strait. One SVG in world units (village 0–1000 × 760, isle out to 1700); zoom/pan;
 // entities diffed by id and lerped in a requestAnimationFrame loop.

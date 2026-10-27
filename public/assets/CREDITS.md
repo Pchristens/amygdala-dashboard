@@ -1,4 +1,4 @@
-# Hearthfield asset credits
+# Amygdala asset credits
 
 All assets were free ($0, no login). CC0 assets need no attribution; it is given anyway. CC-BY 3.0 assets REQUIRE the attribution line shown (https://creativecommons.org/licenses/by/3.0/).
 

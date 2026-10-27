@@ -137,8 +137,8 @@ export function createPanel(opts) {
     const badge = $('badge-petitions'); if (badge) { badge.hidden = !pending.length; badge.textContent = String(pending.length); }
     for (const p of pending) {
       if (!petitionSeen.has(p.id) && notifyPetitions && window.Notification?.permission === 'granted') {
-        new Notification('Hearthfield: guidance requested', { body: `${p.visitor} is waiting for your decision.` });
-        if (document.hidden && !titleTimer) titleTimer = setInterval(() => { document.title = document.title === baseTitle ? 'Guidance awaits · Hearthfield' : baseTitle; }, 1200);
+        new Notification('Amygdala: guidance requested', { body: `${p.visitor} is waiting for your decision.` });
+        if (document.hidden && !titleTimer) titleTimer = setInterval(() => { document.title = document.title === baseTitle ? 'Guidance awaits · Amygdala' : baseTitle; }, 1200);
       }
       petitionSeen.add(p.id);
     }
@@ -1063,7 +1063,7 @@ export function createPanel(opts) {
     const guidance = ['normal', 'conserve', 'exhausted'].includes(usage.guidance) ? usage.guidance : 'normal';
     root.appendChild(h('div', { class: 'lamps-intro' },
       h('span', { class: `pill pill-guidance guidance-${guidance}`, text: guidance === 'normal' ? 'lamps burning normally' : guidance === 'conserve' ? 'conserve oil' : 'oil exhausted' }),
-      h('span', { class: 'dim-note', text: guidance === 'conserve' ? 'An allowance is running low; residents take fewer turns.' : guidance === 'exhausted' ? 'An allowance is used up; residents wait for the reset.' : 'Allowances are account-level figures reported by each provider, not Hearthfield’s own meter.' })));
+      h('span', { class: 'dim-note', text: guidance === 'conserve' ? 'An allowance is running low; residents take fewer turns.' : guidance === 'exhausted' ? 'An allowance is used up; residents wait for the reset.' : 'Allowances are account-level figures reported by each provider, not Amygdala’s own meter.' })));
 
     // amphorae: one per provider with a reported allowance; providers seen in usage but without limits get "not reported"
     const limits = usage.limits && typeof usage.limits === 'object' ? usage.limits : null;
@@ -1129,7 +1129,7 @@ export function createPanel(opts) {
     root.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'The heroes’ sessions' })));
     root.appendChild(h('div', { class: 'sessions-note' },
       h('span', { class: `pill ${sessions?.status === 'measured' ? 'pill-running' : 'pill-stale'}`, text: String(sessions?.status || 'unmeasured') }),
-      h('span', { text: sessions?.note ? ` ${sessions.note}` : ' The heroes\u2019 real sessions are not metered by Hearthfield.' })));
+      h('span', { text: sessions?.note ? ` ${sessions.note}` : ' The heroes\u2019 real sessions are not metered by Amygdala.' })));
   }
   function providerAlias(k) { return { anthropic: 'claude', openai: 'codex', google: 'antigravity', xai: 'grok' }[String(k).toLowerCase()] || String(k).toLowerCase(); }
   function amphoraCard(label, remaining, windows, stale, note) {
