@@ -1533,3 +1533,15 @@ of the Offerings section with their ruling state (awaiting first look, under rev
 accepted or rejected with the commit) and their findings; closed ones follow as the folded history. Omens awaiting
 judgement, delivery or a fix's confirmation sit at the top of the Tablet marked live; the inscribed record follows. A
 Governance fold shows the digest, what awaits a ruling and the ledger.
+
+## v0.47: active hours
+
+- `world.s.activeHours = { start, end }` (local hours, start 0–23, end 1–24, default 8–24) bounds **automatic** turns. A
+  window may wrap past midnight; it is cut at midnight, when the daily budget resets. Outside it no routine turn and no
+  resident-to-resident follow-up runs. Human wakes ("Wake now", board replies to the human, Temple commands), orders and
+  duties (omens, rulings, tales, the Watch) run at any hour, as before.
+- Inside the window the gap before the next automatic turn is `max(tickSeconds, msLeftInWindow / turnsLeftInBudget)`, so
+  the day's budget spreads evenly (24 turns over 8am–midnight is one every 40 minutes). `tickSeconds` is now only a floor;
+  the page offers 3m, 10m, 20m, 40m and 1h. A festival still halves the gap.
+- `POST /api/control { activeHours: { start, end } }` sets the window (400 when start equals end). The human snapshot's
+  `budget` gains `activeHours`.

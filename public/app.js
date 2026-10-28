@@ -1018,6 +1018,8 @@ function renderHeader() {
     if (document.activeElement !== pace) pace.value = String(tick);
   }
   const b = state?.budget;
+  const hrs = b?.activeHours;
+  if (hrs) for (const [id, v] of [['hours-start', hrs.start], ['hours-end', hrs.end]]) if (document.activeElement !== $(id)) $(id).value = String(v);
   const budgetEl = $('budget');
   if (b && Number.isFinite(+b.dailyTurnBudget)) {
     budgetEl.hidden = false;
@@ -1045,6 +1047,12 @@ const bellPresence = () => { if (!SHOT && !MOCK) void api('/api/bells/presence',
 $('gear-btn').addEventListener('click', () => { const g = $('gear-pop'); g.hidden = !g.hidden; });
 document.addEventListener('pointerdown', (e) => { const g = $('gear-pop'); if (!g.hidden && !g.contains(e.target) && e.target !== $('gear-btn')) g.hidden = true; });
 $('pace').addEventListener('change', (e) => api('/api/control', { tickSeconds: +e.target.value }));
+const hourName = (n) => n === 0 || n === 24 ? '12am' : n === 12 ? '12pm' : n < 12 ? `${n}am` : `${n - 12}pm`;
+for (let n = 0; n < 24; n++) $('hours-start').appendChild(h('option', { value: n, text: hourName(n) }));
+for (let n = 1; n <= 24; n++) $('hours-end').appendChild(h('option', { value: n, text: hourName(n) }));
+const setHours = () => api('/api/control', { activeHours: { start: +$('hours-start').value, end: +$('hours-end').value } });
+$('hours-start').addEventListener('change', setHours);
+$('hours-end').addEventListener('change', setHours);
 function budgetStep(dir) {
   const cur = Math.max(0, +state?.budget?.dailyTurnBudget || 0);
   const step = cur >= 100 ? 24 : cur >= 24 ? 12 : 6;

@@ -68,7 +68,7 @@ try {
   }
   // Exercise the scheduler without constructing a conductor or starting any CLI.
   for (const festival of [false, true]) {
-    let runs = 0; const w = { s: { orders: [], residents: { Moss: { enabled: true, zone: 'village' } }, dailyTurnBudget: 100, tickSeconds: 180 }, config: [{ name: 'Moss' }], activeTurns: [], seal: { locked: false }, zoneOf: () => 'village', isHibernating: () => false, hasRole: () => false, autoTurnsToday: () => 0, countAutoTurn() {}, cfg: () => ({ name: 'Moss' }), steward: { activeFestival: () => festival } };
+    let runs = 0; const w = { s: { orders: [], residents: { Moss: { enabled: true, zone: 'village' } }, dailyTurnBudget: 100, tickSeconds: 180 }, config: [{ name: 'Moss' }], activeTurns: [], seal: { locked: false }, zoneOf: () => 'village', isHibernating: () => false, hasRole: () => false, autoTurnsToday: () => 0, autoGapMs: () => 180000, countAutoTurn() {}, cfg: () => ({ name: 'Moss' }), steward: { activeFestival: () => festival } };
     const c = Object.assign(Object.create(Conductor.prototype), { world: w, running: new Map(), queue: [], pendingDuties: [], rr: 0, lastEnd: Date.now() - 100000, dispatchDuties() {}, pressureBlocked: () => false, hasNews: () => true, run(r, reasons) { runs++; if (festival) assert.match(reasons[0], /tree/); } });
     c.schedule(); assert.equal(runs, +festival); c.lastEnd = Date.now(); c.schedule(); assert.equal(runs, +festival); c.pressureBlocked = () => true; c.lastEnd = 0; c.schedule(); assert.equal(runs, +festival);
   }

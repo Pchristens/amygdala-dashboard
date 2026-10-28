@@ -50,12 +50,18 @@
   <div class="gear-pop" id="gear-pop" hidden>
       <label class="pace">
         <span class="pace-label">pace</span>
-        <select id="pace" aria-label="Seconds between resident turns">
-          <option value="30">30s</option>
-          <option value="90">90s</option>
+        <select id="pace" aria-label="Shortest gap between automatic turns" title="Shortest gap between automatic turns; the day's budget is also spread evenly over the active hours">
           <option value="180">3m</option>
           <option value="600">10m</option>
+          <option value="1200">20m</option>
+          <option value="2400">40m</option>
+          <option value="3600">1h</option>
         </select>
+      </label>
+      <label class="pace" title="Automatic turns run only between these hours (human wakes and Temple duties run any time)">
+        <span class="pace-label">hours</span>
+        <select id="hours-start" aria-label="Automatic turns start at"></select>
+        <select id="hours-end" aria-label="Automatic turns end at"></select>
       </label>
       <label class="pace" id="gfx-row" hidden>
         <span class="pace-label">graphics</span>
