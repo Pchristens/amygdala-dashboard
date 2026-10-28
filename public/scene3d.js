@@ -14,7 +14,7 @@ export const P = {
   turquoise: '#4F9DB3', turqDeep: '#3F879E', sea: '#4F9DB3', shallows: '#8ED0D6',
   marble: '#F7F1E4', marbleShade: '#E8DFCB', marbleDark: '#CEC4AE', stone: '#CDC3B3', stoneDark: '#A89E90', ancient: '#D3C7B0', ancientDark: '#AFA38C',
   rock: '#B8A585', rockDark: '#7A6C58', base: '#6B5F52', baseDark: '#574C41', ink: '#3B2F26', wood: '#A58A6A', woodDark: '#7D6650',
-  gold: '#F2C14E', blue: '#6FA2BD', rose: '#E7C7C9', lilac: '#C7BDD6', sand: '#E9DEC6', ember: '#F0742E', vine: '#6F8A64', vineLight: '#8CA47E',
+  gold: '#F2C14E', bronze: '#8A6A3C', bronzeLight: '#B08E52', ochre: '#B8793A', travertine: '#D9CFB8', tile: '#8C4630', tileDark: '#62301F', clay: '#A9684A', amber: '#F2A33A', blue: '#6FA2BD', rose: '#E7C7C9', lilac: '#C7BDD6', sand: '#E9DEC6', ember: '#F0742E', vine: '#6F8A64', vineLight: '#8CA47E',
 };
 const col = (hex) => new THREE.Color(hex);
 
@@ -386,6 +386,71 @@ const homeBlock = (b, e, x, y, z, w, h, d, seed) => { // whitewashed Cycladic bl
   amphora(b, x + w / 2 + 6, y, z + d / 2 - 4); bougainvillea(b, x - w / 2 - 4, y + 3, z + d / 2 - 3);
 };
 
+// ---------- the heroon (Hall of Heroes): shared layout for the builder (static stoa) and map3d (steles per resting hero) ----------
+// Offsets are relative to the place; `ox` shifts the terrace east so the apron clears the western cliff.
+export const HEROON = {
+  W: 100, D: 70, ox: 10, T: 4.2, STEPS: [10.8, 4.8, 2.4], BZ: -18, SX: 36, NB: 8, NS: 5, BRAZIER: [-6, 10], AX: -6, AW: 16, AL: 14.8,   // the apron (STEPS[0]) runs along the south only: the west edge stays clear of the sea cliff; AX/AW/AL: the stepped approach on the brazier's axis
+  get X0() { return -this.W / 2 + 10; }, get BAYB() { return (this.SX - this.X0) / this.NB; }, get BAYS() { return (this.D / 2 - 5.5 - this.BZ) / this.NS; },
+  columns() { const out = []; for (let i = 0; i <= this.NB; i++) out.push(['b', this.X0 + i * this.BAYB, this.BZ]); for (let j = 1; j < this.NS; j++) out.push(['s', this.SX, this.BZ + j * this.BAYS]); return out; },
+  // Steles fill in tiers so five read as a deliberate group and thirty-five as honoured ranks, never a grid or a fence:
+  // the court row under the back wing (bays outward from the brazier's axis, one per bay, 8 units clear of the eaves so
+  // the roof never hides them), the side wing, a staggered second file before the back wing, then two loose arcs about
+  // the fire (radius 20 and 28, every stele turned to face it, the stair axis left open), then an honour guard on the
+  // lower step set well back from the stair cheeks and turned toward the approach; rows on the ground only past 35.
+  // Each slot carries a deterministic height (×0.9/1/1.1) and a yaw of ±3° so no row reads as a picket fence.
+  get SLOTS() {
+    if (this._slots) return this._slots;
+    const T = this.T, D2 = this.D / 2, [bx, bz] = this.BRAZIER, out = [];
+    const bayX = (k) => this.X0 + (k + 0.5) * this.BAYB, bayZ = (j) => this.BZ + (j + 0.5) * this.BAYS;
+    const arc = (r, deg) => { const a = deg * Math.PI / 180; out.push({ x: bx + Math.cos(a) * r, z: bz + Math.sin(a) * r, ry: Math.atan2(-Math.cos(a), -Math.sin(a)), y: T }); };
+    for (const k of [3, 2, 4, 1, 5, 0, 6]) out.push({ x: bayX(k), z: this.BZ + 8, ry: 0, y: T });
+    for (const j of [2, 1, 3, 4]) out.push({ x: this.SX - 8, z: bayZ(j), ry: -Math.PI / 2, y: T });
+    for (const k of [3, 4, 2, 5, 1, 6]) out.push({ x: this.X0 + k * this.BAYB, z: this.BZ + 15, ry: 0, y: T });
+    for (const deg of [55, 125, 25, 155, 0, 180]) arc(20, deg);
+    for (const deg of [40, 140, 15, 165, 0, 180]) arc(28, deg);
+    for (let i = 0; i < 6; i++) { const sgn = i % 2 ? 1 : -1; out.push({ x: this.AX + sgn * (this.AW / 2 + 14 + Math.floor(i / 2) * 7), z: D2 + 7.8, ry: -sgn * 0.35, y: T - 2.8 }); }
+    return (this._slots = out.map((s, i) => this.vary(s, i)));
+  },
+  vary(s, i) { const r = mulberry(7 + i); return { ...s, lift: s.y, sh: [0.9, 1, 1.1][Math.floor(r() * 3)], ry: s.ry + (r() - 0.5) * Math.PI / 30 }; },
+  slot(i) {
+    if (i < this.SLOTS.length) return this.SLOTS[i];
+    const j = i - this.SLOTS.length, W2 = this.W / 2, D2 = this.D / 2, per = Math.floor((this.W - 8) / 6);
+    return this.vary({ x: -W2 + 4 + (j % per) * 6 + 3, z: D2 + this.STEPS[0] + 8 + Math.floor(j / per) * 7, ry: 0, y: 0 }, i);
+  },
+  // How far above the ground a figure standing at (dx, dz) from the place is lifted by the terrace, its steps and the approach.
+  lift(dx, dz) {
+    const W2 = this.W / 2, D2 = this.D / 2; dx -= this.ox;
+    if (dz > D2 && dz <= D2 + this.AL && Math.abs(dx - this.AX) <= this.AW / 2) return this.T * (1 - (dz - D2) / this.AL);
+    if (dx > W2 + this.STEPS[1] || dz > D2 + this.STEPS[0] || dx < -W2 - this.STEPS[1] || dz < -D2) return 0;
+    const off = Math.max(-W2 - dx, dz - D2, 0);
+    return off <= this.STEPS[2] ? this.T : off <= this.STEPS[1] ? this.T - 1.4 : this.T - 2.8;
+  },
+};
+
+// A pedimented travertine stele carrying its site's emblem in painted relief; one geometry per site, instanced by map3d.
+const steleGeos = new Map();
+export function steleGeometry(site) {
+  if (steleGeos.has(site)) return steleGeos.get(site);
+  const b = new Builder(), zf = 0.6, rel = P.ochre;   // bronze-ochre relief on travertine: votive, not funerary
+  const shape = new THREE.Shape(); shape.moveTo(-1.5, 0); shape.lineTo(1.5, 0); shape.lineTo(1.25, 6.2); shape.lineTo(-1.25, 6.2); shape.closePath();
+  const slab = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: false }); slab.translate(0, 0.7, -0.45); b.add(slab, P.travertine);
+  b.box(0, 0, 0, 3.6, 0.7, 1.5, P.ancientDark); b.prism(0, 6.9, 0, 3.0, 0.9, 0.9, P.travertine, 0); b.box(0, 6.75, 0, 2.9, 0.3, 1.1, P.ancientDark);
+  b.box(0, 7.8, 0, 0.55, 0.5, 0.55, rel); b.box(-1.3, 7.05, 0, 0.45, 0.4, 0.5, rel); b.box(1.3, 7.05, 0, 0.45, 0.4, 0.5, rel);   // acroteria: a palmette on the apex, knobs at the corners
+  b.box(0, 1.5, zf, 1.8, 0.12, 0.3, rel);   // a ground line under every emblem
+  const rz = (geo, x, y, a) => b.add(geo, rel, new THREE.Matrix4().makeRotationZ(a).setPosition(x, y, zf));
+  if (site === 'temple') { b.box(-0.6, 3.1, zf, 0.34, 1.1, 0.3, rel); b.box(0.6, 3.1, zf, 0.34, 1.1, 0.3, rel); b.box(0, 4.2, zf, 1.9, 0.22, 0.3, rel); b.prism(0, 4.42, zf, 2.1, 0.7, 0.3, rel, 0); }
+  else if (site === 'library') { b.lying(0, 3.95, zf, 0.4, 1.9, rel, 0, 8); b.box(0, 2.9, zf, 1.3, 1.0, 0.3, rel); }
+  else if (site === 'forge') { b.cone(0, 3.0, zf, 0.75, 1.7, rel, 7); b.sphere(0.45, 3.9, zf, 0.3, rel); }
+  else if (site === 'quarry') { rz(new THREE.BoxGeometry(2.0, 0.42, 0.3), 0, 4.4, 0.35); rz(new THREE.BoxGeometry(0.3, 1.8, 0.3), 0.1, 3.4, -0.6); }
+  else b.add(new THREE.CylinderGeometry(0.65, 0.65, 0.3, 10), rel, new THREE.Matrix4().makeRotationX(Math.PI / 2).setPosition(0, 3.7, zf));
+  const g = BufferGeometryUtils.mergeGeometries(b.parts, false); g.scale(1, 0.9, 1); g.computeVertexNormals(); steleGeos.set(site, g); return g;   // a tenth shorter than drawn: votive, not headstone-tall
+}
+let lampGeo = null, flameGeo = null;
+const LAMP_S = 1.35;   // the clay lamps read from the wide view at this size
+export function lampGeometry() { if (!lampGeo) { const b = new Builder(); b.blob(0, 0.45, 0, 0.85, 0.42, 0.62, P.clay); b.box(0, 0.22, 0.72, 0.42, 0.34, 0.5, P.clay); b.cyl(0, 0, 0, 0.75, 0.85, 0.2, P.ancientDark, 8); lampGeo = BufferGeometryUtils.mergeGeometries(b.parts, false); lampGeo.scale(LAMP_S, LAMP_S, LAMP_S); lampGeo.computeVertexNormals(); } return lampGeo; }
+export function flameGeometry() { if (!flameGeo) { const b = new Builder(); b.sphere(0, 0.82, 0.78, 0.32, P.amber); b.cone(0, 0.95, 0.78, 0.22, 0.6, P.ember, 5); flameGeo = BufferGeometryUtils.mergeGeometries(b.parts, false); flameGeo.scale(LAMP_S, LAMP_S, LAMP_S); flameGeo.computeVertexNormals(); } return flameGeo; }
+export { lightPool };
+
 // Every builder: (b static, e emissive, pool night pools, ao contact discs, x, y0 ground, z, seed) → { h, hit, ... }
 export const BUILDERS = {
   plaza(b, e, pool, ao, x, y, z) {
@@ -406,16 +471,75 @@ export const BUILDERS = {
     aoDisc(ao, x, y, z + 2, 70, 44);
     return { h: 50, hit: [120, 52, 70] };
   },
-  hall(b, e, pool, ao, x, y, z) {
-    b.box(x, y, z, 78, 2, 44, P.marbleShade); b.box(x, y + 2, z, 72, 2, 38, P.marble);
-    b.box(x, y + 4, z - 15, 66, 22, 3, P.ivory);
-    for (const dx of [-28, -14, 0, 14, 28]) {
-      b.box(x + dx, y + 4, z + 12, 6, 2, 6, P.marbleShade);
-      b.cyl(x + dx, y + 6, z + 12, 2, 2.4, 19, P.ivory, 8);
-      b.box(x + dx, y + 25, z + 12, 6, 2, 6, P.marble);
+  hall(b, e, pool, ao, x, y, z) { // the heroon: see HEROON above for the shared layout
+    const H = HEROON, cx = x + H.ox, T = H.T, W2 = H.W / 2, D2 = H.D / 2, ax = cx + H.AX, aw = H.AW, [bxo, bzo] = H.BRAZIER, bx = cx + bxo, bz = z + bzo;
+    // krepis: three limestone steps on the open south and west sides; the bottom one is a broad apron that takes the
+    // honour guard. A shallow flight on the brazier's axis cuts through all three. North and east drop straight behind the stoa.
+    for (let k = 0; k < 3; k++) {
+      const off = H.STEPS[k], top = T - 1.4 * (2 - k), x0 = cx - W2 - Math.min(off, H.STEPS[1]), c = k % 2 ? P.marbleShade : P.marble;
+      b.box((x0 + cx + W2) / 2, y + top - 1.4, z, cx + W2 - x0, 1.4, H.D, c);
+      b.box((x0 + ax - aw / 2) / 2, y + top - 1.4, z + D2 + off / 2, ax - aw / 2 - x0, 1.4, off, c); b.box((ax + aw / 2 + cx + W2) / 2, y + top - 1.4, z + D2 + off / 2, cx + W2 - ax - aw / 2, 1.4, off, c);
     }
-    b.box(x, y + 27, z, 74, 3, 38, P.marble); b.prism(x, y + 30, z, 76, 7, 40, P.terracotta, 0);
-    aoDisc(ao, x, y, z, 43, 27); return { h: 37, hit: [80, 40, 46] };
+    const rise = T / 6, run = H.AL / 6, ang = Math.atan2(T, H.AL);
+    for (let i = 0; i < 6; i++) b.box(ax, y + i * rise, z + D2 + H.AL - (i + 0.5) * run, aw, rise, run, i % 2 ? P.marbleShade : P.marble);
+    for (const sgn of [-1, 1]) {   // sloped cheek walls, each ending in a stub that carries a bronze lamp at the top of the flight
+      const wx = ax + sgn * (aw / 2 + 0.9);
+      b.add(new THREE.BoxGeometry(1.8, 2.4, Math.hypot(T, H.AL) + 2), P.marbleShade, new THREE.Matrix4().makeRotationX(ang).setPosition(wx, y + T / 2 + 1, z + D2 + H.AL / 2));
+      b.box(wx, y + T, z + D2 - 0.6, 2.2, 2.6, 2.2, P.marble); b.cyl(wx, y + T + 2.6, z + D2 - 0.6, 0.45, 0.6, 1.1, P.bronze, 6); b.cyl(wx, y + T + 3.7, z + D2 - 0.6, 0.9, 0.6, 0.5, P.bronzeLight, 8);
+      e.sphere(wx, y + T + 4.6, z + D2 - 0.6, 0.55, P.amber); lightPool(pool, wx, y + T + 0.4, z + D2 - 2, 9, 0.4);
+    }
+    b.box(cx, y + T, z, H.W - 2, 0.3, H.D - 2, P.marbleShade);                                                                                       // court paving, a shade warmer than the steps
+    for (let i = -4; i <= 4; i++) b.box(cx + i * 10.5 + 1, y + T + 0.3, z + 6, 0.3, 0.1, H.D - 18, P.marbleDark);                                      // paving joints give the limestone its scale
+    for (let j = -2; j <= 3; j++) b.box(cx + 1, y + T + 0.3, z + j * 10.5 - 1, H.W - 26, 0.1, 0.3, P.marbleDark);
+    b.box(cx + (H.SX - 8 - W2) / 2 + 2, y + T + 0.3, z + H.BZ + 8, H.SX - 8 + W2 - 12, 0.2, 7, P.sand); b.box(cx + H.SX - 8, y + T + 0.3, z + (H.BZ + D2) / 2 + 4, 7, 0.2, D2 - H.BZ - 12, P.sand);   // sand bands under the stele rows
+    b.cyl(bx, y + T + 0.3, bz, 20.5, 20.5, 0.14, P.sand, 28); b.cyl(bx, y + T + 0.44, bz, 13.5, 13.5, 0.1, P.marbleShade, 28);                         // the sand ring the gathered steles stand on
+    // the L-shaped stoa: a back wall along the north, a side wall along the east, antae at the open ends, all rising to the architrave
+    const colH = 11, arch = 2, wallH = colH + arch, eave = T + wallH, pitch = Math.atan2(4.5, (D2 + H.BZ) / 2), ovh = 2.4, tan = Math.tan(pitch);
+    b.box(cx, y + T, z - D2 + 1.25, H.W, wallH, 2.5, P.ivory); b.box(cx + W2 - 1.25, y + T, z + 1.25, 2.5, wallH, H.D - 2.5, P.ivory);
+    b.box(cx - W2 + 1.25, y + T, z + (-D2 + H.BZ) / 2, 2.5, wallH, H.BZ + D2, P.ivory); b.box(cx + (W2 + H.SX) / 2, y + T, z + D2 - 2.75, W2 - H.SX, wallH, 5.5, P.ivory);
+    for (const [, lx, lz] of H.columns()) b.column(cx + lx, y + T, z + lz, 1.45, colH, P.ivory, P.marbleShade);
+    b.box(cx + (H.SX - W2) / 2, y + T + colH, z + H.BZ, H.SX + W2 + 3, arch, 3.2, P.plaster); b.box(cx + H.SX, y + T + colH, z + (H.BZ + D2) / 2, 3.2, arch, D2 - H.BZ + 3, P.plaster);   // architrave
+    b.box(cx + (H.SX - W2) / 2, y + T + colH + 0.5, z + H.BZ + 1.7, H.SX + W2 + 3, 0.6, 0.3, P.ochre); b.box(cx + H.SX - 1.7, y + T + colH + 0.5, z + (H.BZ + D2) / 2, 0.3, 0.6, D2 - H.BZ + 3, P.ochre);   // painted band
+    // gabled roofs in muted tile, one ridge along each wing; the side wing's runs on into the back wing so the two cross cleanly.
+    // Each slope is one slab from the ridge down past the eave; both gable ends carry a low pediment with an ochre shield.
+    const bD = D2 + H.BZ, rz = z - D2 + bD / 2, sD = W2 - H.SX, rx = cx + H.SX + sD / 2, bRise = bD / 2 * tan, sRise = sD / 2 * tan;
+    const slope = (len) => len / Math.cos(pitch);
+    const bRun = bD / 2 + ovh, bL = slope(bRun), bY = y + eave + (bRise - ovh * tan) / 2 + 0.5;
+    b.add(new THREE.BoxGeometry(H.W + 2 * ovh, 1.1, bL), P.tile, new THREE.Matrix4().makeRotationX(pitch).setPosition(cx, bY, rz + bRun / 2));   // back wing, south slope
+    b.add(new THREE.BoxGeometry(H.W + 2 * ovh, 1.1, bL), P.tile, new THREE.Matrix4().makeRotationX(-pitch).setPosition(cx, bY, rz - bRun / 2));  // north slope
+    const sRun = sD / 2 + ovh, sL = slope(sRun), sY = y + eave + (sRise - ovh * tan) / 2 + 0.5, sZ0 = rz, sZ1 = z + D2 + ovh, sLen = sZ1 - sZ0;
+    b.add(new THREE.BoxGeometry(sL, 1.1, sLen), P.tile, new THREE.Matrix4().makeRotationZ(pitch).setPosition(rx - sRun / 2, sY, (sZ0 + sZ1) / 2));   // side wing, west slope over the columns
+    b.add(new THREE.BoxGeometry(sL, 1.1, sLen), P.tile, new THREE.Matrix4().makeRotationZ(-pitch).setPosition(rx + sRun / 2, sY, (sZ0 + sZ1) / 2));  // east slope
+    b.box(cx, y + eave + bRise + 0.55, rz, H.W + 2 * ovh + 0.6, 1.2, 1.8, P.tileDark); b.box(rx, y + eave + sRise + 0.55, (sZ0 + sZ1) / 2, 1.8, 1.2, sLen + 0.6, P.tileDark);   // ridge courses
+    b.box(cx, y + eave - ovh * tan - 0.3, z + H.BZ + ovh, H.W + 2 * ovh + 0.6, 0.8, 0.8, P.tileDark); b.box(cx + H.SX - ovh, y + eave - ovh * tan - 0.3, (sZ0 + sZ1) / 2, 0.8, 0.8, sLen + 0.6, P.tileDark);   // eave antefixes
+    const pediment = (px, pz, w, h, ry) => {   // tympanum on a stone cornice, a bronze shield at its centre; `ry` turns the face
+      const m = new THREE.Matrix4().makeRotationY(ry).setPosition(px, y + eave, pz);
+      b.add(new THREE.BoxGeometry(w, 1, 1.4), P.marbleShade, m.clone().multiply(new THREE.Matrix4().makeTranslation(0, -0.5, 0)));
+      const sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(0, h); sh.closePath();
+      const g = new THREE.ExtrudeGeometry(sh, { depth: 1.2, bevelEnabled: false }); g.translate(0, 0, -0.6); b.add(g, P.plaster, m);
+      b.add(new THREE.CylinderGeometry(h * 0.3, h * 0.3, 0.5, 12), P.ochre, m.clone().multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2).setPosition(0, h * 0.42, 0.5)));
+    };
+    pediment(cx - W2 - 0.4, rz, bD + 2 * ovh, bRise + ovh * tan, -Math.PI / 2);   // the back wing's west end, toward the sea and the cypress
+    pediment(rx, z + D2 + 0.4, sD + 2 * ovh, sRise + ovh * tan, 0);               // the side wing's south end, toward the path
+    b.box(cx + (H.SX - W2) / 2, y + T, z - D2 + 4.6, H.SX + W2 - 6, 1.6, 3.6, P.marbleShade); b.box(cx + W2 - 4.6, y + T, z + (H.BZ + D2) / 2 + 2, 3.6, 1.6, D2 - H.BZ - 10, P.marbleShade);   // benches along the back walls
+    for (const [side, lx, lz] of H.columns()) {   // a clay lantern hangs in every other bay, so the stoa keeps a faint warm glow at night
+      const i = side === 'b' ? Math.round((lx - H.X0) / H.BAYB) : Math.round((lz - H.BZ) / H.BAYS); if (i % 2 || (side === 'b' && i >= H.NB) || (side === 's' && i >= H.NS)) continue;
+      const hx = side === 'b' ? cx + lx + H.BAYB / 2 : cx + H.SX - 6, hz = side === 'b' ? z + H.BZ - 6 : z + lz + H.BAYS / 2;
+      b.cyl(hx, y + T + colH - 3.2, hz, 0.12, 0.12, 3.2, P.ink, 4); e.cyl(hx, y + T + colH - 4.4, hz, 0.7, 0.9, 1.2, P.amber, 6); lightPool(pool, hx, y + T + 0.4, hz, 12, 0.45);
+    }
+    // the central bronze brazier on a low drum, lit at night (a modest pool: the terrace should glow, not flare)
+    b.cyl(bx, y + T + 0.54, bz, 9.5, 9.5, 0.12, P.marbleDark, 24); b.cyl(bx, y + T + 0.54, bz, 8.2, 8.2, 0.16, P.marbleShade, 24); b.cyl(bx, y + T + 0.54, bz, 5.5, 5.5, 0.2, P.sand, 24);   // a paved roundel under the brazier
+    b.cyl(bx, y + T, bz, 4.4, 4.8, 0.8, P.marbleDark, 10); b.cyl(bx, y + T + 0.8, bz, 3.4, 3.8, 0.5, P.marbleShade, 10);
+    for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2 + 0.5; b.cyl(bx + Math.cos(a) * 2.1, y + T + 1.3, bz + Math.sin(a) * 2.1, 0.32, 0.4, 5.2, P.bronze, 6); }
+    b.cyl(bx, y + T + 5.6, bz, 3.3, 2.1, 2.6, P.bronze, 10); b.cyl(bx, y + T + 8.2, bz, 3.7, 3.4, 0.6, P.bronzeLight, 10);
+    e.sphere(bx, y + T + 9.3, bz, 1.5, P.amber); e.cone(bx, y + T + 9.8, bz, 1.1, 2.6, P.ember, 6); lightPool(pool, bx, y + T + 0.4, bz, 18, 0.8);
+    lightPool(pool, bx, y + T + 0.36, bz, 46, 0.3);   // a wide, faint warmth so the court never turns cold at night
+    // one cypress at the north-west corner, tall against the pediment
+    const tx = cx - W2 - 9, tz = z - D2 + 6;
+    b.cyl(tx, y, tz, 0.9, 1.3, 5, P.woodDark, 5); b.cone(tx, y + 4, tz, 5.2, 36, '#3C5240', 7); b.cone(tx, y + 15, tz, 3.4, 22, P.cypress, 7); aoDisc(ao, tx, y, tz, 8, 8);
+    aoDisc(ao, cx, y, z + 4, 76, 54);
+    const ridge = eave + bRise + 1.2;
+    return { h: ridge + 2, hit: [H.W + 6, ridge + 4, 20], hitAt: { x: cx, z: z - D2 + 10 }, brazier: { x: bx, y: y + T + 10, z: bz } };   // the click target is the back wing: the court stays free for steles and figures
   },
   garden(b, e, pool, ao, x, y, z) { // walled sun garden on ancient foundations
     b.box(x, y, z - 24, 74, 5, 3, P.ancientDark); b.box(x - 22, y, z + 24, 30, 5, 3, P.ancientDark); b.box(x + 26, y, z + 24, 22, 5, 3, P.ancientDark);
@@ -596,7 +720,7 @@ export const BUILDERS = {
     return { h: 78, hit: [44, 80, 44], beam: { x, y: y + 65, z } };
   },
 };
-const SCALE_OF = { hall:0.9, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
+const SCALE_OF = { hall:1, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
 function scaleParts(builder, from, x, y, z, s) { // scale new parts of `builder` about (x,y,z)
   const m = new THREE.Matrix4().makeTranslation(x, y, z).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-x, -y, -z));
   for (let i = from; i < builder.parts.length; i++) builder.parts[i].applyMatrix4(m);
@@ -611,6 +735,8 @@ export function buildPlace(place, b, e, pool, ao) {
   const info = fn(b, e, pool, ao, place.x, y0, place.y, hashStr(place.id)) || { h: 20, hit: [60, 30, 50] };
   [b, e, pool, ao].forEach((bb, i) => scaleParts(bb, marks[i], place.x, y0, place.y, s));
   info.h = (info.h || 20) * s; info.hit = (info.hit || [60, 30, 50]).map((v) => v * s);
+  if (info.hitAt) info.hitAt = { x: place.x + (info.hitAt.x - place.x) * s, z: place.y + (info.hitAt.z - place.y) * s };
+  if (info.brazier) info.brazier = { x: place.x + (info.brazier.x - place.x) * s, y: y0 + (info.brazier.y - y0) * s, z: place.y + (info.brazier.z - place.y) * s };
   if (info.ember) info.ember = { x: place.x + (info.ember.x - place.x) * s, y: y0 + (info.ember.y - y0) * s, z: place.y + (info.ember.z - place.y) * s };
   if (info.beam) info.beam = { x: place.x, y: y0 + (info.beam.y - y0) * s, z: place.y };
   if (info.armillary) info.armillary = { x: place.x, y: y0 + (info.armillary.y - y0) * s, z: place.y, s };

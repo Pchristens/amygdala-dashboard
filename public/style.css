@@ -922,6 +922,11 @@ select {
 .lbl-name.you { font-family: var(--font-serif); font-style: italic; font-size: 12px; }
 .lbl-name.hooded { font-family: var(--font-la); font-size: 13px; letter-spacing: .18em; color: #0f0e1c; text-shadow: 0 0 6px #9fe8d8, 0 0 2px #9fe8d8; }
 .lbl-god { font-size: 11px; color: #5E5043; }
+.lbl-stele { font-family: var(--font-sc); font-size: 12px; letter-spacing: .06em; color: #3B2F26; opacity: 0; transform: translateY(-4px); text-shadow: 0 1px 0 rgba(255,250,240,.95), 0 0 6px rgba(255,250,240,.95), 0 0 2px rgba(255,250,240,1); transition: opacity .25s, transform .25s; }
+.lbl-stele.show { opacity: 1; transform: none; }
+.lbl-frieze { font-family: var(--font-lb); font-size: 11px; letter-spacing: .34em; color: #8A4A32; opacity: 0; transition: opacity .35s; }
+.map3d[data-zoom="near"] .lbl-frieze { opacity: .8; }
+.map3d[data-phase="night"] .lbl-frieze { color: #E8C9A8; }
 .map3d[data-phase="night"] .lbl-place, .map3d[data-phase="night"] .lbl-name, .map3d[data-phase="night"] .lbl-zone, .map3d[data-phase="night"] .lbl-god { color: #F4EAD8; text-shadow: 0 1px 0 rgba(20,24,50,.9), 0 0 6px rgba(20,24,50,.9), 0 0 2px rgba(20,24,50,1); }
 .map3d[data-phase="twilight"] .lbl-place, .map3d[data-phase="twilight"] .lbl-name, .map3d[data-phase="twilight"] .lbl-zone { color: #2A1F3A; text-shadow: 0 1px 0 rgba(255,235,245,.85), 0 0 6px rgba(255,235,245,.85); }
 .send-god { margin-left: auto; }

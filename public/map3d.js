@@ -16,7 +16,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DObject } from 'three/addons/CSS2DRenderer.js';
 import { mulberry, dist, zoneOf, hashStr } from './svg-util.js';
 import { ISLE, SEA_X, isleLandAt } from './isle.js';
-import { Builder, P, makeMaterials, buildTerrain, buildIsleTerrain, buildPlace, buildIsleWorkshop, buildObject, makeTreeInstances, isRiverAt, BRIDGE, groundHeight, THEATRE } from './scene3d.js';
+import { Builder, P, makeMaterials, buildTerrain, buildIsleTerrain, buildPlace, buildIsleWorkshop, buildObject, makeTreeInstances, isRiverAt, BRIDGE, groundHeight, THEATRE, HEROON, steleGeometry, lampGeometry, flameGeometry, lightPool } from './scene3d.js';
 import { placeAssets } from './assets3d.js';
 import { createTree3D, drawTree3D, tickTree3D } from './tree3d.js';
 import { createApprentice, fadeApprentice, createFigure, setFigureSpec, setStatus, tickFigure, say, setThinking, setWaiting, gesture, disposeFigure, FIGURE_H } from './figures3d.js';
@@ -133,8 +133,8 @@ export async function createMap3D(container, opts = {}) {
   const hemi = new THREE.HemisphereLight('#DCEAF0', '#9B8E78', 0.9); scene.add(hemi);
   const fill = new THREE.DirectionalLight('#CFE3EC', 0.35); fill.position.set(-600, 500, 800); scene.add(fill);
   const nightLights = [];
-  const LIGHT_SPOTS = [[440,448],[650,482],[690,618],[140,170],[880,446],[715,222],[250,642],[826,736]];
-  for (const [lx, lz] of LIGHT_SPOTS) { const pl = new THREE.PointLight('#FFB060', 0, 130, 1.6); pl.position.set(lx, groundHeight(lx, lz) + 13, lz); pl.visible = false; pl.userData.k = [1.7, 1, 1, 1.5, 1, 1.5, 1, 1][nightLights.length] || 1; scene.add(pl); nightLights.push(pl); }
+  const LIGHT_SPOTS = [[440,448],[650,482],[690,618],[140,170],[880,446],[715,222],[250,642],[826,736],[104,465]];
+  for (const [lx, lz] of LIGHT_SPOTS) { const pl = new THREE.PointLight('#FFB060', 0, 130, 1.6); pl.position.set(lx, groundHeight(lx, lz) + 13, lz); pl.visible = false; pl.userData.k = [1.7, 1, 1, 1.5, 1, 1.5, 1, 1, 0.9][nightLights.length] || 1; scene.add(pl); nightLights.push(pl); }
   function updateShadowFrustum() {
     const span = Math.max(420, view.w * 0.62);
     sun.shadow.camera.left = -span; sun.shadow.camera.right = span; sun.shadow.camera.top = span * 0.8; sun.shadow.camera.bottom = -span * 0.8;
@@ -219,14 +219,14 @@ export async function createMap3D(container, opts = {}) {
   const placeInfo = new Map(); // id -> { h, hit, ember, beam, label }
   const placeLabels = new Map();
   let graph = null, isleGraph = null, hasIsleAssets = false;
-  let emberEmitter = null, beamCone = null, smokeEmitters = [], armillary = null, plotMesh = null;
+  let emberEmitter = null, beamCone = null, smokeEmitters = [], armillary = null, plotMesh = null, hallPlace = null;
   function rebuildStatic(places, workshops, plots, objects, sites) {
     const key = JSON.stringify([places.map((p) => [p.id, p.kind, p.x, p.y, p.name, zoneOf(p)]), workshops.map((w) => [w.id, w.x, w.y, w.project, w.host]), plots.map((p) => [p.id, p.x, p.y]), objects.map((o) => [o.id, o.kind, o.x, o.y]), isleBuilt]);
     if (key === placesKey) return;
     placesKey = key;
     for (const c of [...staticGroup.children]) { staticGroup.remove(c); c.geometry?.dispose?.(); }
     for (const [, o] of placeLabels) o.removeFromParent();
-    placeLabels.clear(); placeInfo.clear(); smokeEmitters = []; emberEmitter = null;
+    placeLabels.clear(); placeInfo.clear(); smokeEmitters = []; emberEmitter = null; hallPlace = null;
     if (beamCone) { beamCone.removeFromParent(); beamCone = null; }
     if (armillary) { armillary.grp.removeFromParent(); armillary = null; }
     const b = new Builder(), e = new Builder(), pool = new Builder(), ao = new Builder(), decals = new Builder(), hits = [];
@@ -240,10 +240,15 @@ export async function createMap3D(container, opts = {}) {
       // the Green's label sits at the plaza's front edge, clear of the Almond at its centre
       const o = new CSS2DObject(d); o.position.set(p.x, (info.y0 || 0) + (info.h || 20) + 6, p.kind === 'plaza' ? p.y + 66 : p.y); staticGroup.add(o); placeLabels.set(p.id, o);
       const hit = new THREE.Mesh(new THREE.BoxGeometry(...(info.hit || [60, 30, 50])), new THREE.MeshBasicMaterial({ visible: false }));
-      hit.position.set(p.x, (info.y0 || 0) + (info.hit?.[1] || 30) / 2, p.y); hit.userData = { pick: { type: 'place', id: p.id } }; staticGroup.add(hit); hits.push(hit);
+      hit.position.set(info.hitAt?.x ?? p.x, (info.y0 || 0) + (info.hit?.[1] || 30) / 2, info.hitAt?.z ?? p.y); hit.userData = { pick: { type: 'place', id: p.id } }; staticGroup.add(hit); hits.push(hit);
       if (info.ember) emberEmitter = info.ember;
       if (info.beam) { beamCone = makeBeam(info.beam); staticGroup.add(beamCone); }
       if (info.armillary) { armillary = makeArmillary(info.armillary); staticGroup.add(armillary.grp); aimArmillary(); }
+      if (p.kind === 'hall' && zoneOf(p) === 'village') { // the heroon: a Linear B dedication painted on the side wing's architrave (decoration only), shown up close
+        hallPlace = { x: p.x, y: p.y, y0: info.y0 || 0 }; hallDirty = true;
+        const f = document.createElement('div'); f.className = 'lbl lbl-frieze'; f.textContent = '\u{10000}\u{1002D}\u{10024}\u{10003}\u{10012}\u{1001B}\u{1002B}\u{10033}\u{10014}';
+        const fo = new CSS2DObject(f); fo.position.set(p.x + HEROON.ox + HEROON.SX - 1, (info.y0 || 0) + HEROON.T + 12.4, p.y + 10); staticGroup.add(fo); placeLabels.set('hall-frieze', fo);   // on the side wing, clear of the place label
+      }
     }
     for (const w of workshops) {
       const info = buildIsleWorkshop(w, b, e, pool, ao);
@@ -476,9 +481,12 @@ export async function createMap3D(container, opts = {}) {
       let rec = figures.get(key);
       if (!rec) {
         const F = createFigure({ ...spec, kind, id });
-        F.root.position.set(x, groundY(x, y), y);
+        const born = kind === 'god' && hallReady && hallRecs.get(id)?.state === 'resting' ? hallRecs.get(id) : null;   // revived: forms at its stele, then walks out
+        const sx = born ? born.x - Math.sin(born.ry) * 4 : x, sy = born ? born.z + Math.cos(born.ry) * 4 : y;
+        F.root.position.set(sx, groundY(sx, sy) + heroLift(sx, sy), sy);
         scene.add(F.root);
-        rec = { F, kind, id, pos: { x, y }, target: { x, y }, path: null, zone, placeId, amble: 4 + Math.random() * 8, speed: 0, heading: 0 };
+        rec = { F, kind, id, pos: { x: sx, y: sy }, target: { x: sx, y: sy }, path: null, zone, placeId, amble: 4 + Math.random() * 8, speed: 0, heading: 0 };
+        if (born) { rec.form = { t0: null, hold: 1100 }; rec.heading = born.ry + Math.PI; F.root.scale.setScalar(0.01); }
         figures.set(key, rec);
       } else setFigureSpec(rec.F, { ...spec, kind, id });
       if (kind === 'resident') {
@@ -664,6 +672,77 @@ export async function createMap3D(container, opts = {}) {
       fadeApprentice(g.F, g.alpha * 0.55); g.F.parts.held.visible = false; g.F.root.position.set(g.x, groundY(g.x, g.y) + 3 + Math.sin(time * 1.2 + g.seed) * 1.5, g.y);
     }
   }
+  // ---------- the heroon: one stele and lamp per resting hero (instanced), names on hover, revive/forget animations ----------
+  const hallGroup = new THREE.Group(); scene.add(hallGroup);
+  const hallRecs = new Map(); // hero id -> { slot, site, x, z, ry, y, rise, flame, state, t0, hit, label }
+  let hallDirty = false, hallReady = false, hallMeshes = [], hallLabels = [], hallLamps = null, hallFlames = null;
+  const hallSlotPos = (slot) => { const sl = HEROON.slot(slot); return { ...sl, x: hallPlace.x + HEROON.ox + sl.x, z: hallPlace.y + sl.z, y: hallPlace.y0 + sl.y }; };
+  const heroLift = (x, z) => hallPlace ? HEROON.lift(x - hallPlace.x, z - hallPlace.y) : 0;
+  function syncHall(state) {
+    const list = hallPlace && Array.isArray(state.hall) ? state.hall.filter((w) => w && w.id && zoneOf(w) !== 'isle') : [];
+    const ids = new Set(list.map((w) => w.id));
+    for (const [id, rec] of hallRecs) {
+      if (ids.has(id) || rec.state !== 'resting') continue;
+      // gone from the hall: revived (its figure is walking out) or forgotten (its lamp goes out and the stele lowers flush)
+      rec.state = figures.has(figureKey('god', id)) ? 'revive' : 'forget'; rec.t0 = null;
+    }
+    for (const w of list) {
+      let rec = hallRecs.get(w.id);
+      if (!rec) {
+        const used = new Set([...hallRecs.values()].map((r) => r.slot)); let slot = 0; while (used.has(slot)) slot++;   // the lowest free bay
+        rec = { id: w.id, slot, site: w.site || 'other', ...hallSlotPos(slot), rise: hallReady ? 0 : 1, flame: hallReady ? 0 : 1, state: hallReady ? 'arrive' : 'resting', t0: null, title: String(w.title || w.id) };
+        hallRecs.set(w.id, rec); hallDirty = true;
+      } else { rec.site = w.site || 'other'; rec.title = String(w.title || w.id); }
+    }
+    hallReady = true;
+    if (hallDirty) rebuildHall();
+  }
+  function rebuildHall() {
+    hallDirty = false;
+    for (const m of hallMeshes) { hallGroup.remove(m); if (m.userData.own) m.geometry.dispose(); }
+    for (const o of hallLabels) o.removeFromParent();
+    hallMeshes = []; hallLabels = [];
+    for (const rec of hallRecs.values()) Object.assign(rec, hallSlotPos(rec.slot));
+    const recs = [...hallRecs.values()]; hallLamps = hallFlames = null; if (!recs.length) return;
+    const bySite = new Map(); for (const rec of recs) { if (!bySite.has(rec.site)) bySite.set(rec.site, []); bySite.get(rec.site).push(rec); }
+    for (const [site, list] of bySite) { const m = new THREE.InstancedMesh(steleGeometry(site), mats.toon, list.length); m.castShadow = true; m.receiveShadow = true; list.forEach((rec, i) => { rec.steleMesh = m; rec.mi = i; }); hallGroup.add(m); hallMeshes.push(m); }
+    const lamps = new THREE.InstancedMesh(lampGeometry(), mats.toon, recs.length), flames = new THREE.InstancedMesh(flameGeometry(), mats.emissive, recs.length);
+    lamps.castShadow = true; flames.castShadow = false; recs.forEach((rec, i) => { rec.li = i; }); hallGroup.add(lamps, flames); hallMeshes.push(lamps, flames);
+    const pool = new Builder(); for (const rec of recs) lightPool(pool, rec.x + Math.sin(rec.ry) * LAMP_OUT, rec.y + 0.3, rec.z + Math.cos(rec.ry) * LAMP_OUT, 8, 0.5);
+    const pm = pool.mesh(mats.pool); if (pm) { pm.castShadow = false; pm.receiveShadow = false; pm.renderOrder = 1; pm.userData.own = true; hallGroup.add(pm); hallMeshes.push(pm); }
+    for (const rec of recs) {
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(4, STELE_H * rec.sh, 3), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(rec.x, rec.y + STELE_H * rec.sh / 2, rec.z); hit.rotation.y = rec.ry; hit.userData = { pick: { type: 'stele', id: rec.id }, own: true }; hallGroup.add(hit); hallMeshes.push(hit); rec.hit = hit;
+      const d = document.createElement('div'); d.className = 'lbl lbl-stele'; d.textContent = rec.title.slice(0, 40); const o = new CSS2DObject(d); o.position.set(rec.x, rec.y + STELE_H * rec.sh + 1.2, rec.z); hallGroup.add(o); hallLabels.push(o); rec.label = d;
+    }
+    hallLamps = lamps; hallFlames = flames;
+    placeHall(); needsRender = true;
+  }
+  const hallM = new THREE.Matrix4(), hallM2 = new THREE.Matrix4(), hallS = new THREE.Vector3(), STELE_H = 7.5, LAMP_OUT = 2.2;
+  function placeHall() {
+    if (!hallLamps) return;
+    for (const rec of hallRecs.values()) {
+      const sunk = (1 - rec.rise) * STELE_H * rec.sh;   // fully sunk, the acroterion sits flush with the paving
+      hallM.makeRotationY(rec.ry).setPosition(rec.x, rec.y - sunk, rec.z); hallM2.copy(hallM).multiply(new THREE.Matrix4().makeTranslation(0, 0, LAMP_OUT)); hallLamps.setMatrixAt(rec.li, hallM2);
+      hallM2.scale(hallS.setScalar(Math.max(0.001, rec.flame))); hallFlames.setMatrixAt(rec.li, hallM2);
+      hallM.scale(hallS.set(1, rec.sh, 1)); rec.steleMesh.setMatrixAt(rec.mi, hallM);   // each slot's own height, so no row reads as a fence
+      if (rec.hit) rec.hit.userData.pickable = rec.state === 'resting';
+    }
+    for (const m of hallMeshes) if (m.isInstancedMesh) m.instanceMatrix.needsUpdate = true;
+  }
+  function tickHall(now) {
+    let busy = false, rebuild = false;
+    for (const [id, rec] of hallRecs) {
+      if (rec.state === 'resting') continue;
+      rec.t0 ??= now; const t = (now - rec.t0) / 1000; busy = true;
+      if (rec.state === 'arrive') { rec.rise = Math.min(1, t / 1.6); rec.rise = rec.rise * rec.rise * (3 - 2 * rec.rise); rec.flame = Math.max(0, Math.min(1, (t - 1.4) / 0.5)); if (t > 2) { rec.rise = 1; rec.flame = 1; rec.state = 'resting'; } }
+      else if (rec.state === 'revive') { rec.flame = t < 0.35 ? 1 + t / 0.35 * 1.8 : t < 1.4 ? 2.8 - (t - 0.35) / 1.05 * 2.8 : 0; const k = Math.max(0, Math.min(1, (t - 1.0) / 1.8)); rec.rise = 1 - k * k * (3 - 2 * k); if (t > 2.9) { hallRecs.delete(id); rebuild = true; } }
+      else if (rec.state === 'forget') { rec.flame = Math.max(0, 1 - t / 0.5); const k = Math.max(0, Math.min(1, (t - 0.3) / 1.8)); rec.rise = 1 - k * k * (3 - 2 * k); if (t > 2.2) { hallRecs.delete(id); rebuild = true; } }
+    }
+    if (rebuild) rebuildHall(); else if (busy) placeHall();
+    return busy;
+  }
+  let hoverStele = null;
+  function setSteleHover(id) { if (id === hoverStele) return; hallRecs.get(hoverStele)?.label?.classList.remove('show'); hoverStele = id; hallRecs.get(id)?.label?.classList.add('show'); needsRender = true; }
   let seenPosts = null;
 
   // ---------- update from state ----------
@@ -683,6 +762,7 @@ export async function createMap3D(container, opts = {}) {
     rebuildStatic(places, workshops.filter((w) => zoneOf(w) === 'isle'), plots, objects, state.sites || []);
     syncTrees(Array.isArray(state.trees) ? state.trees : [], now);
     syncFigures(state, now);
+    syncHall(state);
     syncApprentices(state); syncGhosts(state);
     const locked = !!(state.seal?.enabled && state.seal.locked);
     container.classList.toggle('sealed', locked);
@@ -742,7 +822,7 @@ export async function createMap3D(container, opts = {}) {
           rec.banner?.removeFromParent(); rec.banner = null; rec.ceremony = null; rec.seatHeight = 0;
           rec.target = { ...rec.normalTarget }; rec.path = route(rec.zone === 'isle' ? isleGraph : graph, rec.pos, rec.target); rec.pathI = 1;
         }
-      } else if (rec.path && rec.pathI < rec.path.length) {
+      } else if (rec.path && rec.pathI < rec.path.length && !(rec.form && t < (rec.form.t0 ??= t) + rec.form.hold)) {
         const tgt = rec.path[rec.pathI];
         const d = dist(rec.pos, tgt);
         const slope = Math.abs(groundY(tgt.x,tgt.y)-groundY(rec.pos.x,rec.pos.y))/Math.max(1,d);
@@ -766,7 +846,8 @@ export async function createMap3D(container, opts = {}) {
         rec.amble -= ds;
         if (rec.amble <= 0) { rec.amble = 5 + Math.random() * 8; const g = { greatlibrary: 'read', forge: 'hammer', quarry: 'haul', temple: 'raise' }[rec.placeKind]; if (g) gesture(F, g, 2.5); }
       }
-      F.root.position.set(rec.pos.x, groundY(rec.pos.x, rec.pos.y) + (rec.seatHeight || 0), rec.pos.y);
+      if (rec.form) { rec.form.t0 ??= t; const k = Math.min(1, (t - rec.form.t0) / 1300), e = k * k * (3 - 2 * k); F.root.scale.setScalar(Math.max(0.01, e)); active = true; if (k >= 1 && t >= rec.form.t0 + rec.form.hold) { rec.form = null; F.root.scale.setScalar(1); } }
+      F.root.position.set(rec.pos.x, groundY(rec.pos.x, rec.pos.y) + (rec.seatHeight || 0) + heroLift(rec.pos.x, rec.pos.y), rec.pos.y);
       F.root.rotation.y = rec.heading;
       tickFigure(F, dt, time, moving, rec.speed, turning, night);
       if (rec.seated) {
@@ -776,6 +857,7 @@ export async function createMap3D(container, opts = {}) {
       if (F.anim.gesture) active = true;
       F.root.userData.moving = moving;
     }
+    if (hallRecs.size && tickHall(t)) active = true;
     if (ghosts.size) tickGhosts(dt, time); // slow drift reads fine at the ambient 20 fps
     if (apprentices.size && tickApprentices(dt, time, night)) active = true;
     let frameMotion = active; // walking and gestures need full frame rate; ambient life uses 20 fps.
@@ -930,6 +1012,7 @@ export async function createMap3D(container, opts = {}) {
       if (pick.type === 'tree') return opts.onTreeClick?.(pick.id);
       if (pick.type === 'you') return opts.onYouClick?.();
       if (pick.type === 'place') return opts.onPlaceClick?.(pick.id);
+      if (pick.type === 'stele') return opts.onPlaceClick?.('hall');
       if (pick.type === 'workshop') return;
     }
     const p = toWorld(e.clientX, e.clientY);
@@ -953,7 +1036,8 @@ export async function createMap3D(container, opts = {}) {
     if (key === hovered) return;
     hovered = key;
     renderer.domElement.style.cursor = pick ? 'pointer' : '';
-    opts.onHover?.(pick ? { type: pick.type === 'apprentice' ? 'resident' : pick.type, id: pick.id } : null);
+    setSteleHover(pick?.type === 'stele' ? pick.id : null);
+    opts.onHover?.(pick && pick.type !== 'stele' ? { type: pick.type === 'apprentice' ? 'resident' : pick.type, id: pick.id } : null);
   });
   controls.addEventListener('change', () => { needsRender = true; startLoop(); opts.onViewChange?.(viewInfo()); });
 

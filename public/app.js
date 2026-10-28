@@ -1154,9 +1154,8 @@ function stripIsle(s) {
   delete out.isleGhosts; delete out.petitions; delete out.bells; delete out.audits; delete out.auditSettings;
   out.offerings = (out.offerings || []).filter(o => o.kind !== 'audit' && !o.humanOnly);
   out.workshops = [];
-  delete out.hall;
   // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.
-  if (params.get('public') === '1') { out.workers = []; out.visitors = []; out.heroPasses = []; out.nodes = []; out.visitorPasses = []; out.petitions = []; }
+  if (params.get('public') === '1') { out.workers = []; out.hall = []; out.visitors = []; out.heroPasses = []; out.nodes = []; out.visitorPasses = []; out.petitions = []; }
   if (out.usage?.isle) { out.usage = { ...out.usage }; delete out.usage.isle; }
   out.seal = { ...(s.seal || {}), enabled: true, locked: true };
   return out;
@@ -1276,6 +1275,11 @@ async function bootMock() {
   }
   s.seal = s.seal || { enabled: true, locked: false, autoLockMinutes: 5 };
   if (params.get('seal') === '0') s.seal = { enabled: false, locked: false };
+  if (params.has('hall')) { // ?hall=N: N synthetic resting heroes in the Hall of Heroes (0 clears it); ?hallAct=revive|forget[:ms] then acts on the first after a delay
+    const sites = ['forge', 'library', 'quarry', 'temple'], n = Math.max(0, Math.min(200, +params.get('hall') || 0));
+    s.hall = Array.from({ length: n }, (_, i) => ({ id: `local:rest${i}`, title: `Resting hero ${i + 1}`, tool: ['claude', 'codex', 'antigravity', 'grok'][i % 4], model: 'synthetic', host: 'local', os: 'linux', project: 'example', lastActivityAt: Date.now() - i * 3600000, archived: i % 3 === 0, status: 'stopped', site: sites[i % 4] }));
+  }
+  if (params.get('hallAct')) { const [act, ms] = params.get('hallAct').split(':'); setTimeout(() => { const w = state.hall?.[0]; if (w) mockApi(`/api/heroes/${act}`, { workerId: w.id }).then(() => applyState(state)); }, +ms || 2500); }
   state = s;
   if (s.seal.enabled && !s.seal.locked) s.seal.locksAt = Date.now() + (s.seal.autoLockMinutes || 5) * 60000;
   if (params.get('sealed') === '1' || (s.seal.enabled && s.seal.locked)) { s.seal.locked = false; mockSeal(true); }
@@ -1408,6 +1412,12 @@ function mockApi(path, body) {
     if (w.sealed) return fail(isleLockedErr);
     state.tales ||= [];
     state.tales.push({ id: `t${mockSeq++}`, zone: zoneOf(w), heroId: w.id, hero: w.title, project: w.project, site: w.site, tool: w.tool, host: w.host, startedAt: now - 120000, endedAt: now, workedMs: 120000, commits: [], fixed: [], stat: null, tale: null, bard: 'The Bard' });
+  } else if (path === '/api/heroes/revive' || path === '/api/heroes/forget') {
+    const i = (state.hall || []).findIndex((w) => w.id === body.workerId);
+    if (i < 0) return fail('That hero is private or gone.');
+    const [w] = state.hall.splice(i, 1);
+    if (path.endsWith('revive')) { const site = (state.sites || []).find((x) => x.id === w.site), p = state.places.find((x) => x.id === site?.placeId) || state.places[0]; state.workers.push({ ...w, status: 'running', archived: false, zone: 'village', x: p.x + 30, y: p.y + 40, updatedAt: now }); }
+    state.feed.push({ id: `f${mockSeq++}`, ts: now, actor: 'You', text: path.endsWith('revive') ? `You called ${w.title} back from the Hall of Heroes` : `${w.title} was forgotten`, zone: 'village' });
   } else if (path === '/api/human/move') {
     state.human = { ...state.human, x: body.x, y: body.y, zone: body.x >= 1150 ? 'isle' : 'village' };
     const near = state.places.find((p) => Math.hypot(p.x - body.x, p.y - body.y) < 60);

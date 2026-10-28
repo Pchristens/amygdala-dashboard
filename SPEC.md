@@ -1129,3 +1129,34 @@ terminal requests every two seconds. Only one terminal poll is in flight per hel
 Output producers pause at the helper's high-water mark and resume as uploads drain,
 rather than silently dropping output chunks. Existing pass, village allow-list, local
 session-tag and per-operation privacy checks remain in force. This adds no model calls.
+
+## v0.35: the heroon
+
+The Hall of Heroes is drawn as a heroon: a raised limestone terrace with three steps on its open south and west sides,
+an L-shaped stoa (solid back and side walls, gabled terracotta roofs with a low pediment on each short end, hanging
+lanterns in alternate bays), a stepped approach on the brazier's axis, a central bronze tripod brazier that burns at
+night, and one cypress at the north-west corner. `kind: 'hall'` builds at scale 1; the
+layout constants and the bay order live in `HEROON` (public/scene3d.js) and are shared with the 3D map.
+
+Each hero in the human snapshot's `hall` has one travertine stele and one clay lamp. The stele carries its `site`
+emblem in painted relief (temple gate, scroll, flame, pick; a disc for anything else); nothing else is written on it.
+Steles and lamps are instanced per site; lamps light at night with the other lamps. Bays fill in tiers
+(`HEROON.SLOTS`): the court row before the back wing, the side wing, a staggered second file before the back wing,
+two loose arcs about the brazier (the stair axis left open), an honour guard on the lower step set well back from the
+approach and turned toward it, then rows on the ground to the south only past thirty-five. Each
+stele has a small deterministic height and yaw variation by bay. A hero keeps its bay for the life of the page; a new hero takes the lowest free bay.
+
+Hero names never appear on the map: hovering a stele shows the hero's title as a label, clicking it opens the Hall
+section of Heroes. The Linear B on the side wing's architrave is decoration only. Figures standing on the terrace or
+its steps are lifted to the surface they stand on.
+
+Transitions are client-side, keyed on membership changes between snapshots. A hero that leaves `hall` and appears in
+`workers` is revived: its lamp flares, the hero forms beside its stele, pauses, walks out along the roads, and the
+stele sinks flush and is removed. A hero that leaves `hall` without reappearing is forgotten: its lamp goes out and
+the stele lowers flush. A hero that arrives rises from the paving and its lamp lights. The first snapshot shows
+everything at rest.
+
+`?shot=1` keeps `hall` (hero titles already appear on hero figures in such shots); `?shot=1&public=1` empties it with
+the other session lists. Mock mode adds `?hall=N` (N synthetic resting heroes) and `?hallAct=revive|forget[:ms]`
+(acts on the first after a delay), and its API handles `/api/heroes/revive` and `/api/heroes/forget` locally.
+`tools/mock-state.mjs [--hall N] [--out file]` writes the gitignored preview fixture from a throwaway World.

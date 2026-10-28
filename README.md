@@ -368,6 +368,13 @@ Finished heroes rest in the Hall, replacing the Glasshouse Garden. Open the Hall
 Heroes. Revive restores an archived session and starts it at its previous site; Forget removes it from agent-deck after
 confirmation. Update Amygdala on each node to enable these actions. Private and Far Isle heroes are excluded.
 
+On the 3D map the Hall is a heroon: a limestone terrace with an L-shaped stoa, a brazier and a cypress, and one
+travertine stele with a clay lamp for every resting hero, carrying its site's emblem. Hover a stele for the hero's
+name; click it to open the Hall. Reviving lights the lamp and the hero walks out; forgetting puts the lamp out.
+For a client-only preview, generate the fixture with `node tools/mock-state.mjs --hall 35`, serve `public/`
+statically and open `?mock=1&still=1&shot=1&vb=-40,341,300` (`?hall=N` overrides the count;
+`?hallAct=revive` or `forget` plays a transition after a moment).
+
 Tales celebrate epic labours: by default, two hours of active work, one fixed Temple finding/omen, or ten
 commits earns a tale. Adjust these thresholds beside the tales list. Shorter labours remain in the chronicle
 as facts; use **Tell the tale** on a live hero or in the Hall of Heroes to request one explicitly. Ending a
