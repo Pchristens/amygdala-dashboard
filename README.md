@@ -363,3 +363,8 @@ are heuristic; inspect the human-only card with the same care as other session o
 Finished heroes rest in the Hall, replacing the Glasshouse Garden. Open the Hall on the map or expand its section in
 Heroes. Revive restores an archived session and starts it at its previous site; Forget removes it from agent-deck after
 confirmation. Update Amygdala on each node to enable these actions. Private and Far Isle heroes are excluded.
+
+Tales celebrate epic labours: by default, two hours of active work, one fixed Temple finding/omen, or ten
+commits earns a tale. Adjust these thresholds beside the tales list. Shorter labours remain in the chronicle
+as facts; use **Tell the tale** on a live hero or in the Hall of Heroes to request one explicitly. Ending a
+labour records its work but only epic or explicitly requested tales wake the bard and receive a fallback account.

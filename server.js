@@ -134,7 +134,8 @@ const API = {
   'POST /api/counsel': b => world.sites.relay(String(b.id), String(b.action)),
   'POST /api/visitors/pass': b => world.visitors.issue(b.name, b.hours, b.label),
   'POST /api/visitors/revoke': b => world.visitors.revoke(String(b.id)),
-  'POST /api/tales/complete': b => world.tales.complete(String(b.workerId)),
+  'POST /api/tales/settings': b => world.tales.settings(b),
+  'POST /api/tales/complete': b => world.tales.request(String(b.workerId)),
   // Long-running (waits for the hero's wrap-up): start it and return; progress shows in the feed.
   'POST /api/tales/end': b => { const id = String(b.workerId); if (!world.workers.some(w => w.id === id)) throw new Error('No such hero.'); world.tales.endLabour(id).catch(e => world.addFeed(null, `Ending the labour failed: ${e.message}`)); return { started: true }; },
   'POST /api/nodes/pass': b => world.nodes.issue(b.name, b.hours),

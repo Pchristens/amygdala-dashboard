@@ -1085,3 +1085,22 @@ and otherwise ask the human to update Amygdala on the named machine. Unknown fie
 
 The `glasshouse` place becomes `{id:'hall',name:'Hall of Heroes',kind:'hall',x:165,y:470}`, a modest limestone stoa.
 Saved place references and dictionary keys migrate to `hall` on load; sealed payloads remain opaque.
+
+## v0.33: epic tales
+
+Every completed labour is recorded as facts. New records add `owed` (boolean) and `epic` (an array of matched
+reasons, or `[]`). A tale is owed when any threshold is met: `workedMs >= minHours * 3600000`,
+`fixed.length >= minFixed`, or `commits.length >= minCommits`. Defaults are 2 hours, 1 finding and 10 commits;
+unknown commits count as zero. Existing tales retain their owed status. Only owed records wake the bard and
+receive the own-account fallback (immediately without a bard, otherwise after 15 minutes). End labour still
+wraps up, stops and records the hero, but no longer guarantees a tale for a short labour.
+
+Human page-token route `POST /api/tales/complete {workerId}` requests a tale. It promotes the latest recorded
+labour when no new labour has begun, setting `owed: true` and `epic: ['asked by the human']`, without duplicating
+the record. If no record exists for the current labour it records and owes one. Already owed or told requests
+are refused. Both live hero cards and Hall of Heroes rows offer Tell the tale; Hall errors appear inline.
+
+Human-only `POST /api/tales/settings {minHours, minFixed, minCommits}` updates persisted thresholds (partial
+updates allowed). Hours must be finite numbers from 0 to 48; counts must be integers from 0 to 1000. Human
+snapshots alone include `taleSettings`. The tales panel exposes these settings and distinguishes factual
+records from pending tales. Threshold changes apply to future recordings, without changing past records.

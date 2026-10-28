@@ -196,18 +196,27 @@ export function createPanel(opts) {
   function renderTales() {
     const root = $('tales'); root.textContent = '';
     if (isleLocked()) { renderSealedTablet(root); return; }
+    if (state.taleSettings) {
+      const controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Epic labours - any threshold earns a tale' })), error = h('span', { role: 'status' });
+      for (const [key, label, max] of [['minHours', 'Hours worked', 48], ['minFixed', 'Findings fixed', 1000], ['minCommits', 'Commits', 1000]]) {
+        const input = h('input', { type: 'number', min: '0', max: String(max), step: key === 'minHours' ? '0.1' : '1', value: state.taleSettings[key], 'aria-label': label });
+        input.addEventListener('change', async () => { try { const result = await opts.api('/api/tales/settings', { [key]: input.value === '' ? null : +input.value }); error.textContent = result?.error || ''; } catch (e) { error.textContent = e.message; } });
+        controls.append(h('label', {}, label, input));
+      }
+      controls.append(error); root.append(controls);
+    }
     const list = (state.tales || []).filter((t) => zoneOf(t) === zone).slice().reverse();
     if (!list.length) root.append(h('div', { class: 'empty', text: 'No labours recorded yet.' }));
     for (const t of list) root.append(h('article', { class: 'tale-scroll' },
-      h('h2', { text: t.tale?.title || 'The tale is yet to be told' }),
-      h('div', { class: 'dim-note', text: `Bard: ${t.bard || 'awaiting a bard'} · ${t.hero || 'Hero'} · ${t.project || '—'} · ${t.site || '—'}` }),
+      h('h2', { text: t.tale?.title || (t.owed === false ? 'Labour recorded' : 'The tale is yet to be told') }),
+      h('div', { class: 'dim-note', text: `Bard: ${t.bard || (t.owed === false ? 'no tale owed' : 'awaiting a bard')} · ${t.hero || 'Hero'} · ${t.project || '—'} · ${t.site || '—'}` }),
       h('div', { text: `${Math.round((+t.workedMs || 0) / 60000)} minutes worked` }),
       h('div', { class: 'tale-commits' }, (t.commits || []).map((c) => h('span', { class: 'chip', text: String(c) }))),
       h('div', { class: 'dim-note', text: t.stat || 'No committed diffstat recorded.' }),
       h('div', { text: `Omens answered: ${(t.fixed || []).join(' · ') || 'none recorded'}` }),
       t.uncommitted ? h('div', { class: 'dim-note', text: 'Uncommitted changes remain.' }) : null,
       t.words ? h('blockquote', { text: String(t.words) }) : null,
-      h('div', { class: 'tale-text', text: t.tale?.text || 'The tale is yet to be told.' })));
+      h('div', { class: 'tale-text', text: t.tale?.text || (t.owed === false ? 'The labour stands as facts.' : 'The tale is yet to be told.') })));
   }
 
   let ordersKey = '';
@@ -787,13 +796,13 @@ export function createPanel(opts) {
     details.append(h('summary', { text: `Hall of Heroes (${state.hall.length})` }));
     for (const w of state.hall) {
       const row = h('div', { class: 'panel-settings' }, h('b', { text: w.title }), h('p', { text: `${w.tool} · ${w.model || 'unknown model'} · ${w.host} (${w.os || 'unknown OS'}) · ${w.project} · ${w.lastActivityAt == null ? 'activity unknown' : new Date(w.lastActivityAt).toLocaleString()}` }));
-      for (const action of ['revive', 'forget']) {
+      for (const action of ['revive', 'tale', 'forget']) {
         const key = `${w.id}:${action}`, error = h('span', { role: 'status', text: hallErrors.get(key) || '' });
-        const button = h('button', { class: 'btn btn-xs', type: 'button', text: action === 'revive' ? 'Revive' : 'Forget', disabled: hallBusy.has(w.id) });
+        const button = h('button', { class: 'btn btn-xs', type: 'button', text: action === 'revive' ? 'Revive' : action === 'tale' ? 'Tell the tale' : 'Forget', disabled: hallBusy.has(w.id) });
         button.addEventListener('click', async () => {
           if (action === 'forget' && !confirm(`Forget “${w.title}” from agent-deck? It can't be revived afterwards.`)) return;
           hallBusy.add(w.id); button.disabled = true; error.textContent = '';
-          try { const result = await opts.api(`/api/heroes/${action}`, { workerId: w.id }); if (!result || result.ok === false) throw new Error(result?.error || 'Action failed.'); hallErrors.delete(key); }
+          try { const result = await opts.api(action === 'tale' ? '/api/tales/complete' : `/api/heroes/${action}`, { workerId: w.id }); if (!result || result.ok === false || result.error) throw new Error(result?.error || 'Action failed.'); hallErrors.delete(key); }
           catch (e) { hallErrors.set(key, e.message); error.textContent = e.message; }
           finally { hallBusy.delete(w.id); button.disabled = false; }
         }); row.append(button, error);
