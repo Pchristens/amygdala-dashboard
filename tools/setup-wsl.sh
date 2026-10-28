@@ -41,8 +41,8 @@ EOF
 }
 [ "${1:-}" = service ] && { service; exit; }
 
-say 'System packages (tmux, python3 for the terminal bridge, git)'
-sudo apt-get update -qq && sudo apt-get install -y -qq tmux python3 git curl ca-certificates xz-utils >/dev/null
+say 'System packages (tmux, python3 for the terminal bridge, git, jq for agent-deck)'
+sudo apt-get update -qq && sudo apt-get install -y -qq tmux python3 git curl ca-certificates xz-utils jq >/dev/null
 
 say 'Node.js 24 LTS from nodejs.org (checksum verified)'
 arch=$(uname -m); case $arch in x86_64) arch=x64;; aarch64) arch=arm64;; esac
@@ -57,7 +57,8 @@ npm config set prefix "$HOME/.local" >/dev/null
 grep -q 'HOME/.local/bin' "$HOME/.profile" 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$HOME/.profile"
 node -v
 
-say 'agent-deck (official installer)'; vendor https://raw.githubusercontent.com/asheshgoplani/agent-deck/main/install.sh
+# --non-interactive accepts its defaults (including its tmux config); without a terminal its prompts would wait forever.
+say 'agent-deck (official installer)'; vendor https://raw.githubusercontent.com/asheshgoplani/agent-deck/main/install.sh --non-interactive
 say 'Claude Code (official installer)'; vendor https://claude.ai/install.sh
 say 'Codex CLI (npm @openai/codex)'; npm install -g @openai/codex >/dev/null
 say 'Antigravity CLI (official installer)'; vendor https://antigravity.google/cli/install.sh || true
