@@ -54,6 +54,15 @@ try {
   assert.match(await settle(w.temple.envelope(f, o)), /unchanged|Reviewed snapshot/);
   fs.writeFileSync(path.join(repo, 'map.js'), 'const a = 1;\nconst b = 4;\n');
   const second = await settle(w.temple.nodeSnapshot(hero)); assert.notEqual(second.d.hash, o.diffHash);
+  // A named commit (v0.44): that commit alone, even after work lands on top of it; a stale commit still reads unchanged.
+  const base = git('rev-parse', 'HEAD').trim(); git('commit', '-qam', 'later');
+  const oc = await settle(w.temple.offer(hero.id, 'base', base.slice(0, 10)));
+  assert.equal(oc.kind, 'commit'); assert.equal(oc.headCommit, base); assert.deepEqual(oc.files, ['map.js']); assert(w.temple.readSnapshot(oc).includes('+const b = 2;'));
+  assert.match(await settle(w.temple.envelope(f, oc)), /not changed/);
+  const lc = await snapshotOf(repo, base); assert.equal(lc.kind, 'commit'); assert.equal(sha(lc.diff), oc.diffHash);
+  await assert.rejects(settle(w.temple.offer(hero.id, '', 'deadbeef1')), /No such commit/);
+  await assert.rejects(w.temple.offer(hero.id, '', 'HEAD; rm'), /hex/);
+  await assert.rejects(n.request(p.id, 'snapshot', { sessionId: 'h1', commit: '--all' }, hero.id), /Invalid snapshot/);
   // No git: the node says so as data, and the offering falls back to a scroll (the hero's output, read on the node).
   // Isle heroes on a node are refused before any job is sent.
   const isleHero = w.workers.find(x => x.id === `node:${p.id}:h2`);

@@ -1406,3 +1406,13 @@ arguments (`claude --continue` is not recognised).
   (`agent-deck session send <steward session>`, only when the Steward is on the hero's machine; otherwise finish with a
   summary), don't push, deploy or restart servers, and use your own subagents, not new sessions or Fable models.
   A visitor's petition hero never gets the note.
+
+## v0.44: offering a named commit
+
+- `POST /api/temple/offer` takes an optional `commit` (7 to 64 hex characters). The offering is then that commit's own
+  patch (`kind: 'commit'`, `headCommit` the full hash), not the working tree or HEAD, so a hero's finished commit stays
+  reviewable after other work lands on top of it. An unknown commit is refused; a commit never falls back to a scroll.
+- The node `snapshot` job payload is `{sessionId}` or `{sessionId, commit}`; the node passes the commit to git. An older
+  node answers with HEAD, which the server rejects as an invalid snapshot.
+- A decree on a commit offering reports the code as unchanged while that commit still exists.
+- The standing note asks heroes to commit finished work locally and name the commit hash in their report.

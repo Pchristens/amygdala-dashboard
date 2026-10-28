@@ -124,7 +124,7 @@ const API = {
   'POST /api/seal/unlock': b => world.seal.unlock(b.passphrase),
   'POST /api/seal/lock': () => world.seal.lock(),
   'POST /api/seal/touch': () => world.seal.touch(),
-  'POST /api/temple/offer': b => world.temple.offer(String(b.workerId), b.note),
+  'POST /api/temple/offer': b => world.temple.offer(String(b.workerId), b.note, b.commit == null || b.commit === '' ? undefined : String(b.commit)),
   'POST /api/temple/command': b => { for (const n of world.temple.command(String(b.offeringId), b.residents === 'all' ? 'all' : [].concat(b.residents || []), b.note)) conductor.wake(n, `the Temple commanded you to review offering ${b.offeringId}`); },
   'POST /api/temple/close': b => world.temple.close(String(b.offeringId)),
   'POST /api/findings/status': b => world.temple.setStatus(String(b.id), b.status),

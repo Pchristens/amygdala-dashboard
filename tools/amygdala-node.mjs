@@ -64,7 +64,7 @@ export async function executeJob(job, latestJobs, sessions, village, run = exec,
     if (s.remote_name || s.ssh_host) throw new Error('Remote sessions cannot be offered.');
     try {
       if (job.kind === 'show') return JSON.stringify(await (opts.lines || commitLines)(w.path, job.commit, job.file, job.start, job.end));
-      const { head, kind, diff } = await (opts.snapshot || snapshotOf)(w.path), d = digest(diff);
+      const { head, kind, diff } = await (opts.snapshot || snapshotOf)(w.path, job.commit), d = digest(diff);
       return JSON.stringify({ head, kind, diff: d.kept, hash: d.hash, allFiles: d.allFiles, truncated: d.truncated });
     } catch (e) { return JSON.stringify({ error: String(e?.message || 'The change could not be read.').slice(0, 200) }); }
   }
