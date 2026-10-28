@@ -76,7 +76,7 @@ try {
   // The standing note: names the Steward only when it is reachable from the hero's machine.
   assert.match(standingNote('a655bbb4-1793157180'), /agent-deck session send a655bbb4-1793157180 /);
   assert(!standingNote(null).includes('agent-deck session send')); assert(!standingNote('x; rm -rf /').includes('rm -rf'));
-  for (const note of [standingNote(null), standingNote('s')]) { assert.match(note, /don't push, deploy/); assert.match(note, /Fable/); }
+  for (const note of [standingNote(null), standingNote('s')]) { assert.match(note, /don't push, deploy/); assert.match(note, /Fable/); assert.match(note, /until the Steward says your work is accepted/); }
   // Commissions carry the Steward only to the Steward's own machine, and never for a visitor's petition hero.
   w.s.stewardHero = { workerId: hero.id, node: p.id, sessionId: 'h1' };
   const sent = []; const realRequest = n.request.bind(n); n.request = (node, kind, payload, id) => { sent.push(payload); return Promise.resolve('{"id":"new"}'); };
