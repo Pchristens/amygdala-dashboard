@@ -1178,7 +1178,10 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .panel-settings { margin: 0 0 12px; padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: 6px; overflow-wrap: anywhere; }
 .panel-settings label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 13px; }
 .panel-settings label:has(> input[type=checkbox]:first-child) { justify-content: flex-start; }
-.panel-settings input[type=number] { width: 72px; }
+.panel-settings input[type=number] { width: 72px; flex: none; }
+/* Full-width selects squeezed their label text to one letter per line; stack the label above instead. */
+.panel-settings label:has(> select) { flex-direction: column; align-items: stretch; gap: 4px; }
+.panel-settings select { width: 100%; }
 .panel-settings p { margin: 6px 0 0; font-size: 12px; color: var(--ink-dim); }
 .pass-dialog { max-height: 90vh; overflow: auto; }
 .pass-snippet { font-family: monospace; font-size: 12px; }
