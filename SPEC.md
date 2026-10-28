@@ -1295,3 +1295,27 @@ v0.38 follow-up: a Watch duty turn whose events include a `human-post` goes to a
 a stand-in when the Watch rests), falling back to any holder, and that turn itself may search, so the Watch can answer
 directly. The unaddressed fallback without a Watch also prefers Claude and Codex residents. The Watch's instructions
 route questions needing current information to them.
+
+## v0.39: the Temple tab reads by urgency
+
+The drawer's Temple tab is laid out top-down by what needs the human, so nothing important sits below the fold. No
+API, snapshot or MCP change; this is the page contract for the tab.
+
+1. **Needs you** (hidden when empty; its count in the title): a compact strip of heroes waiting for the human (village
+   only, with a count of new counsel), findings awaiting judgement or delivery (`omen`, `decreed` not yet landed,
+   `awaiting_confirmation`) and open offerings. Each item expands in place to its full card (the hero row, the omen
+   entry on a compact tablet with Decree / Set aside / Confirm fixed, the offering card with Command / Close).
+2. **Heroes** by site (hosts on the isle), with the "Send a hero on a labour" button. Waiting heroes appear only in
+   the strip, as they did in the old "Waiting for you" section.
+3. Collapsed by default, each a `<details>` whose open state is remembered for the page's life:
+   **Offerings history** (closed offerings, latest three, "Show all N"), **The Tablet of Omens** (resolved entries:
+   fixed, set aside, insufficient evidence, landed decrees; the decree mode switch sits at its top),
+   **Hall of Heroes** (still `#hall-heroes`, so a stele click opens it), and **Settings & logs** (the steward's reset
+   windows, the Watchtower's settings and its last twenty audit lines).
+
+Long text (a scroll, a finding's evidence, an audit offering's verdicts, a verdict's reasoning, the audit log) clamps
+to a few lines behind a "Show more" toggle, and a file list beyond six paths behind "+N more"; both are remembered
+across re-renders. When the isle is sealed the tab shows the sealed tablet and the quarantined heroes only, as before.
+
+`tools/mock-state.mjs` now also writes a Temple fixture: open and closed offerings (one a scroll), findings in every
+state, one new counsel, three audit lines and the steward and Watchtower settings, all invented and all in the village.

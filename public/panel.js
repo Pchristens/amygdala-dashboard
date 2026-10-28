@@ -790,24 +790,91 @@ export function createPanel(opts) {
     return h('span', { class: `chip chip-rank rank-${rank}`, text: rank === 'priest' ? '☀ priest' : rank === 'high' ? '✦ high' : 'low' });
   }
 
+  // The tab reads top-down by urgency: what needs the human, the heroes at work, then history and settings folded away.
+  // It re-renders on every snapshot, so fold, strip and clamp state is remembered here for the session.
   function renderWorkshop() {
     els.workshop.textContent = '';
     if (isleLocked()) {
       const t = h('div');
       renderSealedTablet(t);
       els.workshop.appendChild(t.firstChild);
+      renderGods();
+      return;
     }
-    renderHall();
+    renderNeedsYou();
     renderGods();
-    if (!isleLocked()) { renderOfferings(); renderTablet(); }
+    renderOfferings();
+    renderTablet();
+    renderHall();
+    renderSettings();
   }
-  let hallOpen = false;
+  const foldOpen = { offerings: false, tablet: false, hall: false, settings: false };
+  const needOpen = new Set(), expanded = new Set();
+  let offeringsAll = false;
+  function foldSection(key, label, count, ...extra) {
+    const d = h('details', { class: 'temple-fold', id: key === 'hall' ? 'hall-heroes' : `fold-${key}` }); d.open = !!foldOpen[key];
+    d.addEventListener('toggle', () => { foldOpen[key] = d.open; });
+    d.appendChild(h('summary', { class: 'temple-section-title' }, h('span', { text: label }), count != null ? h('span', { class: 'count', text: String(count) }) : null, ...extra));
+    return d;
+  }
+  // Long text clamps to a few lines behind a toggle. Cards are built before layout (and inside closed folds), so the
+  // decision comes from the text itself rather than from measuring it.
+  function clamped(key, el, text, lines = 6) {
+    const t = String(text ?? '');
+    if ((t.match(/\n/g) || []).length + 1 <= lines && t.length <= lines * 90) return el;
+    const box = h('div', { class: `clamp ${expanded.has(key) ? 'expanded' : ''}` }, el);
+    const toggle = h('button', { class: 'btn btn-ghost btn-xs clamp-toggle', type: 'button', text: expanded.has(key) ? 'Show less' : 'Show more' });
+    toggle.addEventListener('click', (e) => { e.stopPropagation(); const open = box.classList.toggle('expanded'); if (open) expanded.add(key); else expanded.delete(key); toggle.textContent = open ? 'Show less' : 'Show more'; });
+    box.appendChild(toggle);
+    return box;
+  }
+  function heroesInZone() {
+    const q = quarantineKeys();
+    const isQ = (w) => q.has(`${w.project}@${w.host}`) || zoneOf(w) === 'isle';
+    return (state.workers || []).filter((w) => w && w.id && (zone === 'isle') === isQ(w));
+  }
+  const waitingHero = (w) => zone === 'village' && w.status === 'waiting' && !w.stale;
+  function needsJudgement(f) { return isOmenPending(f) || f.status === 'awaiting_confirmation'; }
+  function renderNeedsYou() {
+    const heroes = heroesInZone().filter(waitingHero);
+    const omens = (state.findings || []).filter((f) => f && f.id && zoneOf(f) === zone && needsJudgement(f))
+      .sort((a, b) => (+b.omenAt || +b.verdict?.ts || 0) - (+a.omenAt || +a.verdict?.ts || 0));
+    const offerings = offeringsInZone().filter((o) => o.status !== 'closed').sort((a, b) => (+b.createdAt || 0) - (+a.createdAt || 0));
+    const n = heroes.length + omens.length + offerings.length;
+    if (!n) return;
+    els.workshop.appendChild(h('div', { class: 'temple-section-title needs-title' }, h('span', { text: 'Needs you' }), h('span', { class: 'count count-need', text: String(n) })));
+    const strip = h('div', { class: 'needs-you' });
+    for (const w of heroes) {
+      const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id && c.status === 'new').length;
+      strip.appendChild(needItem(`w:${w.id}`, 'hero', [h('span', { class: 'pill pill-waiting', text: 'needs you' }), h('span', { class: 'need-name', text: String(w.title || w.id) }),
+        h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }), counsel ? h('span', { class: 'chip chip-other', text: `${counsel} counsel` }) : null,
+        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w)));
+    }
+    for (const f of omens) {
+      const d = f.delivery?.state;
+      strip.appendChild(needItem(`f:${f.id}`, 'omen', [h('span', { class: `pill pill-status status-${f.status}`, text: statusLabel(f.status) }), h('span', { class: `pill pill-sev sev-${sev(f)}`, text: sev(f) }),
+        h('span', { class: 'need-name', text: String(f.claim || '') }), h('span', { class: 'worker-path', text: `${f.project || ''} · ${f.file || '?'}${f.line != null ? `:${f.line}` : ''}` }),
+        d && d !== 'landed' ? h('span', { class: `pill pill-delivery delivery-${d === 'awaiting approval' ? 'awaiting' : d}`, text: d === 'awaiting approval' ? 'awaiting your approval' : d === 'failed' ? 'delivery failed' : d }) : null],
+      () => h('div', { class: 'rune-tablet omens compact' }, omenEntry(f))));
+    }
+    for (const o of offerings) {
+      const findings = findingsFor(o.id).length, who = Array.isArray(o.reviewers) ? o.reviewers.length : 0;
+      strip.appendChild(needItem(`o:${o.id}`, 'offering', [h('span', { class: 'pill pill-running', text: 'open' }), h('span', { class: 'need-name', text: String(o.title || o.project || o.id) }),
+        h('span', { class: `chip ${agentClass(o.tool)}`, text: String(o.tool || 'tool') }), h('span', { class: 'chip chip-other', text: String(o.kind || 'working changes') }),
+        h('span', { class: 'need-sub', text: `${findings} finding${findings === 1 ? '' : 's'} · ${who ? `${who} reviewer${who === 1 ? '' : 's'}` : 'no reviewers yet'} · ${relTime(o.createdAt)}` })], () => offeringCard(o)));
+    }
+    els.workshop.appendChild(strip);
+  }
+  function needItem(key, kind, head, build) {
+    const d = h('details', { class: `need need-${kind}` }); d.open = needOpen.has(key);
+    d.addEventListener('toggle', () => { if (d.open) needOpen.add(key); else needOpen.delete(key); });
+    d.append(h('summary', { class: 'need-head' }, ...head.filter(Boolean)), h('div', { class: 'need-body' }, build()));
+    return d;
+  }
   const hallErrors = new Map(), hallBusy = new Set();
   function renderHall() {
     if (zone !== 'village' || !state.hall) return;
-    const details = h('details', { id: 'hall-heroes' }); details.open = hallOpen;
-    details.addEventListener('toggle', () => { hallOpen = details.open; });
-    details.append(h('summary', { text: `Hall of Heroes (${state.hall.length})` }));
+    const details = foldSection('hall', 'Hall of Heroes', state.hall.length);
     for (const w of state.hall) {
       const row = h('div', { class: 'panel-settings' }, h('b', { text: w.title }), h('p', { text: `${w.tool} · ${w.model || 'unknown model'} · ${w.host} (${w.os || 'unknown OS'}) · ${w.project} · ${w.lastActivityAt == null ? 'activity unknown' : new Date(w.lastActivityAt).toLocaleString()}` }));
       for (const action of ['revive', 'tale', 'forget']) {
@@ -827,10 +894,7 @@ export function createPanel(opts) {
   }
   function renderGods() {
     const workers = (state.workers || []).filter((w) => w && w.id);
-    const q = quarantineKeys();
-    const isQ = (w) => q.has(`${w.project}@${w.host}`) || zoneOf(w) === 'isle';
-    const inZone = workers.filter((w) => (zone === 'isle') === isQ(w));
-    const waiting = inZone.filter((w) => w.status === 'waiting' && !w.stale);
+    const inZone = heroesInZone();
     const title = h('div', { class: 'temple-section-title' }, h('span', { text: zone === 'isle' ? 'Heroes in quarantine' : 'Heroes' }), h('span', { class: 'count', text: String(inZone.length) }));
     if (zone === 'village') {
       const send = h('button', { class: 'btn btn-primary btn-xs send-god', type: 'button', text: 'Send a hero on a labour…', title: 'Commission a new real session at a site across the river' });
@@ -838,41 +902,13 @@ export function createPanel(opts) {
       title.appendChild(send);
     }
     els.workshop.appendChild(title);
-    if (zone === 'village' && state.steward) {
-      // Not 'card': that class is the absolutely positioned map popover and floats over the page.
-      const controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Steward · reset windows' }));
-      for (const [key, label] of [['enabled', 'Use spare allowance before reset'], ['festivalEnabled', 'Festival fallback']]) {
-        const input = h('input', { type: 'checkbox', checked: state.steward[key] }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: input.checked })); controls.append(h('label', {}, input, label));
-      }
-      for (const [key, label] of [['idleHours', 'Human idle hours'], ['sevenDayHours', 'Weekly hours left'], ['sevenDaySpare', 'Weekly spare %'], ['fiveHourHours', 'Five-hour hours left'], ['fiveHourSpare', 'Five-hour spare %']]) {
-        const input = h('input', { type: 'number', min: '0', max: key.endsWith('Spare') ? '90' : '168', step: '0.5', value: state.steward[key], 'aria-label': label }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: +input.value })); controls.append(h('label', {}, label, input));
-      }
-      els.workshop.append(controls);
-    }
-    if (zone === 'village' && state.auditSettings) {
-      const s = state.auditSettings, controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Watchtower' }));
-      const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));
-      controls.append(h('label', {}, enabled, ' Audit autonomous heroes'));
-      for (const [key, label] of [['tier1', 'First reviewer'], ['tier2', 'Escalation reviewer']]) {
-        // Reviewers are picked by role (shown as title · model); a resident with a shared role is picked by name.
-        const select = h('select', { 'aria-label': label }), list = state.residents || [];
-        for (const r of list) { const value = r.role && list.filter(x => x.role === r.role).length === 1 ? r.role : r.name; select.append(h('option', { value, text: `${r.title || r.role || r.name} · ${r.model || r.agent}`, selected: value === s[key] || r.name === s[key] })); } select.addEventListener('change', () => opts.api('/api/audit/settings', { [key]: select.value })); controls.append(h('label', {}, label, select));
-      }
-      const cap = h('input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }); cap.addEventListener('change', () => opts.api('/api/audit/settings', { dailyCap: +cap.value })); controls.append(h('label', {}, 'Daily audit runs ', cap));
-      for (const a of (state.audits || []).slice(-20).reverse()) controls.append(h('p', { text: `${a.severity} · ${a.rule} · ${a.status}: ${a.excerpt}` }));
-      els.workshop.append(controls);
-    }
     if (!workers.length) {
       els.workshop.appendChild(h('div', { class: 'empty', text: 'No heroes at the sites. Send one on a labour, or start a session in Agent Deck.' }));
       return;
     }
-    if (waiting.length && zone === 'village') {
-      els.workshop.appendChild(h('div', { class: 'workshop-section-title', text: `Waiting for you (${waiting.length})` }));
-      for (const w of waiting) els.workshop.appendChild(workerRow(w));
-    }
     const order = { running: 0, error: 1, idle: 2, stopped: 3 };
     const sortW = (list) => list.sort((a, b) => (a.stale ? 9 : order[a.status] ?? 8) - (b.stale ? 9 : order[b.status] ?? 8));
-    const rest = inZone.filter((w) => !(w.status === 'waiting' && !w.stale && zone === 'village'));
+    const rest = inZone.filter((w) => !waitingHero(w));   // waiting heroes sit in the Needs-you strip
     if (!inZone.length) els.workshop.appendChild(h('div', { class: 'empty', text: zone === 'isle' ? 'No sessions are quarantined on the isle.' : 'Every session is on the isle right now.' }));
     if (zone === 'village') {
       // group by site
@@ -896,6 +932,38 @@ export function createPanel(opts) {
         els.workshop.appendChild(hg);
       }
     }
+  }
+  // Steward and Watchtower controls, with the audit log: every control as before, folded under Settings & logs.
+  function renderSettings() {
+    if (zone !== 'village' || !(state.steward || state.auditSettings)) return;
+    const fold = foldSection('settings', 'Settings & logs');
+    if (state.steward) {
+      // Not 'card': that class is the absolutely positioned map popover and floats over the page.
+      const controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Steward · reset windows' }));
+      for (const [key, label] of [['enabled', 'Use spare allowance before reset'], ['festivalEnabled', 'Festival fallback']]) {
+        const input = h('input', { type: 'checkbox', checked: state.steward[key] }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: input.checked })); controls.append(h('label', {}, input, label));
+      }
+      for (const [key, label] of [['idleHours', 'Human idle hours'], ['sevenDayHours', 'Weekly hours left'], ['sevenDaySpare', 'Weekly spare %'], ['fiveHourHours', 'Five-hour hours left'], ['fiveHourSpare', 'Five-hour spare %']]) {
+        const input = h('input', { type: 'number', min: '0', max: key.endsWith('Spare') ? '90' : '168', step: '0.5', value: state.steward[key], 'aria-label': label }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: +input.value })); controls.append(h('label', {}, label, input));
+      }
+      fold.append(controls);
+    }
+    if (state.auditSettings) {
+      const s = state.auditSettings, controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Watchtower' }));
+      const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));
+      controls.append(h('label', {}, enabled, ' Audit autonomous heroes'));
+      for (const [key, label] of [['tier1', 'First reviewer'], ['tier2', 'Escalation reviewer']]) {
+        // Reviewers are picked by role (shown as title · model); a resident with a shared role is picked by name.
+        const select = h('select', { 'aria-label': label }), list = state.residents || [];
+        for (const r of list) { const value = r.role && list.filter(x => x.role === r.role).length === 1 ? r.role : r.name; select.append(h('option', { value, text: `${r.title || r.role || r.name} · ${r.model || r.agent}`, selected: value === s[key] || r.name === s[key] })); } select.addEventListener('change', () => opts.api('/api/audit/settings', { [key]: select.value })); controls.append(h('label', {}, label, select));
+      }
+      const cap = h('input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }); cap.addEventListener('change', () => opts.api('/api/audit/settings', { dailyCap: +cap.value })); controls.append(h('label', {}, 'Daily audit runs ', cap));
+      // The last audit lines follow the settings so a glance explains why a hero was flagged.
+      const log = (state.audits || []).slice(-20).reverse();
+      if (log.length) { const lines = h('div', { class: 'audit-log' }); for (const a of log) lines.append(h('p', { text: `${a.severity} · ${a.rule} · ${a.status}: ${a.excerpt}` })); controls.append(clamped('audit-log', lines, log.map((a) => a.excerpt).join('\n'), 5)); }
+      fold.append(controls);
+    }
+    els.workshop.append(fold);
   }
   function siteList() {
     const list = (state.sites || []).filter((s) => s && s.id);
@@ -979,11 +1047,15 @@ export function createPanel(opts) {
     return box;
   }
   function counselCount() { return (state.counsel || []).filter((c) => c && c.status === 'new' && (zoneOf(c) !== 'isle' || !sealed())).length; }
+  // Closed offerings, folded: open ones sit in the Needs-you strip.
   function renderOfferings() {
-    const list = offeringsInZone().sort((a, b) => (a.status === b.status ? (+b.createdAt || 0) - (+a.createdAt || 0) : a.status === 'open' ? -1 : 1));
-    els.workshop.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Offerings' }), h('span', { class: 'count', text: String(list.length) })));
-    if (!list.length) { els.workshop.appendChild(h('div', { class: 'empty', text: 'No offerings yet. Lay one from a session above and the village will review it.' })); return; }
-    for (const o of list) els.workshop.appendChild(offeringCard(o));
+    const all = offeringsInZone(), list = all.filter((o) => o.status === 'closed').sort((a, b) => (+b.createdAt || 0) - (+a.createdAt || 0));
+    const fold = foldSection('offerings', 'Offerings history', list.length);
+    if (!list.length) fold.appendChild(h('div', { class: 'empty', text: all.length ? 'No offerings have been closed yet.' : 'No offerings yet. Lay one from a hero above and the village will review it.' }));
+    const shown = offeringsAll ? list : list.slice(0, 3);
+    for (const o of shown) fold.appendChild(offeringCard(o));
+    if (list.length > shown.length) { const more = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: `Show all ${list.length}` }); more.addEventListener('click', () => { offeringsAll = true; renderWorkshop(); }); fold.appendChild(h('div', { class: 'fold-more' }, more)); }
+    els.workshop.appendChild(fold);
   }
   function offeringCard(o) {
     const files = Array.isArray(o.files) ? o.files.map(String) : [];
@@ -1004,11 +1076,11 @@ export function createPanel(opts) {
     if (o.note) card.appendChild(h('div', { class: 'card-quote', text: String(o.note) }));
     if (o.kind === 'scroll') {
       const text = String(o.text ?? o.content ?? o.scroll ?? '');
-      card.appendChild(h('div', { class: 'scroll-text', text: text || '(an empty scroll)' }));
+      card.appendChild(clamped(`${o.id}:scroll`, h('div', { class: 'scroll-text', text: text || '(an empty scroll)' }), text));
     } else if (files.length) {
-      const fl = h('div', { class: 'offering-files' });
-      for (const f of files.slice(0, 6)) fl.appendChild(h('span', { class: 'worker-path', text: f }));
-      if (files.length > 6) fl.appendChild(h('span', { class: 'dim-note', text: `+${files.length - 6} more` }));
+      const fl = h('div', { class: 'offering-files' }), key = `${o.id}:files`;
+      for (const f of files.slice(0, expanded.has(key) ? files.length : 6)) fl.appendChild(h('span', { class: 'worker-path', text: f }));
+      if (files.length > 6 && !expanded.has(key)) { const more = h('button', { class: 'btn btn-ghost btn-xs clamp-toggle', type: 'button', text: `+${files.length - 6} more` }); more.addEventListener('click', () => { expanded.add(key); more.replaceWith(...files.slice(6).map((f) => h('span', { class: 'worker-path', text: f }))); }); fl.appendChild(more); }
       const omitted = Array.isArray(o.omittedPaths) ? o.omittedPaths.length : 0;
       if (omitted) fl.appendChild(h('span', { class: 'dim-note', text: `${omitted} path${omitted === 1 ? '' : 's'} omitted`, title: o.omittedPaths.map(String).join('\n') }));
       card.appendChild(fl);
@@ -1031,7 +1103,7 @@ export function createPanel(opts) {
       close.addEventListener('click', () => opts.onCloseOffering?.(o));
       card.appendChild(h('div', { class: 'card-actions' }, cmd, close));
     }
-    if (o.kind === 'audit') for (const v of o.verdicts || []) card.append(h('p', { text: `${v.reviewer}: ${v.verdict} — ${v.summary}` }));
+    if (o.kind === 'audit' && (o.verdicts || []).length) { const vs = h('div', { class: 'offering-verdicts' }); for (const v of o.verdicts) vs.append(h('p', { text: `${v.reviewer}: ${v.verdict} — ${v.summary}` })); card.append(clamped(`${o.id}:verdicts`, vs, o.verdicts.map((v) => v.summary).join('\n'), 4)); }
     const findings = findingsFor(o.id);
     if (findings.length) {
       card.appendChild(h('div', { class: 'findings-title', text: `${findings.length} finding${findings.length === 1 ? '' : 's'}` }));
@@ -1050,7 +1122,7 @@ export function createPanel(opts) {
       f.independent ? h('span', { class: 'chip chip-other', text: 'independent', title: 'Found without seeing the author\u2019s own notes' }) : null,
       h('span', { class: 'finding-by' }, avatar(f.reviewer, residentByName(f.reviewer)?.color, 'xs'), h('span', { text: String(f.reviewer || '?') }), f.provider ? providerChip(f.provider) : null)));
     row.appendChild(h('div', { class: 'finding-claim', text: String(f.claim || '') }));
-    if (f.evidence) row.appendChild(h('pre', { class: 'evidence', text: String(f.evidence) }));
+    if (f.evidence) row.appendChild(clamped(`${f.id}:evidence`, h('pre', { class: 'evidence', text: String(f.evidence) }), f.evidence, 5));
     if (f.missingContext) row.appendChild(h('div', { class: 'finding-row missing' }, h('b', { text: 'needs context ' }), String(f.missingContext)));
     if (f.scenario) row.appendChild(h('div', { class: 'finding-row' }, h('b', { text: 'scenario ' }), String(f.scenario)));
     if (f.fix) row.appendChild(h('div', { class: 'finding-row' }, h('b', { text: 'fix ' }), String(f.fix)));
@@ -1073,21 +1145,23 @@ export function createPanel(opts) {
       h('span', { class: 'fix-check-note', text: String(check.note || '') }),
       h('span', { class: 'finding-by', text: `by ${check.by || '?'}` }));
   }
+  // The resolved Tablet, folded: omens still awaiting judgement or delivery sit in the Needs-you strip.
   function renderTablet() {
-    const list = (state.findings || []).filter((f) => f && f.id && zoneOf(f) === zone && TABLET_STATUSES.includes(f.status))
-      .sort((a, b) => (isOmenPending(b) - isOmenPending(a)) || ((+b.omenAt || +b.verdict?.ts || 0) - (+a.omenAt || +a.verdict?.ts || 0)));
-    const pending = list.filter(isOmenPending).length;
+    const list = (state.findings || []).filter((f) => f && f.id && zoneOf(f) === zone && TABLET_STATUSES.includes(f.status) && !needsJudgement(f))
+      .sort((a, b) => (+b.omenAt || +b.verdict?.ts || 0) - (+a.omenAt || +a.verdict?.ts || 0));
     const mode = state.decreeMode === 'approve' || state.world?.decreeMode === 'approve' ? 'approve' : 'auto';
     const modeSw = h('span', { class: 'decree-mode', title: 'auto: the High Priest\u2019s decrees are delivered to the session at once · approve: you confirm each decree first' },
       h('span', { class: 'decree-mode-label', text: 'decrees' }),
       h('button', { class: `zone-opt ${mode === 'auto' ? '' : ''}`, type: 'button', text: 'auto', 'aria-selected': mode === 'auto' ? 'true' : 'false', onClick: () => opts.onDecreeMode?.('auto') }),
       h('button', { class: 'zone-opt', type: 'button', text: 'approve', 'aria-selected': mode === 'approve' ? 'true' : 'false', onClick: () => opts.onDecreeMode?.('approve') }));
-    els.workshop.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'The Tablet of Omens' }), pending ? h('span', { class: 'count count-omen', text: String(pending) }) : null, modeSw));
+    const fold = foldSection('tablet', 'The Tablet of Omens', list.length);
+    fold.appendChild(h('div', { class: 'tablet-mode' }, modeSw));
     const tablet = h('div', { class: 'rune-tablet omens' });
     tablet.appendChild(h('div', { class: 'rune-tablet-title', text: list.length ? 'Omens read by the High Priest' : 'The tablet is blank' }));
     if (!list.length) tablet.appendChild(h('div', { class: 'rune-tablet-hint', text: 'When a finding gathers a second, it becomes an omen for the High Priest to judge.' }));
     for (const f of list) tablet.appendChild(omenEntry(f));
-    els.workshop.appendChild(tablet);
+    fold.appendChild(tablet);
+    els.workshop.appendChild(fold);
   }
   function omenEntry(f) {
     const status = String(f.status || 'omen');
@@ -1104,9 +1178,10 @@ export function createPanel(opts) {
       h('div', { class: 'omen-text', text: readable })));
     if (f.verdict) {
       const v = f.verdict;
-      e.appendChild(h('div', { class: 'omen-verdict' },
+      const reasoning = String(v.reasoning || v.instructions || '');
+      e.appendChild(clamped(`${f.id}:verdict`, h('div', { class: 'omen-verdict' },
         h('span', { class: `pill ${v.verdict === 'implement' ? 'pill-running' : 'pill-error'}`, text: v.verdict === 'implement' ? 'implement' : 'reject' }),
-        ' ', h('b', { text: `${v.by || 'High Priest'}: ` }), String(v.reasoning || v.instructions || ''), v.ts ? h('span', { class: 'post-time', text: ` · ${relTime(v.ts)}` }) : null));
+        ' ', h('b', { text: `${v.by || 'High Priest'}: ` }), reasoning, v.ts ? h('span', { class: 'post-time', text: ` · ${relTime(v.ts)}` }) : null), reasoning, 4));
     } else if (status === 'omen') {
       e.appendChild(h('div', { class: 'omen-verdict dim-note', text: 'Awaiting the High Priest’s judgement.' }));
     }

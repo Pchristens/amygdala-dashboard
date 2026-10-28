@@ -14,5 +14,10 @@ try {
   assert(!s.workers.some(w => w.status === 'stopped' || w.archived));
   for (const k of ['hall', 'workers', 'residents']) assert(!s[k].some(x => x.zone === 'isle' || x.isleTagged || x.sealed || x.quarantined), `${k} stays off the isle`);   // places keep the default isle landmarks
   assert(s.places.some(p => p.id === 'hall' && p.kind === 'hall')); assert.equal(s.world.sun, null);
+  // The Temple fixture: open and closed offerings, findings in every state, counsel and audits, all invented and all in the village.
+  assert(s.offerings.some(o => o.status === 'open') && s.offerings.some(o => o.status === 'closed') && s.offerings.some(o => o.kind === 'scroll'));
+  for (const st of ['open', 'omen', 'decreed', 'fixed', 'rejected']) assert(s.findings.some(f => f.status === st), `a ${st} finding`);
+  assert(s.counsel.some(c => c.status === 'new') && s.audits.length && s.steward && s.auditSettings);
+  for (const k of ['offerings', 'findings', 'counsel']) assert(s[k].every(x => x.zone === 'village' && !x.path?.startsWith('/home')), `${k} invented, in the village`);
   console.log('mock-state: synthetic fixture shape, hall count and isle filtering passed');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }

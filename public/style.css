@@ -787,6 +787,38 @@ select {
 
 .temple-section-title { display: flex; align-items: center; gap: 8px; font-family: var(--font-serif); font-size: 16px; margin: 14px 4px 8px; color: var(--ink); }
 .temple-section-title .count-omen { background: color-mix(in srgb, #8a7ec8 35%, var(--panel-3)); color: var(--ink); }
+/* The Temple tab: a Needs-you strip first, then the heroes, then history and settings folded away. */
+.needs-title { margin-top: 6px; }
+.needs-title .count-need { background: color-mix(in srgb, var(--amber) 40%, var(--panel-3)); color: var(--ink); }
+.needs-you { margin: 0 0 6px; }
+.need { margin: 0 0 6px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--panel-2); }
+.need-hero { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
+.need-omen { border-color: color-mix(in srgb, #8a7ec8 55%, transparent); }
+.need-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 10px 7px 8px; cursor: pointer; font-size: 12.5px; list-style: none; }
+.need-head::-webkit-details-marker { display: none; }
+.need-head::before { content: '▸'; font-size: 10px; color: var(--ink-dim); width: 10px; flex: none; }
+.need[open] > .need-head::before { content: '▾'; }
+.need-head .need-name { font-weight: 700; color: var(--ink); flex: 1 1 140px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.need-head .need-sub, .need-head .worker-path { color: var(--ink-dim); font-size: 11.5px; flex-basis: 100%; }
+.need-head .worker-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.need-body { padding: 0 8px 8px; }
+.need-body > .worker-row, .need-body > .offering { margin: 0; }
+.need-body > .rune-tablet { margin: 0; }
+.temple-fold { margin: 4px 0; border-top: 1px solid var(--line-soft); }
+.temple-fold > summary { cursor: pointer; list-style: none; margin: 8px 4px; user-select: none; }
+.temple-fold > summary::-webkit-details-marker { display: none; }
+.temple-fold > summary::before { content: '▸'; font-size: 11px; color: var(--ink-dim); width: 12px; }
+.temple-fold[open] > summary::before { content: '▾'; }
+.temple-fold .panel-settings { margin: 0 4px 10px; }
+.tablet-mode { display: flex; justify-content: flex-end; margin: 0 4px; }
+.tablet-mode .decree-mode { margin-left: 0; }
+.fold-more { margin: 2px 0 10px 4px; }
+.clamp { position: relative; }
+.clamp > :first-child { max-height: 7.5em; overflow: hidden; mask-image: linear-gradient(180deg, #000 70%, transparent); }
+.clamp.expanded > :first-child { max-height: none; mask-image: none; }
+.clamp.expanded > .scroll-text, .clamp.expanded > .evidence { max-height: 60vh; overflow: auto; }
+.clamp-toggle { margin-top: 2px; }
+.audit-log p { margin: 6px 0 0; font-size: 12px; color: var(--ink-dim); }
 .decree-mode { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-sans); font-size: 11px; color: var(--ink-dim); }
 .decree-mode .zone-opt { padding: 1px 8px; font-size: 11px; }
 .badge-omen { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #8a7ec8; color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
