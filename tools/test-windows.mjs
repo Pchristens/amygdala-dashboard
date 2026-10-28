@@ -14,6 +14,7 @@ try {
   const entry = path.join(dir, 'node_modules', 'fake', 'bin', 'x.js');
   fs.mkdirSync(path.dirname(entry), { recursive: true }); fs.writeFileSync(entry, '');
   fs.writeFileSync(path.join(dir, 'node.exe'), '');
+  fs.writeFileSync(path.join(dir, 'codex'), '#!/bin/sh\n'); // npm's extensionless sh shim must never win on Windows
   fs.writeFileSync(path.join(dir, 'codex.cmd'), '@echo off\r\n"%_prog%" "%dp0%\\node_modules\\fake\\bin\\x.js" %*\r\n');
   const options = { platform: 'win32', env: { PATH: dir, PATHEXT: '.EXE;.CMD;.BAT' } };
   const args = ['prompt & whoami | echo %PATH%', '"quoted"'];
