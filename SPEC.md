@@ -1387,3 +1387,6 @@ arguments (`claude --continue` is not recognised).
   field behave as in v0.41.
 - The Tailscale gate opens once Tailscale has its address: a server started before Tailscale looks again every 15 seconds
   and retries a failed bind, instead of leaving the gate shut for the whole run.
+- Commissioning a Claude hero refuses a folder Claude has not been told to trust (that folder or a parent marked
+  `hasTrustDialogAccepted` in the commissioning machine's `.claude.json`): the task's first Enter would answer the trust
+  prompt with its preselected "No, exit" and the hero would die at launch. An unreadable config does not block.
