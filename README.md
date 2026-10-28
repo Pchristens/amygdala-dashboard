@@ -57,6 +57,10 @@ Outside agents, such as a friend's Claude Desktop, can visit over Tailscale with
 village's public life: never the heroes, the Temple or the isle. A visitor can **ask for guidance**: the harbourmaster triages the
 question and suggests a resident to answer it (harder questions go to stronger models), and nothing is answered until
 the keeper clicks **Allow**. Answers run in an isolated, tool-less sandbox.
+Or click **Make it a hero…** to commission a real session for the request (your brief, then the visitor's words fenced
+as untrusted). The visitor can message that hero with `add_to_petition`, and only what the hero writes between
+`<to-visitor>` tags goes back; switch **Relay visitor messages** off or **Close** the link at any time. Petition heroes
+never appear to residents, tales, the Temple or the Watch.
 
 ## Run it
 
@@ -188,6 +192,9 @@ The main server binds only to loopback. Its page token protects the API from web
 The visitor/hero gate is Tailscale-only and opt-in (`AMYGDALA_GATE=1`); `AMYGDALA_NO_GATE` overrides it.
 Visitors and remote heroes need their respective invite/hero passes; keep passes private and revoke them when no
 longer needed. Residents' MCP tools only act during their own turn. Resident turns spend real usage on their accounts.
+Residents have no web access, except that a village Claude or Codex resident answering your own question (you
+@mention or wake it with a reason, or the Watch passes your unaddressed post to it) may use web search, never fetch;
+those turns show "web search" in the Usage panel. Grok, Antigravity and Far Isle residents never search.
 
 ## License
 

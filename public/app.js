@@ -385,6 +385,7 @@ const panel = createPanel({
   onDecreeMode: (mode) => api('/api/temple/decree-mode', { mode }),
   onOmenCount: (n) => renderOmenChip(n),
   onCommission: () => openCommission(),
+  onPetitionHero: (p) => openCommission(p),
   onMoveSite: (workerId, site) => api('/api/workers/site', { workerId, site }).then((ok) => { if (okResult(ok)) toast(site === 'auto' ? 'Automatic placement enabled.' : `Moved to ${siteLabel(site)}.`); }),
   onCounsel: (id, action) => api('/api/counsel', { id, action }).then((ok) => { if (okResult(ok)) toast(action === 'relay' ? 'Counsel relayed to the hero (fenced as untrusted).' : 'Counsel dismissed.'); }),
   onDig: (f) => openDig(f),
@@ -679,7 +680,10 @@ function mockTrail(f) {
 
 // ---------- Commission: send a god ----------
 const commissionDialog = $('commission-dialog');
-function openCommission() {
+// With a petition, the same form makes the visitor's request a hero: the title never carries the question (it shows on the map).
+let commissionPetition = null;
+function openCommission(petition = null) {
+  commissionPetition = petition;
   const sel = $('cm-site');
   sel.textContent = '';
   const sites = (state?.sites || []).filter((s) => s && s.id && s.id !== 'temple');
@@ -693,7 +697,11 @@ function openCommission() {
   $('cm-error').textContent = machines.options.length ? '' : 'No machine with agent-deck is online.';
   $('cm-error').hidden = !!machines.options.length;
   $('cm-submit').disabled = !machines.options.length;
-  $('cm-title').value = ''; $('cm-prompt').value = ''; $('cm-model').value = ''; $('cm-effort').value = '';
+  $('cm-title').value = petition ? `Visitor's labour — ${petition.visitor}` : ''; $('cm-model').value = ''; $('cm-effort').value = '';
+  $('cm-prompt').value = petition ? `A visitor to Amygdala, ${petition.visitor}, asked for the help below. Do what is reasonable and safe within this project, and tell them plainly what you did or why you could not.` : '';
+  $('cm-prompt').maxLength = petition ? Math.max(200, 3200 - String(petition.question || '').length) : 4000; // brief + fenced request + reply rules fit the 4000-character first message
+  $('cm-heading').textContent = petition ? `Make ${petition.visitor}'s petition a hero` : 'Send a hero on a labour';
+  $('cm-sub').textContent = petition ? 'Your brief comes first; the hero then sees the visitor\u2019s request, fenced as untrusted input, and replies to them between <to-visitor> tags.' : 'Commission a real agent session at one of the sites across the river.';
   const MODELS = { claude: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-haiku-5-5'], codex: ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna'], antigravity: ['gemini-4-argon-medium'], gemini: ['gemini-4-argon-medium'] };
   const fillModels = () => { const dl = $('cm-model-list'); dl.textContent = ''; for (const mm of MODELS[$('cm-tool').value] || []) dl.appendChild(h('option', { value: mm })); };
   $('cm-tool').onchange = fillModels; fillModels();
@@ -712,9 +720,10 @@ $('commission-form').addEventListener('submit', async (e) => {
   if (!body.path || !(body.path.startsWith('/') || body.path.startsWith('~') || /^[A-Za-z]:[\\/]/.test(body.path) || body.path.startsWith('\\\\'))) { err.textContent = 'The project folder must be an absolute path (or start with ~).'; err.hidden = false; return; }
   if (!body.title || !body.prompt) { err.textContent = 'Give the god a title and a task.'; err.hidden = false; return; }
   $('cm-submit').disabled = true;
-  const res = await api('/api/commission', body);
+  const petition = commissionPetition;
+  const res = petition ? await api(`/api/petitions/${encodeURIComponent(petition.id)}/commission`, { ...body, brief: body.prompt, prompt: undefined }) : await api('/api/commission', body);
   $('cm-submit').disabled = false;
-  if (okResult(res)) { commissionDialog.close(); toast(`A hero sets out for ${siteLabel(body.site)}.`); }
+  if (okResult(res)) { commissionDialog.close(); toast(petition ? `A hero takes up ${petition.visitor}'s request.` : `A hero sets out for ${siteLabel(body.site)}.`); }
   else { err.textContent = (res && res.error) || 'The commission was refused.'; err.hidden = false; }
 });
 

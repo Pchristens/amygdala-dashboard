@@ -135,6 +135,17 @@ export function createPanel(opts) {
       h('div', { class: 'dialog-actions' }, h('button', { class: 'btn', text: 'Cancel', onClick: () => dialog.close() }), h('button', { class: 'btn', text: 'Deny', onClick: () => decide('deny') }), deny ? null : h('button', { class: 'btn btn-primary', text: 'Allow', onClick: () => decide('allow') })));
     document.body.append(dialog); dialog.addEventListener('close', () => dialog.remove(), { once: true }); dialog.showModal();
   }
+  // A petition hero: its link, the relay switch, Close, and the thread (visitor messages and the hero's tagged replies).
+  function petitionHero(card, p) {
+    const linked = ['commissioning', 'commissioned'].includes(p.status), w = (state.workers || []).find(x => x.id === p.heroId);
+    const label = { open: 'linked', private: 'private: relay paused', gone: 'gone', starting: 'starting…', unlinked: 'waiting for the session' }[p.hero] || p.hero || '';
+    card.append(h('div', { class: 'dim-note' }, `Hero: ${p.heroTitle}${label ? ` · ${label}` : ''} `, w && p.hero === 'open' && opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-xs', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null));
+    for (const m of (p.thread || []).slice(-30)) card.append(h('b', { text: m.from === 'hero' ? p.heroTitle : `${p.visitor}${m.status && m.status !== 'delivered' ? ` (${m.status})` : ''}` }), h('p', { class: 'petition-text', text: m.text }));
+    if (!linked) return;
+    const relay = h('input', { type: 'checkbox', checked: p.relay !== false, onChange: async () => { const r = await opts.api(`/api/petitions/${encodeURIComponent(p.id)}/relay`, { on: relay.checked }); if (r?.ok === false) relay.checked = !relay.checked; } });
+    card.append(h('label', { class: 'dim-note' }, relay, ' Relay visitor messages'), ' ',
+      h('button', { class: 'btn btn-xs', text: 'Close', title: 'End the link with the visitor; the hero keeps working', onClick: () => opts.api(`/api/petitions/${encodeURIComponent(p.id)}/close`, {}) }));
+  }
   function renderPetitions(root) {
     const petitions = state.petitions || [], pending = petitions.filter(p => p.status === 'pending');
     const badge = $('badge-petitions'); if (badge) { badge.hidden = !pending.length; badge.textContent = String(pending.length); }
@@ -153,8 +164,9 @@ export function createPanel(opts) {
     renderGate();
     } }));
     if (!petitions.length) root.append(h('p', { class: 'dim-note', text: 'No petitions yet. Visitors can ask privately for guidance; each request needs your decision.' }));
-    const active = petitions.filter(p => ['pending', 'allowed', 'answering'].includes(p.status));
-    const history = petitions.filter(p => !['pending', 'allowed', 'answering'].includes(p.status)).slice(-20).reverse();
+    const live = ['pending', 'allowed', 'answering', 'commissioning', 'commissioned'];
+    const active = petitions.filter(p => live.includes(p.status));
+    const history = petitions.filter(p => !live.includes(p.status)).slice(-20).reverse();
     for (const p of [...active, ...history]) {
       const card = h('div', { class: 'gate-pass' }, h('b', { text: p.visitor }), h('div', { text: p.about || 'Guidance' }),
         h('div', { class: 'dim-note', text: `${new Date(p.askedAt).toLocaleString()} · ${p.status}` }), h('p', { class: 'petition-text', text: p.question }));
@@ -164,7 +176,8 @@ export function createPanel(opts) {
       }
       if (p.answer) card.append(h('b', { text: p.answerer || 'Answer' }), h('p', { class: 'petition-text', text: p.answer }));
       if (p.note) card.append(h('p', { class: 'petition-text dim-note', text: p.note }));
-      if (p.status === 'pending') card.append(h('button', { class: 'btn btn-xs', text: 'Allow…', onClick: () => petitionDecision(p) }), ' ', h('button', { class: 'btn btn-xs', text: 'Deny…', onClick: () => petitionDecision(p, true) }));
+      if (p.heroTitle && p.status !== 'pending') petitionHero(card, p);
+      if (p.status === 'pending') card.append(h('button', { class: 'btn btn-xs', text: 'Allow…', onClick: () => petitionDecision(p) }), ' ', h('button', { class: 'btn btn-xs', text: 'Deny…', onClick: () => petitionDecision(p, true) }), ' ', h('button', { class: 'btn btn-xs', text: 'Make it a hero…', title: 'Commission a hero for this request; it can talk with the visitor', onClick: () => opts.onPetitionHero?.(p) }));
       root.append(card);
     }
   }
@@ -1210,7 +1223,7 @@ export function createPanel(opts) {
       const measured = r.status === 'reported' && r.total != null;
       root.appendChild(h('div', { class: `turn-row ${measured ? '' : 'unmeasured'}` },
         avatar(r.resident, residentByName(r.resident)?.color, 'xs'),
-        h('span', { class: 'turn-who' }, h('b', { text: String(r.resident || '?') }), h('span', { class: 'dim-note', text: ` · ${r.kind || 'life'}` })),
+        h('span', { class: 'turn-who' }, h('b', { text: String(r.resident || '?') }), h('span', { class: 'dim-note', text: ` · ${r.kind || 'life'}${r.web ? ' · web search' : ''}` })),
         h('span', { class: 'chip chip-other', text: `${r.provider || '?'}${r.model ? ` · ${r.model}` : ''}` }),
         h('span', { class: 'turn-total', text: measured ? fmtTok(r.total) : 'unavailable' }),
         h('span', { class: 'dim-note turn-meta', text: `${fmtDur(r.durationMs)}${r.outcome && r.outcome !== 'ok' ? ` · ${r.outcome}` : ''} · ${relTime(r.endedAt)}` })));

@@ -237,7 +237,10 @@ const server = http.createServer(async (req, res) => {
         else termHub.resize(terminal[1], b.cols, b.rows);
         return json(res, 200, { ok: true });
       }
-      const petition = p.match(/^\/api\/petitions\/([^/]+)\/(allow|deny)$/);
+      const petition = p.match(/^\/api\/petitions\/([^/]+)\/(allow|deny|commission|relay|close)$/);
+      if (petition?.[2] === 'commission') return json(res, 200, { ok: true, ...(await world.visitors.commission(petition[1], b)) });
+      if (petition?.[2] === 'relay') { world.visitors.setRelay(petition[1], b.on); return json(res, 200, { ok: true }); }
+      if (petition?.[2] === 'close') { world.visitors.close(petition[1]); return json(res, 200, { ok: true }); }
       if (petition) { world.visitors.decide(petition[1], petition[2], b); return json(res, 200, { ok: true }); }
       const m = p.match(/^\/api\/residents\/([^/]+)(\/wake|\/naming|\/hibernate)?$/);
       if (m) {
@@ -245,7 +248,7 @@ const server = http.createServer(async (req, res) => {
         if (!world.cfg(name)) return json(res, 404, { ok: false, error: 'unknown resident' });
         if (m[2] === '/hibernate') { if (world.seal.locked && world.zoneOf(name) === 'isle') throw new Error('The isle is sealed.'); world.setHibernate(name, b.on); }
         else if (m[2] === '/naming') { world.requestNaming(name); conductor.wake(name, 'Your naming ceremony is ready: choose_name when you are ready.'); }
-        else if (m[2]) { if (world.seal.locked && world.s.residents[name].zone === 'isle') throw new Error('The isle is sealed. Unlock it first.'); conductor.wake(name, b.reason ? `the human: ${String(b.reason).slice(0, 200)}` : undefined); }
+        else if (m[2]) { if (world.seal.locked && world.s.residents[name].zone === 'isle') throw new Error('The isle is sealed. Unlock it first.'); conductor.wake(name, b.reason ? `the human: ${String(b.reason).slice(0, 200)}` : undefined, { web: !!b.reason }); }
         else {
           if (typeof b.enabled === 'boolean') world.setEnabled(name, b.enabled);
           if (b.zone) world.setResidentZone(name, b.zone);
