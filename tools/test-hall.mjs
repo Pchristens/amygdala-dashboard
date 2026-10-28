@@ -3,9 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { World, migrateHall } from '../lib/world.js';
+import { mergeDeckLists } from '../lib/deck.js';
 import { Usage } from '../lib/usage.js';
 import { reportSessions, executeJob } from './amygdala-node.mjs';
 import { validateReport } from '../lib/nodes.js';
+// `list --all` records are stripped: live sessions keep their full plain-list record; only extra ids count as archived.
+assert.deepEqual(mergeDeckLists([{ id: 'a', status: 'waiting', tmux_session: 't' }], [{ id: 'a' }, { id: 'b', title: 'old' }]), [{ id: 'a', status: 'waiting', tmux_session: 't' }, { id: 'b', title: 'old', archived: true, status: 'stopped' }]);
+assert.deepEqual(mergeDeckLists({ sessions: [{ id: 'a' }] }, null), [{ id: 'a' }]);
 Usage.prototype.pollDeck = () => {}; Usage.prototype.probe = () => {};
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-hall-'));
 let world;

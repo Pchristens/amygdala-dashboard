@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { spawn, bin, execFile, hostOs, deckAvailable, env } from '../lib/bin.js';
-import { toWorker } from '../lib/deck.js';
+import { toWorker, mergeDeckLists } from '../lib/deck.js';
 import { extractSignals, classifyHero, isleTagged } from '../lib/heroclass.js';
 import { Sites, transcriptTail } from '../lib/sites.js';
 const exec = promisify(execFile);
@@ -98,7 +98,8 @@ export async function main(args = process.argv.slice(2)) {
     try {
       const available = deckAvailable(), sessions = [];
       if (available) {
-        const local = JSON.parse((await exec('agent-deck', ['list', '--json', '--all'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout);
+        const list = async args => JSON.parse((await exec('agent-deck', ['list', '--json', ...args], { timeout: 15000, maxBuffer: 8 << 20 })).stdout);
+        const local = mergeDeckLists(await list([]), await list(['--all']).catch(() => []));
         sessions.push(...(Array.isArray(local) ? local : local.sessions || []));
         try { const remote = JSON.parse((await exec('agent-deck', ['remote', 'sessions', '--json'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout); sessions.push(...(Array.isArray(remote) ? remote : remote.sessions || [])); } catch {}
       }
