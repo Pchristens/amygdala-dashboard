@@ -1135,9 +1135,11 @@ session-tag and per-operation privacy checks remain in force. This adds no model
 The Hall of Heroes is drawn as a heroon: a raised limestone terrace with three steps on its open south and west sides,
 an L-shaped stoa (solid back and side walls, gabled terracotta roofs with a low pediment on each short end, hanging
 lanterns in alternate bays), a stepped approach on the brazier's axis, a central bronze tripod brazier that burns at
-night, and cypresses along the sea side. The terrace (140 by 150 units, `HEROON.W`/`D`) fills the flat ground from the
-lane up to the foot of the massif, grown north from a fixed south edge (`HEROON.oz`) so the approach still meets the
-lane; only the plan grows, the stoa, steps and steles stay human-scale, so sixty-one bays precede the ground rows.
+night, and cypresses along the sea side. The terrace (124 by 150 units, `HEROON.W`/`D`) fills the flat ground between
+the sea cliff and the lane from the Green, up to the foot of the massif, grown north from a fixed south edge
+(`HEROON.oz`) so the approach still meets the lane and the east edge keeps clear of it. The stoa is monumental, Doric at
+five diameters (`HEROON.COL`, `ARCH`) on a three-step podium (`T`), while steles and lamps stay human-scale, so
+fifty-six bays precede the ground rows.
 `kind: 'hall'` builds at scale 1; the layout constants and the bay order live in `HEROON` (public/scene3d.js) and are
 shared with the 3D map.
 

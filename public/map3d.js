@@ -133,7 +133,7 @@ export async function createMap3D(container, opts = {}) {
   const hemi = new THREE.HemisphereLight('#DCEAF0', '#9B8E78', 0.9); scene.add(hemi);
   const fill = new THREE.DirectionalLight('#CFE3EC', 0.35); fill.position.set(-600, 500, 800); scene.add(fill);
   const nightLights = [];
-  const LIGHT_SPOTS = [[440,448],[650,482],[690,618],[140,170],[880,446],[715,222],[250,642],[826,736],[103,427]];
+  const LIGHT_SPOTS = [[440,448],[650,482],[690,618],[140,170],[880,446],[715,222],[250,642],[826,736],[95,427]];
   for (const [lx, lz] of LIGHT_SPOTS) { const pl = new THREE.PointLight('#FFB060', 0, 130, 1.6); pl.position.set(lx, groundHeight(lx, lz) + 13, lz); pl.visible = false; pl.userData.k = [1.7, 1, 1, 1.5, 1, 1.5, 1, 1, 0.9][nightLights.length] || 1; scene.add(pl); nightLights.push(pl); }
   function updateShadowFrustum() {
     const span = Math.max(420, view.w * 0.62);
@@ -247,7 +247,7 @@ export async function createMap3D(container, opts = {}) {
       if (p.kind === 'hall' && zoneOf(p) === 'village') { // the heroon: a Linear B dedication painted on the side wing's architrave (decoration only), shown up close
         hallPlace = { x: p.x, y: p.y, y0: info.y0 || 0 }; hallDirty = true;
         const f = document.createElement('div'); f.className = 'lbl lbl-frieze'; f.textContent = '\u{10000}\u{1002D}\u{10024}\u{10003}\u{10012}\u{1001B}\u{1002B}\u{10033}\u{10014}';
-        const fo = new CSS2DObject(f); fo.position.set(p.x + HEROON.ox + HEROON.SX - 1, (info.y0 || 0) + HEROON.T + 12.4, p.y + HEROON.oz + 10); staticGroup.add(fo); placeLabels.set('hall-frieze', fo);   // on the side wing, clear of the place label
+        const fo = new CSS2DObject(f); fo.position.set(p.x + HEROON.ox + HEROON.SX - 1, (info.y0 || 0) + HEROON.T + HEROON.COL + HEROON.ARCH / 2, p.y + HEROON.oz + 10); staticGroup.add(fo); placeLabels.set('hall-frieze', fo);   // on the side wing, clear of the place label
       }
     }
     for (const w of workshops) {

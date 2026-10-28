@@ -391,8 +391,9 @@ const homeBlock = (b, e, x, y, z, w, h, d, seed) => { // whitewashed Cycladic bl
 export const HEROON = {
   // The terrace fills the flat ground between the sea cliff and the foot of the massif: `oz` grows it north from a
   // fixed south edge, so the approach still meets the lane. Stoa depth, column spacing, steps and steles stay human-scale.
-  W: 140, D: 150, ox: 10, oz: -40, T: 4.2, STEPS: [10.8, 4.8, 2.4], BRAZIER: [-6.8, 12], AX: -6.8, AW: 16, AL: 14.8,   // the apron (STEPS[0]) runs along the south only: the west edge stays clear of the sea cliff; AX/AW/AL: the stepped approach on the brazier's axis
-  get BZ() { return -this.D / 2 + 17; }, get SX() { return this.W / 2 - 14; }, NB: 12, NS: 13,   // wings 17 and 14 deep; bays about 9.7
+  W: 124, D: 150, ox: 2, oz: -40, T: 5.6, STEPS: [10.8, 4.8, 2.4], BRAZIER: [-7, 12], AX: -7, AW: 16, AL: 19,   // the apron (STEPS[0]) runs along the south only: the west edge stays clear of the sea cliff, the east of the lane; AX/AW/AL: the stepped approach on the brazier's axis
+  COL: 17, ARCH: 3.2, get RISE() { return this.T / 3; },                                        // Doric at 5 diameters: a monumental stoa on a three-step podium
+  get BZ() { return -this.D / 2 + 20; }, get SX() { return this.W / 2 - 16; }, NB: 10, NS: 13,   // wings 20 and 16 deep; bays about 10
   get X0() { return -this.W / 2 + 10; }, get BAYB() { return (this.SX - this.X0) / this.NB; }, get BAYS() { return (this.D / 2 - 5.5 - this.BZ) / this.NS; },
   columns() { const out = []; for (let i = 0; i <= this.NB; i++) out.push(['b', this.X0 + i * this.BAYB, this.BZ]); for (let j = 1; j < this.NS; j++) out.push(['s', this.SX, this.BZ + j * this.BAYS]); return out; },
   // Steles fill in tiers so five read as a deliberate group and thirty-five as honoured ranks, never a grid or a fence:
@@ -410,11 +411,11 @@ export const HEROON = {
     for (const k of outward(this.NB - 1, 5)) out.push({ x: bayX(k), z: this.BZ + 8, ry: 0, y: T });
     for (const j of outward(this.NS, 7).filter((j) => j > 0)) out.push({ x: this.SX - 8, z: bayZ(j), ry: -Math.PI / 2, y: T });
     for (const deg of [55, 125, 25, 155, 0, 180]) arc(22, deg);
-    for (const deg of [40, 140, 15, 165, 0, 180]) arc(32, deg);
+    for (const deg of [40, 140, 15, 165, 180]) arc(32, deg);
     for (const k of outward(this.NB - 1, 6).filter((k) => k > 0)) out.push({ x: this.X0 + k * this.BAYB, z: this.BZ + 15, ry: 0, y: T });   // stops a bay short of the side wing's first stele
-    for (const deg of [50, 130, 30, 150, 10, 170]) arc(42, deg);
-    for (const deg of [45, 135, 25, 155]) arc(52, deg);
-    for (let i = 0; i < 6; i++) { const sgn = i % 2 ? 1 : -1; out.push({ x: this.AX + sgn * (this.AW / 2 + 14 + Math.floor(i / 2) * 7), z: D2 + 7.8, ry: -sgn * 0.35, y: T - 2.8 }); }
+    for (const deg of [50, 130, 30, 150, 170]) arc(42, deg);
+    for (const deg of [45, 135, 65, 115, 160]) arc(52, deg);
+    for (let i = 0; i < 6; i++) { const sgn = i % 2 ? 1 : -1; out.push({ x: this.AX + sgn * (this.AW / 2 + 14 + Math.floor(i / 2) * 7), z: D2 + 7.8, ry: -sgn * 0.35, y: T - 2 * this.RISE }); }
     return (this._slots = out.map((s, i) => this.vary(s, i)));
   },
   vary(s, i) { const r = mulberry(7 + i); return { ...s, lift: s.y, sh: [0.9, 1, 1.1][Math.floor(r() * 3)], ry: s.ry + (r() - 0.5) * Math.PI / 30 }; },
@@ -429,7 +430,7 @@ export const HEROON = {
     if (dz > D2 && dz <= D2 + this.AL && Math.abs(dx - this.AX) <= this.AW / 2) return this.T * (1 - (dz - D2) / this.AL);
     if (dx > W2 + this.STEPS[1] || dz > D2 + this.STEPS[0] || dx < -W2 - this.STEPS[1] || dz < -D2) return 0;
     const off = Math.max(-W2 - dx, dz - D2, 0);
-    return off <= this.STEPS[2] ? this.T : off <= this.STEPS[1] ? this.T - 1.4 : this.T - 2.8;
+    return off <= this.STEPS[2] ? this.T : off <= this.STEPS[1] ? this.T - this.RISE : this.T - 2 * this.RISE;
   },
 };
 
@@ -482,15 +483,15 @@ export const BUILDERS = {
     // krepis: three limestone steps on the open south and west sides; the bottom one is a broad apron that takes the
     // honour guard. A shallow flight on the brazier's axis cuts through all three. North and east drop straight behind the stoa.
     for (let k = 0; k < 3; k++) {
-      const off = H.STEPS[k], top = T - 1.4 * (2 - k), x0 = cx - W2 - Math.min(off, H.STEPS[1]), c = k % 2 ? P.marbleShade : P.marble;
-      b.box((x0 + cx + W2) / 2, y + top - 1.4, z, cx + W2 - x0, 1.4, H.D, c);
-      b.box((x0 + ax - aw / 2) / 2, y + top - 1.4, z + D2 + off / 2, ax - aw / 2 - x0, 1.4, off, c); b.box((ax + aw / 2 + cx + W2) / 2, y + top - 1.4, z + D2 + off / 2, cx + W2 - ax - aw / 2, 1.4, off, c);
+      const off = H.STEPS[k], R = H.RISE, top = T - R * (2 - k), x0 = cx - W2 - Math.min(off, H.STEPS[1]), c = k % 2 ? P.marbleShade : P.marble;
+      b.box((x0 + cx + W2) / 2, y + top - R, z, cx + W2 - x0, R, H.D, c);
+      b.box((x0 + ax - aw / 2) / 2, y + top - R, z + D2 + off / 2, ax - aw / 2 - x0, R, off, c); b.box((ax + aw / 2 + cx + W2) / 2, y + top - R, z + D2 + off / 2, cx + W2 - ax - aw / 2, R, off, c);
     }
     const rise = T / 6, run = H.AL / 6, ang = Math.atan2(T, H.AL);
     for (let i = 0; i < 6; i++) b.box(ax, y + i * rise, z + D2 + H.AL - (i + 0.5) * run, aw, rise, run, i % 2 ? P.marbleShade : P.marble);
     for (const sgn of [-1, 1]) {   // sloped cheek walls, each ending in a stub that carries a bronze lamp at the top of the flight
       const wx = ax + sgn * (aw / 2 + 0.9);
-      b.add(new THREE.BoxGeometry(1.8, 2.4, Math.hypot(T, H.AL) + 2), P.marbleShade, new THREE.Matrix4().makeRotationX(ang).setPosition(wx, y + T / 2 + 1, z + D2 + H.AL / 2));
+      b.add(new THREE.BoxGeometry(1.8, 2.6, Math.hypot(T, H.AL) + 2), P.marbleShade, new THREE.Matrix4().makeRotationX(ang).setPosition(wx, y + T / 2 + 1.1, z + D2 + H.AL / 2));
       b.box(wx, y + T, z + D2 - 0.6, 2.2, 2.6, 2.2, P.marble); b.cyl(wx, y + T + 2.6, z + D2 - 0.6, 0.45, 0.6, 1.1, P.bronze, 6); b.cyl(wx, y + T + 3.7, z + D2 - 0.6, 0.9, 0.6, 0.5, P.bronzeLight, 8);
       e.sphere(wx, y + T + 4.6, z + D2 - 0.6, 0.55, P.amber); lightPool(pool, wx, y + T + 0.4, z + D2 - 2, 9, 0.4);
     }
@@ -502,12 +503,13 @@ export const BUILDERS = {
     b.cyl(bx, y + T + 0.3, bz, 24, 24, 0.14, P.sand, 28); b.cyl(bx, y + T + 0.44, bz, 17, 17, 0.1, P.marbleShade, 28);                         // the sand ring the gathered steles stand on
     b.box(cx - 7, y + T + 0.3, z + D2 - 23, H.W - 38, 0.16, 44, P.ancient); b.box(cx - 7, y + T + 0.3, z + D2 - 45.2, H.W - 38, 0.2, 0.6, P.marbleDark);   // the gathering floor: packed sand over the south court behind a marble kerb
     // the L-shaped stoa: a back wall along the north, a side wall along the east, antae at the open ends, all rising to the architrave
-    const colH = 11, arch = 2, wallH = colH + arch, eave = T + wallH, pitch = Math.atan2(4.5, (D2 + H.BZ) / 2), ovh = 2.4, tan = Math.tan(pitch);
+    const colH = H.COL, arch = H.ARCH, wallH = colH + arch, eave = T + wallH, pitch = Math.atan2(4.5, 8.5), ovh = 2.8, tan = Math.tan(pitch);
     b.box(cx, y + T, z - D2 + 1.25, H.W, wallH, 2.5, P.ivory); b.box(cx + W2 - 1.25, y + T, z + 1.25, 2.5, wallH, H.D - 2.5, P.ivory);
     b.box(cx - W2 + 1.25, y + T, z + (-D2 + H.BZ) / 2, 2.5, wallH, H.BZ + D2, P.ivory); b.box(cx + (W2 + H.SX) / 2, y + T, z + D2 - 2.75, W2 - H.SX, wallH, 5.5, P.ivory);
-    for (const [, lx, lz] of H.columns()) b.column(cx + lx, y + T, z + lz, 1.45, colH, P.ivory, P.marbleShade);
+    for (const [, lx, lz] of H.columns()) b.column(cx + lx, y + T, z + lz, 1.7, colH, P.ivory, P.marbleShade);
     b.box(cx + (H.SX - W2) / 2, y + T + colH, z + H.BZ, H.SX + W2 + 3, arch, 3.2, P.plaster); b.box(cx + H.SX, y + T + colH, z + (H.BZ + D2) / 2, 3.2, arch, D2 - H.BZ + 3, P.plaster);   // architrave
-    b.box(cx + (H.SX - W2) / 2, y + T + colH + 0.5, z + H.BZ + 1.7, H.SX + W2 + 3, 0.6, 0.3, P.ochre); b.box(cx + H.SX - 1.7, y + T + colH + 0.5, z + (H.BZ + D2) / 2, 0.3, 0.6, D2 - H.BZ + 3, P.ochre);   // painted band
+    b.box(cx + (H.SX - W2) / 2, y + T + colH + 0.7, z + H.BZ + 1.7, H.SX + W2 + 3, 0.8, 0.3, P.ochre); b.box(cx + H.SX - 1.7, y + T + colH + 0.7, z + (H.BZ + D2) / 2, 0.3, 0.8, D2 - H.BZ + 3, P.ochre);   // painted band
+    b.box(cx + (H.SX - W2) / 2, y + T + colH + arch - 0.5, z + H.BZ + 1.8, H.SX + W2 + 3, 0.5, 0.5, P.marbleShade); b.box(cx + H.SX - 1.8, y + T + colH + arch - 0.5, z + (H.BZ + D2) / 2, 0.5, 0.5, D2 - H.BZ + 3, P.marbleShade);   // cornice
     // gabled roofs in muted tile, one ridge along each wing; the side wing's runs on into the back wing so the two cross cleanly.
     // Each slope is one slab from the ridge down past the eave; both gable ends carry a low pediment with an ochre shield.
     const bD = D2 + H.BZ, rz = z - D2 + bD / 2, sD = W2 - H.SX, rx = cx + H.SX + sD / 2, bRise = bD / 2 * tan, sRise = sD / 2 * tan;
@@ -529,11 +531,11 @@ export const BUILDERS = {
     };
     pediment(cx - W2 - 0.4, rz, bD + 2 * ovh, bRise + ovh * tan, -Math.PI / 2);   // the back wing's west end, toward the sea and the cypress
     pediment(rx, z + D2 + 0.4, sD + 2 * ovh, sRise + ovh * tan, 0);               // the side wing's south end, toward the path
-    b.box(cx + (H.SX - W2) / 2, y + T, z - D2 + 4.6, H.SX + W2 - 6, 1.6, 3.6, P.marbleShade); b.box(cx + W2 - 4.6, y + T, z + (H.BZ + D2) / 2 + 2, 3.6, 1.6, D2 - H.BZ - 10, P.marbleShade);   // benches along the back walls
+    b.box(cx + (H.SX - W2) / 2, y + T, z - D2 + 4.6, H.SX + W2 - 6, 1.8, 3.6, P.marbleShade); b.box(cx + W2 - 4.6, y + T, z + (H.BZ + D2) / 2 + 2, 3.6, 1.8, D2 - H.BZ - 10, P.marbleShade);   // benches along the back walls
     for (const [side, lx, lz] of H.columns()) {   // a clay lantern hangs in every other bay, so the stoa keeps a faint warm glow at night
       const i = side === 'b' ? Math.round((lx - H.X0) / H.BAYB) : Math.round((lz - H.BZ) / H.BAYS); if (i % 2 || (side === 'b' && i >= H.NB) || (side === 's' && i >= H.NS)) continue;
-      const hx = side === 'b' ? cx + lx + H.BAYB / 2 : cx + H.SX - 6, hz = side === 'b' ? z + H.BZ - 6 : z + lz + H.BAYS / 2;
-      b.cyl(hx, y + T + colH - 3.2, hz, 0.12, 0.12, 3.2, P.ink, 4); e.cyl(hx, y + T + colH - 4.4, hz, 0.7, 0.9, 1.2, P.amber, 6); lightPool(pool, hx, y + T + 0.4, hz, 12, 0.45);
+      const hx = side === 'b' ? cx + lx + H.BAYB / 2 : cx + H.SX - 7, hz = side === 'b' ? z + H.BZ - 7 : z + lz + H.BAYS / 2;
+      b.cyl(hx, y + T + colH - 7, hz, 0.12, 0.12, 7, P.ink, 4); e.cyl(hx, y + T + colH - 8.2, hz, 0.7, 0.9, 1.2, P.amber, 6);   // hung at eye height from the taller architrave lightPool(pool, hx, y + T + 0.4, hz, 12, 0.45);
     }
     // the central bronze brazier on a low drum, lit at night (a modest pool: the terrace should glow, not flare)
     b.cyl(bx, y + T + 0.54, bz, 12, 12, 0.12, P.marbleDark, 24); b.cyl(bx, y + T + 0.54, bz, 10.4, 10.4, 0.16, P.marbleShade, 24); b.cyl(bx, y + T + 0.54, bz, 7, 7, 0.2, P.sand, 24);   // a paved roundel under the brazier
@@ -543,7 +545,7 @@ export const BUILDERS = {
     e.sphere(bx, y + T + 9.3, bz, 1.5, P.amber); e.cone(bx, y + T + 9.8, bz, 1.1, 2.6, P.ember, 6); lightPool(pool, bx, y + T + 0.4, bz, 22, 0.8);
     lightPool(pool, bx, y + T + 0.36, bz, 66, 0.3);   // a wide, faint warmth so the court never turns cold at night
     // a cypress at the north-west corner, tall against the pediment, and a loose row of three along the sea side
-    for (const [tx, tz, s] of [[cx - W2 - 9, z - D2 + 6, 1], [cx - W2 - 10, z - D2 + 52, 0.8], [cx - W2 - 8, z - D2 + 96, 0.9], [cx - W2 - 11, z + D2 - 22, 0.75]]) {
+    for (const [tx, tz, s] of [[cx - W2 - 8, z - D2 + 6, 1.25], [cx - W2 - 7.5, z - D2 + 52, 0.95], [cx - W2 - 6.5, z - D2 + 96, 1.1], [cx - W2 - 6.5, z + D2 - 22, 0.9]]) {   // on the strip between the west steps and the cliff lip
       b.cyl(tx, y, tz, 0.9, 1.3, 5, P.woodDark, 5); b.cone(tx, y + 4, tz, 5.2 * s, 36 * s, '#3C5240', 7); b.cone(tx, y + 4 + 11 * s, tz, 3.4 * s, 22 * s, P.cypress, 7); aoDisc(ao, tx, y, tz, 8 * s, 8 * s);
     }
     aoDisc(ao, cx, y, z + 4, H.W * 0.76, H.D * 0.77);
