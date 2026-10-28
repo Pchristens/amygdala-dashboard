@@ -60,11 +60,24 @@ function sunFromWorld(w) {
 }
 const phaseName = (alt, am) => alt < -6 ? 'night' : alt < 6 ? (am ? 'dawn' : 'twilight') : am ? 'morning' : 'afternoon';
 
+// Graphics quality. High is the full look; Medium and Low trade pixel ratio, shadow-map detail, post-processing and
+// frame rate for power. fps caps motion (0 = display rate); ambientMs paces idle life (breathing, water, sway);
+// shadowIdle is how often an idle frame redraws the shadow map (0 = every frame). Auto is High capped at 60 fps (idle
+// shadows at 10 Hz) on mains power, Medium on battery, and steps down a level when motion can't hold ~20 fps.
+const URLQ = new URLSearchParams(location.search);
+export const GFX = {
+  high: { dpr: 2, shadow: 4096, post: 'bloom', samples: 4, fps: 0, ambientMs: 50, shadowIdle: 0 },
+  medium: { dpr: 1.5, shadow: 2048, post: 'bloom', samples: 4, fps: 40, ambientMs: 80, shadowIdle: 250 },
+  low: { dpr: 1, shadow: 1024, post: 'plain', samples: 0, fps: 30, ambientMs: 125, shadowIdle: 1000 },
+};
+
 export async function createMap3D(container, opts = {}) {
   // ---------- renderer / scene / camera ----------
-  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+  // nothing reads the canvas back, so the drawing buffer can be swapped instead of copied every frame
+  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false; // render() decides when the shadow map is redrawn (see GFX.shadowIdle)
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -110,7 +123,7 @@ export async function createMap3D(container, opts = {}) {
     const aspect = w / h;
     camera.left = -500; camera.right = 500; camera.top = 500 / aspect; camera.bottom = -500 / aspect;
     camera.updateProjectionMatrix();
-    needsRender = true;
+    needsRender = true; lastRenderT = -1e9; startLoop(); // setSize cleared the canvas: redraw on the next frame, past any fps cap
   }
   let resizeQueued = false;
   new ResizeObserver(() => { if (resizeQueued) return; resizeQueued = true; requestAnimationFrame(() => { resizeQueued = false; resize(); }); }).observe(container);
@@ -118,7 +131,7 @@ export async function createMap3D(container, opts = {}) {
   // ---------- lights ----------
   const sun = new THREE.DirectionalLight('#fff4e0', 2.4);
   sun.castShadow = true;
-  const SHADOW = Math.max(512, Math.min(4096, +new URLSearchParams(location.search).get('shadow') || 4096));
+  const SHADOW = Math.max(512, Math.min(4096, +URLQ.get('shadow') || 4096));
   sun.shadow.mapSize.set(SHADOW, SHADOW);
   sun.shadow.radius = 4;
   sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.6;
@@ -895,7 +908,7 @@ export async function createMap3D(container, opts = {}) {
     if (beamCone) { for (const c of beamCone.children) c.material.opacity = night ? c.userData.op : 0; if (night) { beamCone.rotation.y = time * 0.3; active = true; } }
     terrain.glint.material.opacity = 0.42 + Math.sin(time * 0.8) * 0.14;
     // follow mode
-    if (follow) { const rec = figures.get(follow); if (rec) { view.cx += (rec.pos.x - view.cx) * Math.min(1, ds * 2.5); view.cz += (rec.pos.y - view.cz) * Math.min(1, ds * 2.5); controls.target.set(view.cx, 0, view.cz); placeCamera(); active = true; } }
+    if (follow) { const rec = figures.get(follow); if (rec) { view.cx += (rec.pos.x - view.cx) * Math.min(1, ds * 2.5); view.cz += (rec.pos.y - view.cz) * Math.min(1, ds * 2.5); controls.target.set(view.cx, 0, view.cz); placeCamera(); active = frameMotion = true; } }
     // Seven-second approach from the sea off Willow Pier, past the Green.
     if (introFlight) {
       const p = Math.min(1, (t - introFlight) / 7000), e = p * p * (3 - 2 * p);
@@ -905,7 +918,7 @@ export async function createMap3D(container, opts = {}) {
       ISO.el = 0.20 + (0.61 - 0.20) * e;
       camera.zoom = 2.8 + (0.76 - 2.8) * e;
       camera.updateProjectionMatrix(); controls.target.set(view.cx, 0, view.cz); placeCamera();
-      active = true;
+      active = frameMotion = true;
       if (p >= 1) finishIntro();
     }
     // camera easing
@@ -915,20 +928,20 @@ export async function createMap3D(container, opts = {}) {
       camera.zoom = viewAnim.from.zoom + (viewAnim.to.zoom - viewAnim.from.zoom) * e; camera.updateProjectionMatrix();
       controls.target.set(view.cx, 0, view.cz); placeCamera();
       if (p >= 1) viewAnim = null;
-      active = true;
+      active = frameMotion = true;
     }
     if (controls.update()) { active = true; frameMotion = true; }
     clampView();
-    // idle (only breathing/bobbing): render at ~20 fps; anything else: every frame
+    // idle (only breathing/bobbing): render every Q.ambientMs; anything else: every frame, up to Q.fps
     idleAcc += dt;
-    if (active || needsRender) { render(); needsRender = false; idleAcc = 0; }
-    else if (idleAcc >= 50) { render(); idleAcc = 0; }
+    const full = active || needsRender;
+    if (full ? !Q.fps || t - lastRenderT >= 1000 / Q.fps - 3 : idleAcc >= Q.ambientMs) { render(frameMotion || needsRender); needsRender = false; idleAcc = 0; lastRenderT = t; if (frameMotion) govern(t); }
     // End the cinematic RAF chain when the camera settles. Existing petals, breathing,
     // mist and water retain a paced ambient clock, and interaction wakes us immediately.
     if (frameMotion || introFlight || viewAnim || follow) requestAnimationFrame(tick);
-    else { running = false; ambientTimer = setTimeout(startLoop, 50); }
+    else { running = false; ambientTimer = setTimeout(startLoop, Q.ambientMs); }
   }
-  let viewAnim = null, idleAcc = 0, introFlight = null;
+  let viewAnim = null, idleAcc = 0, introFlight = null, lastRenderT = -1e9;
   function finishIntro() { introFlight = null; ISO.el = 0.61; controls.enabled = true; panTo('village', false); needsRender = true; startLoop(); }
   function playIntro() { follow = null; viewAnim = null; controls.enabled = false; introFlight = performance.now(); startLoop(); return finishIntro; }
   function spawnSmoke(at, color, ember) {
@@ -938,13 +951,50 @@ export async function createMap3D(container, opts = {}) {
     p.userData = { life: 0, ttl: ember ? 1.4 : 3.2, ph: Math.random() * 6 };
     smokeGroup.add(p); smokeParticles.push(p);
   }
-  const NOPOST = new URLSearchParams(location.search).get('nopost') === '1';
-  function render() {
+  // full: figures, the camera or the scene changed. Other frames (breathing, sway, petals, smoke, water) may reuse the
+  // shadow map, and label layout only changes when figures or the camera move, so they re-run declutter twice a second.
+  let lastShadowT = -1e9, lastDeclutterT = -1e9;
+  function render(full = true) {
+    const now = performance.now();
+    renderer.shadowMap.needsUpdate = full || now - lastShadowT >= Q.shadowIdle;
+    if (renderer.shadowMap.needsUpdate) { lastShadowT = now; STATS.shadowUpdates++; }
     syncViewFromCamera();
     placeSky();
-    declutter();
-    if (NOPOST) renderer.render(scene, camera); else composer.render();
+    if (full || now - lastDeclutterT >= 500) { declutter(); lastDeclutterT = now; }
+    if (post) composer.render(); else renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
+    STATS.renders++; STATS.renderMs += performance.now() - now;
+  }
+  // ---------- graphics quality ----------
+  const NOPOST = URLQ.get('nopost') === '1', STATS = { renders: 0, renderMs: 0, shadowUpdates: 0 };
+  let Q = GFX.high, qPref = 'auto', autoBase = 'high', autoLevel = 'high', post = !NOPOST;
+  function applyQuality() {
+    const level = qPref === 'auto' ? autoLevel : qPref;
+    Q = { ...GFX[level] }; if (qPref === 'auto' && level === 'high') Object.assign(Q, { fps: 60, shadowIdle: 100 }); // Auto's High: same frames, no 144 Hz redraws, idle shadows at 10 Hz
+    renderer.setPixelRatio(Math.min(Q.dpr, window.devicePixelRatio || 1)); composer.setPixelRatio(renderer.getPixelRatio());
+    const size = URLQ.has('shadow') ? SHADOW : Q.shadow;
+    if (sun.shadow.mapSize.x !== size) { sun.shadow.mapSize.set(size, size); sun.shadow.map?.dispose(); sun.shadow.map = null; }
+    post = Q.post && !NOPOST; bloom.enabled = Q.post === 'bloom';
+    for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== Q.samples) { rt.samples = Q.samples; rt.dispose(); } // MSAA
+    container.dataset.gfx = level;
+    resize();
+  }
+  function setQuality(pref) { qPref = GFX[pref] ? pref : 'auto'; autoLevel = autoBase; gov.slow = 0; applyQuality(); return quality(); }
+  const quality = () => ({ pref: qPref, level: container.dataset.gfx });
+  navigator.getBattery?.().then((b) => { const f = () => { autoBase = b.charging ? 'high' : 'medium'; if (qPref === 'auto') setQuality('auto'); }; b.addEventListener('chargingchange', f); f(); }).catch(() => {});
+  // Auto's governor: two consecutive 2 s windows of one stretch of motion under 20 fps step it down a level until the
+  // next setQuality (20, not 24: Medium's 40 fps cap lands on 25 fps on a 50 Hz display).
+  const gov = { t0: 0, last: 0, n: 0, slow: 0 };
+  function govern(t) {
+    if (qPref !== 'auto' || autoLevel === 'low') return;
+    if (t - gov.last > 500) { gov.t0 = t; gov.n = 0; gov.slow = 0; } gov.last = t; gov.n++;
+    if (t - gov.t0 < 2000) return;
+    gov.slow = gov.n * 1000 / (t - gov.t0) < 20 ? gov.slow + 1 : 0; gov.t0 = t; gov.n = 0;
+    if (gov.slow >= 2) { gov.slow = 0; autoLevel = autoLevel === 'high' ? 'medium' : 'low'; window.__dbg?.(`graphics: auto stepped down to ${autoLevel}`); applyQuality(); }
+  }
+  if (URLQ.has('gfxstats')) {
+    const gl = renderer.getContext(), px = new Uint8Array(4);
+    window.__gfx = { stats: STATS, get quality() { return quality(); }, setQuality, bench(n = 20) { let calls = 0, tris = 0; const t0 = performance.now(); for (let i = 0; i < n; i++) { renderer.info.autoReset = false; renderer.info.reset(); render(); calls = renderer.info.render.calls; tris = renderer.info.render.triangles; renderer.info.autoReset = true; gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return { msPerFrame: +((performance.now() - t0) / n).toFixed(2), calls, tris, dpr: renderer.getPixelRatio(), shadow: sun.shadow.mapSize.x, post }; } };
   }
   function syncViewFromCamera() {
     view.cx = controls.target.x; view.cz = controls.target.z;
@@ -1091,8 +1141,8 @@ export async function createMap3D(container, opts = {}) {
   function recenter() { panTo(viewInfo().zone, true); }
   function setGiftMode(on) { container.classList.toggle('gift-mode', !!on); }
 
-  resize();
+  setQuality(URLQ.get('gfx') || opts.quality);
   setSunGoal({ phase: 'morning' }, null);
   panTo('village', false);
-  return { playIntro, getVillageState, sunInfo, update, project, toWorld, entityPos, pulseAt, recenter, panTo, setView, viewInfo, setGiftMode, get state() { return current; }, follow: (name) => { follow = name ? figureKey('resident', name) : null; } };
+  return { playIntro, getVillageState, sunInfo, update, project, toWorld, entityPos, pulseAt, recenter, panTo, setView, viewInfo, setGiftMode, get state() { return current; }, setQuality, quality, follow: (name) => { follow = name ? figureKey('resident', name) : null; } };
 }

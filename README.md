@@ -328,6 +328,16 @@ Machines returning after six hours receive one count of missed bells. Delivery i
 a lost report response can lose that notification. The six-per-day bell budget remains unchanged.
 Far Isle bells always show only “🔔 A bell rang on the Far Isle”, including on lock screens.
 
+### Graphics quality
+
+Settings (⚙) include **graphics**, saved per browser. **High** is the full look: shadows redrawn every frame, bloom and
+MSAA, up to 2× pixel ratio, drawn at the display's refresh rate. **Medium** caps the pixel ratio at 1.5, halves the
+shadow map, draws motion at 40 fps and idle life at ~12 fps, and refreshes idle shadows four times a second. **Low**
+draws at 1× with a quarter-size shadow map, no bloom or MSAA, 30 fps motion and ~8 fps idle life. **Auto** (the
+default) is High capped at 60 fps with idle shadows at 10 Hz on mains power, Medium on battery, and steps down a level
+when moving the camera or figures can't hold about 20 fps. `?gfx=high|medium|low|auto` overrides it for one page load,
+and `?gfxstats=1` exposes `window.__gfx` (render counts, `bench()`) for measuring.
+
 ### Apprentice echoes
 
 In the 3D human view, extra parallel orders appear as small glowing apprentices carrying the site's

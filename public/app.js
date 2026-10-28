@@ -114,7 +114,13 @@ async function makeMap() {
   svg.hidden = false; svg.style.display = '';
   return createMap(svg, mapOpts);
 }
+// Graphics quality is per browser (a laptop on battery and a desktop differ), so it lives in localStorage, not the world.
+try { mapOpts.quality = localStorage.getItem('amygdala.gfx') || 'auto'; } catch (_) { /* private mode */ }
 const map = await makeMap();
+if (map.setQuality) {
+  $('gfx-row').hidden = false; $('gfx').value = map.quality().pref;
+  $('gfx').addEventListener('change', (e) => { map.setQuality(e.target.value); try { localStorage.setItem('amygdala.gfx', e.target.value); } catch (_) { /* private mode */ } });
+}
 $('recenter-btn').addEventListener('click', () => map.recenter());
 zoneNav.addEventListener('click', () => {
   const to = zoneNav.dataset.zone === 'isle' ? 'village' : 'isle';
