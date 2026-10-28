@@ -1083,7 +1083,8 @@ Nodes and local deck sync list with `--all`. Session reports add optional `archi
 (nonnegative safe integer milliseconds or null). Older reports remain valid; lifecycle actions require the new fields
 and otherwise ask the human to update Amygdala on the named machine. Unknown fields remain rejected.
 
-The `glasshouse` place becomes `{id:'hall',name:'Hall of Heroes',kind:'hall',x:165,y:470}`, a modest limestone stoa.
+The `glasshouse` place becomes `{id:'hall',name:'Hall of Heroes',kind:'hall',x:100,y:455}`, a modest limestone stoa, moved
+west of the old spot so the lane from the south-west junction stays clear.
 Saved place references and dictionary keys migrate to `hall` on load; sealed payloads remain opaque.
 
 ## v0.33: epic tales
