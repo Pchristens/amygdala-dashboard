@@ -1305,8 +1305,8 @@ API, snapshot or MCP change; this is the page contract for the tab.
    only, with a count of new counsel), findings awaiting judgement or delivery (`omen`, `decreed` not yet landed,
    `awaiting_confirmation`) and open offerings. Each item expands in place to its full card (the hero row, the omen
    entry on a compact tablet with Decree / Set aside / Confirm fixed, the offering card with Command / Close).
-2. **Heroes** by site (hosts on the isle), with the "Send a hero on a labour" button. Waiting heroes appear only in
-   the strip, as they did in the old "Waiting for you" section.
+2. **Heroes** by site (hosts on the isle), with the "Send a hero on a labour" button. Waiting heroes appear both in
+   the strip and at their site, sorted first there.
 3. Collapsed by default, each a `<details>` whose open state is remembered for the page's life:
    **Offerings history** (closed offerings, latest three, "Show all N"), **The Tablet of Omens** (resolved entries:
    fixed, set aside, insufficient evidence, landed decrees; the decree mode switch sits at its top),

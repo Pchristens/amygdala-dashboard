@@ -906,9 +906,9 @@ export function createPanel(opts) {
       els.workshop.appendChild(h('div', { class: 'empty', text: 'No heroes at the sites. Send one on a labour, or start a session in Agent Deck.' }));
       return;
     }
-    const order = { running: 0, error: 1, idle: 2, stopped: 3 };
+    const order = { waiting: -1, running: 0, error: 1, idle: 2, stopped: 3 };
     const sortW = (list) => list.sort((a, b) => (a.stale ? 9 : order[a.status] ?? 8) - (b.stale ? 9 : order[b.status] ?? 8));
-    const rest = inZone.filter((w) => !waitingHero(w));   // waiting heroes sit in the Needs-you strip
+    const rest = inZone;   // waiting heroes show at their site too, as well as in the Needs-you strip
     if (!inZone.length) els.workshop.appendChild(h('div', { class: 'empty', text: zone === 'isle' ? 'No sessions are quarantined on the isle.' : 'Every session is on the isle right now.' }));
     if (zone === 'village') {
       // group by site
