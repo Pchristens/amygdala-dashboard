@@ -1403,7 +1403,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   const status = String(worker.status || 'idle');
   root.textContent = '';
   const body = h('div', { class: 'terminal-body' });
-  const hint = h('div', { class: 'terminal-hint dim-note', text: 'Live terminal — what you type goes to the hero.' });
+  const hint = h('div', { class: 'terminal-hint dim-note', text: `Live terminal — what you type goes to the hero. To select text to copy, hold ${/Mac/.test(navigator.platform) ? 'Option' : 'Shift'} while dragging.` });
   const note = h('div', { class: 'terminal-status dim-note', hidden: true });
   root.append(h('div', { class: 'terminal-header' },
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
@@ -1422,7 +1422,8 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   const mount = h('div', { class: 'terminal-mount' });
   body.append(mount);
   const term = new window.Terminal({
-    cursorBlink: true, fontSize: 13,
+    // CLIs that capture the mouse swallow plain drags; on a Mac only Option-drag can then select (Shift elsewhere).
+    cursorBlink: true, fontSize: 13, macOptionClickForcesSelection: true,
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
     theme: { background: '#171c21', foreground: '#e6dfd1', cursor: '#e7a26b', selectionBackground: '#46515d' },
   });
