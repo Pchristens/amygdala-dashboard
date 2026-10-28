@@ -1545,3 +1545,12 @@ Governance fold shows the digest, what awaits a ruling and the ledger.
   the page offers 3m, 10m, 20m, 40m and 1h. A festival still halves the gap.
 - `POST /api/control { activeHours: { start, end } }` sets the window (400 when start equals end). The human snapshot's
   `budget` gains `activeHours`.
+
+## v0.48: Codex usage from every machine
+
+- Codex records its allowance only in session logs on the machine that ran it. The server still reads its own logs, and
+  each node now reads its machine's newest Codex log every 5 minutes and reports it in the existing `usage` slot of
+  `/node/report` as `{ id: 'codex', windows, observedAt }` (when the slot is free that cycle). `observedAt` is the log's
+  modification time; a value in the future or not a number is refused.
+- The newest reading wins (`usage.mergeCodex`): an older reading, or one with no timestamp, never replaces a fresher one, so
+  the Codex lamp and provider-pressure gate follow whichever machine ran Codex last.

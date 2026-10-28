@@ -15,7 +15,7 @@ import { extractSignals, classifyHero, isleTagged } from '../lib/heroclass.js';
 import { Sites, transcriptTail } from '../lib/sites.js';
 const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
-import { probeGrok } from '../lib/fleet.js';
+import { probeGrok, probeCodex } from '../lib/fleet.js';
 import { decodeImage, savePaste, pasteDir } from '../lib/pastes.js';
 import { snapshotOf, digest, commitLines, run } from '../lib/snapshot.js';
 import { releaseFacts } from '../lib/governance.js';
@@ -148,10 +148,10 @@ export async function main(args = process.argv.slice(2)) {
   let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
-  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], steward = null, live = false, lastLive = 0, inflight = 0, updating = false, lastUpdate = 0;
+  let village = [], results = [], lastUsage = 0, lastGrok = 0, lastCodex = 0, codexSent = 0, latestSessions = [], steward = null, live = false, lastLive = 0, inflight = 0, updating = false, lastUpdate = 0;
   // Up five minutes after an update: the new code holds, so forget the commit to roll back to.
   setTimeout(() => fs.rm(path.join(REPO, '.git', PREV), { force: true }, () => {}), 300000).unref();
-  const terminals = new Map(), endedHere = new Set(); let output = [], pendingGrok = null;
+  const terminals = new Map(), endedHere = new Set(); let output = [], pendingGrok = null, pendingCodex = null;
   const poller = terminalPoller(async () => {
     try {
       for (const [id, t] of terminals) { try { termSession(t.term, latestSessions, village); } catch { terminals.delete(id); t.child.kill(); } }
@@ -192,6 +192,9 @@ export async function main(args = process.argv.slice(2)) {
       if (usage) usage = { id: usage.id, windows: (usage.windows || []).map(({ kind, label, used_percentage, resets_at, stale }) => ({ kind, label, used_percentage, resets_at, stale })) };
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
+      // Codex keeps its allowance in its own session logs on this machine; the server can't see them, so pass the newest on.
+      if (Date.now() - lastCodex > 300000) { lastCodex = Date.now(); probeCodex().then(u => { if (u && u.observedAt > codexSent) pendingCodex = { id: 'codex', windows: u.windows, observedAt: u.observedAt }; }).catch(() => {}); }
+      if (!usage && pendingCodex) { usage = pendingCodex; codexSent = pendingCodex.observedAt; pendingCodex = null; }
       for (const id of scanner.cache.keys()) if (!village.includes(id)) scanner.cache.delete(id);
       auditScanner.retain(audit.enabled ? sessions.filter(s => !s.archived && village.includes(s.id) && !audit.optOut.includes(s.id)).map(s => s.id) : []);
       const apprentices = [], auditHits = [], isleGhosts = [];
