@@ -1,3 +1,4 @@
+import { terminalInput, terminalKeys } from './terminal-input.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Side panel: Board / Exhibits / Residents / Workshop tabs, with a Village / Isle zone switch.
 import { h, agentClass, relTime, avatar, capitalize, commitmentEl, safeCssColor, runeTablet, toRunes } from './util.js';
@@ -1429,26 +1430,20 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   term.open(mount);
   const base = `/api/term/${encodeURIComponent(worker.id)}`;
   const controller = new AbortController();
-  let disposed = false, ended = false, connected = false;
-  let input = '', inputTimer, frame;
-  let queue = Promise.resolve();
-  const post = (action, data) => {
-    queue = queue.then(async () => {
-      if (disposed || ended) return;
-      const response = await fetch(`${base}/${action}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token },
-        body: JSON.stringify(data), signal: controller.signal,
-      });
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Terminal request failed.');
-      }
-    }).catch(error => { if (!disposed && !ended) hint.textContent = error.message; });
-  };
+  let disposed = false, ended = false;
+  let frame;
+  term.attachCustomKeyEventHandler(event => terminalKeys(term, event));
+  const transport = terminalInput({
+    send: (action, data) => fetch(`${base}/${action}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token },
+      body: JSON.stringify(data), signal: controller.signal,
+    }),
+    error: error => { if (!disposed && !ended) hint.textContent = error.message; },
+  });
   const resize = () => {
     if (disposed || ended || !mount.clientWidth || !mount.clientHeight) return;
     fit.fit();
-    if (connected) post('resize', { cols: term.cols, rows: term.rows });
+    transport.resize(term.cols, term.rows);
   };
   const observer = new ResizeObserver(() => {
     cancelAnimationFrame(frame);
@@ -1457,7 +1452,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   observer.observe(mount);
   const source = new EventSource(`${base}/stream?token=${encodeURIComponent(token)}`);
   source.onopen = () => {
-    connected = true;
+    transport.connect();
     hint.textContent = 'Live terminal — what you type goes to the hero.';
     resize();
   };
@@ -1465,31 +1460,18 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     if (!disposed && !ended) term.write(Uint8Array.from(atob(event.data), ch => ch.charCodeAt(0)));
   });
   source.addEventListener('exit', () => {
-    ended = true; connected = false; source.close();
-    clearTimeout(inputTimer); input = '';
+    ended = true; source.close();
+    transport.dispose();
     hint.textContent = 'session ended';
     term.options.disableStdin = true;
     term.write('\r\n\x1b[90msession ended\x1b[0m\r\n');
   });
   source.onerror = () => { if (!disposed && !ended) hint.textContent = 'Terminal connection lost — reconnecting…'; };
-  const dataListener = term.onData(data => {
-    if (disposed || ended || !connected) return;
-    input += data;
-    if (inputTimer) return;
-    inputTimer = setTimeout(() => {
-      inputTimer = null;
-      const bytes = new TextEncoder().encode(input); input = '';
-      // Keep each request below the server's body limit, including large pastes.
-      for (let i = 0; i < bytes.length; i += 16384) {
-        const chunk = bytes.subarray(i, i + 16384);
-        post('input', { d: btoa(String.fromCharCode(...chunk)) });
-      }
-    }, 10);
-  });
+  const dataListener = term.onData(data => { if (!disposed && !ended) transport.data(data); });
   frame = requestAnimationFrame(() => { resize(); term.focus(); });
   return () => {
     disposed = true;
-    clearTimeout(inputTimer); cancelAnimationFrame(frame);
+    transport.dispose(); cancelAnimationFrame(frame);
     source.close(); controller.abort(); observer.disconnect();
     dataListener.dispose(); term.dispose(); root.textContent = '';
   };

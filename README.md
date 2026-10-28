@@ -123,6 +123,10 @@ keeps the session alive; **End session** kills it. Up to eight sessions retain 6
 Mac node terminals still require python3 and tmux on that node, with no such requirement on the server.
 Only current public village heroes can use terminals. Node helpers also report Grok usage every 30 minutes;
 a fresh server probe takes precedence. Restarting the server ends its held terminals.
+Terminal paste uses the browser's native shortcuts (Ctrl+V, Ctrl+Shift+V, Shift+Insert,
+or Cmd+V) and context-menu Paste. Ctrl+C copies a selection; without one it interrupts.
+Input entered while connecting is buffered. Update both the dashboard and node helper
+for faster terminal polling and retryable input backpressure; no new configuration is needed.
 
 Bridge heroes can still report from Windows using `tools/amygdala-hero.ps1`. Cards show each hero's OS and
 commissions let you choose the host or an online agent-deck node. To run a Windows node, save its pass in

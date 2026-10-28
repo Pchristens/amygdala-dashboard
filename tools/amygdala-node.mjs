@@ -57,6 +57,35 @@ export function openNodeTerm(term, requested, sessions, village, start = spawn, 
   const s = termSession(term, sessions, village);
   return start('python3', ['-I', fileURLToPath(new URL('./ptybridge.py', import.meta.url)), tmux(), 'attach-session', '-t', s.tmux_session], { stdio: ['pipe', 'pipe', 'ignore'] });
 }
+export function terminalOutput(term, child, terminals, output, wake) {
+  const lines = createInterface({ input: child.stdout });
+  lines.on('line', line => {
+    if (!terminals.has(term.id)) return;
+    try {
+      const m = JSON.parse(line);
+      if (m.t === 'o') {
+        output.push({ id: term.id, d: m.d });
+        // Pause producers rather than discard terminal escape sequences under load.
+        if (output.length >= 24) for (const t of terminals.values()) t.lines?.pause();
+        wake();
+      }
+    } catch {}
+  });
+  return lines;
+}
+// Output wakes the poll immediately; an idle node only checks for opens every two seconds.
+export function terminalPoller(poll, active, { schedule = setTimeout, cancel = clearTimeout } = {}) {
+  let timer, busy = false, again = false, stopped = false;
+  const arm = delay => { cancel(timer); timer = schedule(run, delay); timer?.unref?.(); };
+  async function run() {
+    if (stopped) return;
+    if (busy) { again = true; return; }
+    busy = true;
+    try { await poll(); } finally { busy = false; if (!stopped) { arm(again ? 0 : active() ? 25 : 2000); again = false; } }
+  }
+  arm(0);
+  return { wake() { if (busy) again = true; else arm(0); }, dispose() { stopped = true; cancel(timer); } };
+}
 export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (args[i] === '--no-notify') { options.noNotify = true; i--; continue; } if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
   const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
@@ -66,14 +95,13 @@ export async function main(args = process.argv.slice(2)) {
   let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
-  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], connected = false;
+  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [];
   const terminals = new Map(); let output = [], pendingGrok = null;
-  let lastTermPoll = 0;
-  setInterval(async () => {
-    if (connected || (!terminals.size && Date.now() - lastTermPoll < 2000)) return; connected = true; lastTermPoll = Date.now();
+  const poller = terminalPoller(async () => {
     try {
       for (const [id, t] of terminals) { try { termSession(t.term, latestSessions, village); } catch { terminals.delete(id); t.child.kill(); } }
       const batch = output.splice(0, 8);
+      if (output.length < 16) for (const t of terminals.values()) t.lines?.resume();
       const res = await fetch(new URL('/node/term', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ output: batch }), signal: AbortSignal.timeout(10000) });
       if (!res.ok) throw new Error('Terminal refused.');
       const { terms } = await res.json();
@@ -83,8 +111,8 @@ export async function main(args = process.argv.slice(2)) {
         if (!t) {
           try {
             const child = openNodeTerm(term, terms, latestSessions, village); t = { term, child }; terminals.set(term.id, t);
-            createInterface({ input: child.stdout }).on('line', line => { if (!terminals.has(term.id)) return; try { const m = JSON.parse(line); if (m.t === 'o' && output.length < 32) output.push({ id: term.id, d: m.d }); } catch {} });
-            const ended = () => { if (!terminals.delete(term.id)) return; if (output.length < 32) output.push({ id: term.id, exit: true }); };
+            t.lines = terminalOutput(term, child, terminals, output, () => poller.wake());
+            const ended = () => { if (!terminals.delete(term.id)) return; output.push({ id: term.id, exit: true }); poller.wake(); };
             child.on('error', ended); child.on('close', ended);
           } catch { output.push({ id: term.id, exit: true }); continue; }
         }
@@ -92,8 +120,7 @@ export async function main(args = process.argv.slice(2)) {
         for (const line of term.input) { if (line.length > 140000) throw new Error('Invalid terminal input.'); t.child.stdin.write(line); }
       }
     } catch { village = []; for (const t of terminals.values()) t.child.kill(); terminals.clear(); output = []; }
-    finally { connected = false; }
-  }, 250).unref();
+  }, () => terminals.size || output.length);
   for (;;) {
     try {
       const available = deckAvailable(), sessions = [];

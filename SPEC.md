@@ -1105,3 +1105,27 @@ Human-only `POST /api/tales/settings {minHours, minFixed, minCommits}` updates p
 updates allowed). Hours must be finite numbers from 0 to 48; counts must be integers from 0 to 1000. Human
 snapshots alone include `taleSettings`. The tales panel exposes these settings and distinguishes factual
 records from pending tales. Threshold changes apply to future recordings, without changing past records.
+
+## v0.34: terminal latency and paste
+
+Terminal viewers let native paste shortcuts (Ctrl+V, Ctrl+Shift+V, Shift+Insert and Cmd+V)
+reach xterm's native paste event, including bracketed-paste handling. Context-menu Paste
+uses the same native event. With a selection, Ctrl+C copies; Ctrl+Shift+C invokes the
+browser copy command instead of interrupting the hero. Without a selection Ctrl+C remains
+an interrupt. Native paste/copy does not require the async Clipboard API.
+
+Input before SSE opens is buffered. The viewer keeps one input/resize POST in flight,
+drains up to 16 KiB of pending UTF-8 bytes after each successful response, and coalesces
+resizes to the newest dimensions. Input takes priority over resizes. Node terminal input
+has a 256 KiB encoded JSON-lines queue per terminal. When full, input or resize POSTs
+return HTTP 429 without accepting any part of that request; viewers retain the pending
+bytes/dimensions and retry after 25 ms. Successful requests are removed exactly once.
+Other failures stop automatic submission and show the error; uncertain network outcomes
+are not automatically replayed. Detach/exit disposes pending viewer input.
+
+Node helpers poll active terminals 25 ms after each completed poll, and wake immediately
+on PTY output (or immediately after an in-flight poll completes). Idle nodes poll for new
+terminal requests every two seconds. Only one terminal poll is in flight per helper.
+Output producers pause at the helper's high-water mark and resume as uploads drain,
+rather than silently dropping output chunks. Existing pass, village allow-list, local
+session-tag and per-operation privacy checks remain in force. This adds no model calls.

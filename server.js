@@ -259,7 +259,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, headers);
     fs.createReadStream(file).pipe(res);
   } catch (e) {
-    if (!res.headersSent) json(res, 400, { ok: false, error: e.message }); else res.end();
+    if (!res.headersSent) json(res, e.status === 429 ? 429 : 400, { ok: false, error: e.message }); else res.end();
   }
 });
 
