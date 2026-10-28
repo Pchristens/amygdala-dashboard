@@ -1135,15 +1135,18 @@ session-tag and per-operation privacy checks remain in force. This adds no model
 The Hall of Heroes is drawn as a heroon: a raised limestone terrace with three steps on its open south and west sides,
 an L-shaped stoa (solid back and side walls, gabled terracotta roofs with a low pediment on each short end, hanging
 lanterns in alternate bays), a stepped approach on the brazier's axis, a central bronze tripod brazier that burns at
-night, and one cypress at the north-west corner. `kind: 'hall'` builds at scale 1; the
-layout constants and the bay order live in `HEROON` (public/scene3d.js) and are shared with the 3D map.
+night, and cypresses along the sea side. The terrace (140 by 150 units, `HEROON.W`/`D`) fills the flat ground from the
+lane up to the foot of the massif, grown north from a fixed south edge (`HEROON.oz`) so the approach still meets the
+lane; only the plan grows, the stoa, steps and steles stay human-scale, so sixty-one bays precede the ground rows.
+`kind: 'hall'` builds at scale 1; the layout constants and the bay order live in `HEROON` (public/scene3d.js) and are
+shared with the 3D map.
 
 Each hero in the human snapshot's `hall` has one travertine stele and one clay lamp. The stele carries its `site`
 emblem in painted relief (temple gate, scroll, flame, pick; a disc for anything else); nothing else is written on it.
 Steles and lamps are instanced per site; lamps light at night with the other lamps. Bays fill in tiers
 (`HEROON.SLOTS`): the court row before the back wing, the side wing, a staggered second file before the back wing,
 two loose arcs about the brazier (the stair axis left open), an honour guard on the lower step set well back from the
-approach and turned toward it, then rows on the ground to the south only past thirty-five. Each
+approach and turned toward it, then rows on the ground to the south only past the colonnade bays. Each
 stele has a small deterministic height and yaw variation by bay. A hero keeps its bay for the life of the page; a new hero takes the lowest free bay.
 
 Hero names never appear on the map: hovering a stele shows the hero's title as a label, clicking it opens the Hall

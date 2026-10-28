@@ -133,7 +133,7 @@ export async function createMap3D(container, opts = {}) {
   const hemi = new THREE.HemisphereLight('#DCEAF0', '#9B8E78', 0.9); scene.add(hemi);
   const fill = new THREE.DirectionalLight('#CFE3EC', 0.35); fill.position.set(-600, 500, 800); scene.add(fill);
   const nightLights = [];
-  const LIGHT_SPOTS = [[440,448],[650,482],[690,618],[140,170],[880,446],[715,222],[250,642],[826,736],[104,465]];
+  const LIGHT_SPOTS = [[440,448],[650,482],[690,618],[140,170],[880,446],[715,222],[250,642],[826,736],[103,427]];
   for (const [lx, lz] of LIGHT_SPOTS) { const pl = new THREE.PointLight('#FFB060', 0, 130, 1.6); pl.position.set(lx, groundHeight(lx, lz) + 13, lz); pl.visible = false; pl.userData.k = [1.7, 1, 1, 1.5, 1, 1.5, 1, 1, 0.9][nightLights.length] || 1; scene.add(pl); nightLights.push(pl); }
   function updateShadowFrustum() {
     const span = Math.max(420, view.w * 0.62);
@@ -238,7 +238,7 @@ export async function createMap3D(container, opts = {}) {
       d.className = `lbl lbl-place ${divine ? 'divine' : ''} ${['temple', 'greatlibrary', 'forge', 'quarry', 'tower'].includes(p.kind) ? 'major' : 'minor'}`;
       d.textContent = String(p.name || p.id);
       // the Green's label sits at the plaza's front edge, clear of the Almond at its centre
-      const o = new CSS2DObject(d); o.position.set(p.x, (info.y0 || 0) + (info.h || 20) + 6, p.kind === 'plaza' ? p.y + 66 : p.y); staticGroup.add(o); placeLabels.set(p.id, o);
+      const o = new CSS2DObject(d); o.position.set(info.labelAt?.x ?? p.x, (info.y0 || 0) + (info.h || 20) + 6, p.kind === 'plaza' ? p.y + 66 : (info.labelAt?.z ?? p.y)); staticGroup.add(o); placeLabels.set(p.id, o);
       const hit = new THREE.Mesh(new THREE.BoxGeometry(...(info.hit || [60, 30, 50])), new THREE.MeshBasicMaterial({ visible: false }));
       hit.position.set(info.hitAt?.x ?? p.x, (info.y0 || 0) + (info.hit?.[1] || 30) / 2, info.hitAt?.z ?? p.y); hit.userData = { pick: { type: 'place', id: p.id } }; staticGroup.add(hit); hits.push(hit);
       if (info.ember) emberEmitter = info.ember;
@@ -247,7 +247,7 @@ export async function createMap3D(container, opts = {}) {
       if (p.kind === 'hall' && zoneOf(p) === 'village') { // the heroon: a Linear B dedication painted on the side wing's architrave (decoration only), shown up close
         hallPlace = { x: p.x, y: p.y, y0: info.y0 || 0 }; hallDirty = true;
         const f = document.createElement('div'); f.className = 'lbl lbl-frieze'; f.textContent = '\u{10000}\u{1002D}\u{10024}\u{10003}\u{10012}\u{1001B}\u{1002B}\u{10033}\u{10014}';
-        const fo = new CSS2DObject(f); fo.position.set(p.x + HEROON.ox + HEROON.SX - 1, (info.y0 || 0) + HEROON.T + 12.4, p.y + 10); staticGroup.add(fo); placeLabels.set('hall-frieze', fo);   // on the side wing, clear of the place label
+        const fo = new CSS2DObject(f); fo.position.set(p.x + HEROON.ox + HEROON.SX - 1, (info.y0 || 0) + HEROON.T + 12.4, p.y + HEROON.oz + 10); staticGroup.add(fo); placeLabels.set('hall-frieze', fo);   // on the side wing, clear of the place label
       }
     }
     for (const w of workshops) {
@@ -676,7 +676,7 @@ export async function createMap3D(container, opts = {}) {
   const hallGroup = new THREE.Group(); scene.add(hallGroup);
   const hallRecs = new Map(); // hero id -> { slot, site, x, z, ry, y, rise, flame, state, t0, hit, label }
   let hallDirty = false, hallReady = false, hallMeshes = [], hallLabels = [], hallLamps = null, hallFlames = null;
-  const hallSlotPos = (slot) => { const sl = HEROON.slot(slot); return { ...sl, x: hallPlace.x + HEROON.ox + sl.x, z: hallPlace.y + sl.z, y: hallPlace.y0 + sl.y }; };
+  const hallSlotPos = (slot) => { const sl = HEROON.slot(slot); return { ...sl, x: hallPlace.x + HEROON.ox + sl.x, z: hallPlace.y + HEROON.oz + sl.z, y: hallPlace.y0 + sl.y }; };
   const heroLift = (x, z) => hallPlace ? HEROON.lift(x - hallPlace.x, z - hallPlace.y) : 0;
   function syncHall(state) {
     const list = hallPlace && Array.isArray(state.hall) ? state.hall.filter((w) => w && w.id && zoneOf(w) !== 'isle') : [];

@@ -389,25 +389,31 @@ const homeBlock = (b, e, x, y, z, w, h, d, seed) => { // whitewashed Cycladic bl
 // ---------- the heroon (Hall of Heroes): shared layout for the builder (static stoa) and map3d (steles per resting hero) ----------
 // Offsets are relative to the place; `ox` shifts the terrace east so the apron clears the western cliff.
 export const HEROON = {
-  W: 100, D: 70, ox: 10, T: 4.2, STEPS: [10.8, 4.8, 2.4], BZ: -18, SX: 36, NB: 8, NS: 5, BRAZIER: [-6, 10], AX: -6, AW: 16, AL: 14.8,   // the apron (STEPS[0]) runs along the south only: the west edge stays clear of the sea cliff; AX/AW/AL: the stepped approach on the brazier's axis
+  // The terrace fills the flat ground between the sea cliff and the foot of the massif: `oz` grows it north from a
+  // fixed south edge, so the approach still meets the lane. Stoa depth, column spacing, steps and steles stay human-scale.
+  W: 140, D: 150, ox: 10, oz: -40, T: 4.2, STEPS: [10.8, 4.8, 2.4], BRAZIER: [-6.8, 12], AX: -6.8, AW: 16, AL: 14.8,   // the apron (STEPS[0]) runs along the south only: the west edge stays clear of the sea cliff; AX/AW/AL: the stepped approach on the brazier's axis
+  get BZ() { return -this.D / 2 + 17; }, get SX() { return this.W / 2 - 14; }, NB: 12, NS: 13,   // wings 17 and 14 deep; bays about 9.7
   get X0() { return -this.W / 2 + 10; }, get BAYB() { return (this.SX - this.X0) / this.NB; }, get BAYS() { return (this.D / 2 - 5.5 - this.BZ) / this.NS; },
   columns() { const out = []; for (let i = 0; i <= this.NB; i++) out.push(['b', this.X0 + i * this.BAYB, this.BZ]); for (let j = 1; j < this.NS; j++) out.push(['s', this.SX, this.BZ + j * this.BAYS]); return out; },
   // Steles fill in tiers so five read as a deliberate group and thirty-five as honoured ranks, never a grid or a fence:
   // the court row under the back wing (bays outward from the brazier's axis, one per bay, 8 units clear of the eaves so
-  // the roof never hides them), the side wing, a staggered second file before the back wing, then two loose arcs about
-  // the fire (radius 20 and 28, every stele turned to face it, the stair axis left open), then an honour guard on the
-  // lower step set well back from the stair cheeks and turned toward the approach; rows on the ground only past 35.
-  // Each slot carries a deterministic height (×0.9/1/1.1) and a yaw of ±3° so no row reads as a picket fence.
+  // the roof never hides them), the side wing, the two inner arcs about the fire, a staggered second file before the back
+  // wing, then the outer arcs (radius 22 to 52, every stele turned to face the fire, the stair axis left open), then an
+  // honour guard on the lower step set well back from the stair cheeks and turned toward the approach; rows on the
+  // ground only past the sixty-one bays. Each slot carries a deterministic height (×0.9/1/1.1) and a yaw of ±3°.
   get SLOTS() {
     if (this._slots) return this._slots;
     const T = this.T, D2 = this.D / 2, [bx, bz] = this.BRAZIER, out = [];
     const bayX = (k) => this.X0 + (k + 0.5) * this.BAYB, bayZ = (j) => this.BZ + (j + 0.5) * this.BAYS;
     const arc = (r, deg) => { const a = deg * Math.PI / 180; out.push({ x: bx + Math.cos(a) * r, z: bz + Math.sin(a) * r, ry: Math.atan2(-Math.cos(a), -Math.sin(a)), y: T }); };
-    for (const k of [3, 2, 4, 1, 5, 0, 6]) out.push({ x: bayX(k), z: this.BZ + 8, ry: 0, y: T });
-    for (const j of [2, 1, 3, 4]) out.push({ x: this.SX - 8, z: bayZ(j), ry: -Math.PI / 2, y: T });
-    for (const k of [3, 4, 2, 5, 1, 6]) out.push({ x: this.X0 + k * this.BAYB, z: this.BZ + 15, ry: 0, y: T });
-    for (const deg of [55, 125, 25, 155, 0, 180]) arc(20, deg);
-    for (const deg of [40, 140, 15, 165, 0, 180]) arc(28, deg);
+    const outward = (n, c) => { const o = []; for (let d = 0; o.length < n; d++) { if (c + d < n) o.push(c + d); if (d && c - d >= 0 && o.length < n) o.push(c - d); } return o; };
+    for (const k of outward(this.NB - 1, 5)) out.push({ x: bayX(k), z: this.BZ + 8, ry: 0, y: T });
+    for (const j of outward(this.NS, 7).filter((j) => j > 0)) out.push({ x: this.SX - 8, z: bayZ(j), ry: -Math.PI / 2, y: T });
+    for (const deg of [55, 125, 25, 155, 0, 180]) arc(22, deg);
+    for (const deg of [40, 140, 15, 165, 0, 180]) arc(32, deg);
+    for (const k of outward(this.NB - 1, 6).filter((k) => k > 0)) out.push({ x: this.X0 + k * this.BAYB, z: this.BZ + 15, ry: 0, y: T });   // stops a bay short of the side wing's first stele
+    for (const deg of [50, 130, 30, 150, 10, 170]) arc(42, deg);
+    for (const deg of [45, 135, 25, 155]) arc(52, deg);
     for (let i = 0; i < 6; i++) { const sgn = i % 2 ? 1 : -1; out.push({ x: this.AX + sgn * (this.AW / 2 + 14 + Math.floor(i / 2) * 7), z: D2 + 7.8, ry: -sgn * 0.35, y: T - 2.8 }); }
     return (this._slots = out.map((s, i) => this.vary(s, i)));
   },
@@ -419,7 +425,7 @@ export const HEROON = {
   },
   // How far above the ground a figure standing at (dx, dz) from the place is lifted by the terrace, its steps and the approach.
   lift(dx, dz) {
-    const W2 = this.W / 2, D2 = this.D / 2; dx -= this.ox;
+    const W2 = this.W / 2, D2 = this.D / 2; dx -= this.ox; dz -= this.oz;
     if (dz > D2 && dz <= D2 + this.AL && Math.abs(dx - this.AX) <= this.AW / 2) return this.T * (1 - (dz - D2) / this.AL);
     if (dx > W2 + this.STEPS[1] || dz > D2 + this.STEPS[0] || dx < -W2 - this.STEPS[1] || dz < -D2) return 0;
     const off = Math.max(-W2 - dx, dz - D2, 0);
@@ -471,8 +477,8 @@ export const BUILDERS = {
     aoDisc(ao, x, y, z + 2, 70, 44);
     return { h: 50, hit: [120, 52, 70] };
   },
-  hall(b, e, pool, ao, x, y, z) { // the heroon: see HEROON above for the shared layout
-    const H = HEROON, cx = x + H.ox, T = H.T, W2 = H.W / 2, D2 = H.D / 2, ax = cx + H.AX, aw = H.AW, [bxo, bzo] = H.BRAZIER, bx = cx + bxo, bz = z + bzo;
+  hall(b, e, pool, ao, x, y, z0) { // the heroon: see HEROON above for the shared layout
+    const H = HEROON, cx = x + H.ox, z = z0 + H.oz, T = H.T, W2 = H.W / 2, D2 = H.D / 2, ax = cx + H.AX, aw = H.AW, [bxo, bzo] = H.BRAZIER, bx = cx + bxo, bz = z + bzo;
     // krepis: three limestone steps on the open south and west sides; the bottom one is a broad apron that takes the
     // honour guard. A shallow flight on the brazier's axis cuts through all three. North and east drop straight behind the stoa.
     for (let k = 0; k < 3; k++) {
@@ -489,10 +495,12 @@ export const BUILDERS = {
       e.sphere(wx, y + T + 4.6, z + D2 - 0.6, 0.55, P.amber); lightPool(pool, wx, y + T + 0.4, z + D2 - 2, 9, 0.4);
     }
     b.box(cx, y + T, z, H.W - 2, 0.3, H.D - 2, P.marbleShade);                                                                                       // court paving, a shade warmer than the steps
-    for (let i = -4; i <= 4; i++) b.box(cx + i * 10.5 + 1, y + T + 0.3, z + 6, 0.3, 0.1, H.D - 18, P.marbleDark);                                      // paving joints give the limestone its scale
-    for (let j = -2; j <= 3; j++) b.box(cx + 1, y + T + 0.3, z + j * 10.5 - 1, H.W - 26, 0.1, 0.3, P.marbleDark);
+    const nx = Math.floor((H.W - 26) / 21), nz = Math.floor((H.D - 18) / 21);                                                                        // paving joints give the limestone its scale
+    for (let i = -nx; i <= nx; i++) b.box(cx + i * 10.5 + 1, y + T + 0.3, z + 6, 0.3, 0.1, H.D - 18, P.marbleDark);
+    for (let j = -nz; j <= nz; j++) b.box(cx + 1, y + T + 0.3, z + j * 10.5 + 6, H.W - 26, 0.1, 0.3, P.marbleDark);
     b.box(cx + (H.SX - 8 - W2) / 2 + 2, y + T + 0.3, z + H.BZ + 8, H.SX - 8 + W2 - 12, 0.2, 7, P.sand); b.box(cx + H.SX - 8, y + T + 0.3, z + (H.BZ + D2) / 2 + 4, 7, 0.2, D2 - H.BZ - 12, P.sand);   // sand bands under the stele rows
-    b.cyl(bx, y + T + 0.3, bz, 20.5, 20.5, 0.14, P.sand, 28); b.cyl(bx, y + T + 0.44, bz, 13.5, 13.5, 0.1, P.marbleShade, 28);                         // the sand ring the gathered steles stand on
+    b.cyl(bx, y + T + 0.3, bz, 24, 24, 0.14, P.sand, 28); b.cyl(bx, y + T + 0.44, bz, 17, 17, 0.1, P.marbleShade, 28);                         // the sand ring the gathered steles stand on
+    b.box(cx - 7, y + T + 0.3, z + D2 - 23, H.W - 38, 0.16, 44, P.ancient); b.box(cx - 7, y + T + 0.3, z + D2 - 45.2, H.W - 38, 0.2, 0.6, P.marbleDark);   // the gathering floor: packed sand over the south court behind a marble kerb
     // the L-shaped stoa: a back wall along the north, a side wall along the east, antae at the open ends, all rising to the architrave
     const colH = 11, arch = 2, wallH = colH + arch, eave = T + wallH, pitch = Math.atan2(4.5, (D2 + H.BZ) / 2), ovh = 2.4, tan = Math.tan(pitch);
     b.box(cx, y + T, z - D2 + 1.25, H.W, wallH, 2.5, P.ivory); b.box(cx + W2 - 1.25, y + T, z + 1.25, 2.5, wallH, H.D - 2.5, P.ivory);
@@ -528,18 +536,19 @@ export const BUILDERS = {
       b.cyl(hx, y + T + colH - 3.2, hz, 0.12, 0.12, 3.2, P.ink, 4); e.cyl(hx, y + T + colH - 4.4, hz, 0.7, 0.9, 1.2, P.amber, 6); lightPool(pool, hx, y + T + 0.4, hz, 12, 0.45);
     }
     // the central bronze brazier on a low drum, lit at night (a modest pool: the terrace should glow, not flare)
-    b.cyl(bx, y + T + 0.54, bz, 9.5, 9.5, 0.12, P.marbleDark, 24); b.cyl(bx, y + T + 0.54, bz, 8.2, 8.2, 0.16, P.marbleShade, 24); b.cyl(bx, y + T + 0.54, bz, 5.5, 5.5, 0.2, P.sand, 24);   // a paved roundel under the brazier
+    b.cyl(bx, y + T + 0.54, bz, 12, 12, 0.12, P.marbleDark, 24); b.cyl(bx, y + T + 0.54, bz, 10.4, 10.4, 0.16, P.marbleShade, 24); b.cyl(bx, y + T + 0.54, bz, 7, 7, 0.2, P.sand, 24);   // a paved roundel under the brazier
     b.cyl(bx, y + T, bz, 4.4, 4.8, 0.8, P.marbleDark, 10); b.cyl(bx, y + T + 0.8, bz, 3.4, 3.8, 0.5, P.marbleShade, 10);
     for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2 + 0.5; b.cyl(bx + Math.cos(a) * 2.1, y + T + 1.3, bz + Math.sin(a) * 2.1, 0.32, 0.4, 5.2, P.bronze, 6); }
     b.cyl(bx, y + T + 5.6, bz, 3.3, 2.1, 2.6, P.bronze, 10); b.cyl(bx, y + T + 8.2, bz, 3.7, 3.4, 0.6, P.bronzeLight, 10);
-    e.sphere(bx, y + T + 9.3, bz, 1.5, P.amber); e.cone(bx, y + T + 9.8, bz, 1.1, 2.6, P.ember, 6); lightPool(pool, bx, y + T + 0.4, bz, 18, 0.8);
-    lightPool(pool, bx, y + T + 0.36, bz, 46, 0.3);   // a wide, faint warmth so the court never turns cold at night
-    // one cypress at the north-west corner, tall against the pediment
-    const tx = cx - W2 - 9, tz = z - D2 + 6;
-    b.cyl(tx, y, tz, 0.9, 1.3, 5, P.woodDark, 5); b.cone(tx, y + 4, tz, 5.2, 36, '#3C5240', 7); b.cone(tx, y + 15, tz, 3.4, 22, P.cypress, 7); aoDisc(ao, tx, y, tz, 8, 8);
-    aoDisc(ao, cx, y, z + 4, 76, 54);
+    e.sphere(bx, y + T + 9.3, bz, 1.5, P.amber); e.cone(bx, y + T + 9.8, bz, 1.1, 2.6, P.ember, 6); lightPool(pool, bx, y + T + 0.4, bz, 22, 0.8);
+    lightPool(pool, bx, y + T + 0.36, bz, 66, 0.3);   // a wide, faint warmth so the court never turns cold at night
+    // a cypress at the north-west corner, tall against the pediment, and a loose row of three along the sea side
+    for (const [tx, tz, s] of [[cx - W2 - 9, z - D2 + 6, 1], [cx - W2 - 10, z - D2 + 52, 0.8], [cx - W2 - 8, z - D2 + 96, 0.9], [cx - W2 - 11, z + D2 - 22, 0.75]]) {
+      b.cyl(tx, y, tz, 0.9, 1.3, 5, P.woodDark, 5); b.cone(tx, y + 4, tz, 5.2 * s, 36 * s, '#3C5240', 7); b.cone(tx, y + 4 + 11 * s, tz, 3.4 * s, 22 * s, P.cypress, 7); aoDisc(ao, tx, y, tz, 8 * s, 8 * s);
+    }
+    aoDisc(ao, cx, y, z + 4, H.W * 0.76, H.D * 0.77);
     const ridge = eave + bRise + 1.2;
-    return { h: ridge + 2, hit: [H.W + 6, ridge + 4, 20], hitAt: { x: cx, z: z - D2 + 10 }, brazier: { x: bx, y: y + T + 10, z: bz } };   // the click target is the back wing: the court stays free for steles and figures
+    return { h: ridge + 2, hit: [H.W + 6, ridge + 4, 20], hitAt: { x: cx, z: z - D2 + 10 }, labelAt: { x: cx, z: z - D2 + 12 }, brazier: { x: bx, y: y + T + 10, z: bz } };   // the click target and label sit on the back wing: the court stays free for steles and figures
   },
   garden(b, e, pool, ao, x, y, z) { // walled sun garden on ancient foundations
     b.box(x, y, z - 24, 74, 5, 3, P.ancientDark); b.box(x - 22, y, z + 24, 30, 5, 3, P.ancientDark); b.box(x + 26, y, z + 24, 22, 5, 3, P.ancientDark);
@@ -736,6 +745,7 @@ export function buildPlace(place, b, e, pool, ao) {
   [b, e, pool, ao].forEach((bb, i) => scaleParts(bb, marks[i], place.x, y0, place.y, s));
   info.h = (info.h || 20) * s; info.hit = (info.hit || [60, 30, 50]).map((v) => v * s);
   if (info.hitAt) info.hitAt = { x: place.x + (info.hitAt.x - place.x) * s, z: place.y + (info.hitAt.z - place.y) * s };
+  if (info.labelAt) info.labelAt = { x: place.x + (info.labelAt.x - place.x) * s, z: place.y + (info.labelAt.z - place.y) * s };
   if (info.brazier) info.brazier = { x: place.x + (info.brazier.x - place.x) * s, y: y0 + (info.brazier.y - y0) * s, z: place.y + (info.brazier.z - place.y) * s };
   if (info.ember) info.ember = { x: place.x + (info.ember.x - place.x) * s, y: y0 + (info.ember.y - y0) * s, z: place.y + (info.ember.z - place.y) * s };
   if (info.beam) info.beam = { x: place.x, y: y0 + (info.beam.y - y0) * s, z: place.y };
