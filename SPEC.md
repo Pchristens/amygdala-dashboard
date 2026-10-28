@@ -1554,3 +1554,26 @@ Governance fold shows the digest, what awaits a ruling and the ledger.
   modification time; a value in the future or not a number is refused.
 - The newest reading wins (`usage.mergeCodex`): an older reading, or one with no timestamp, never replaces a fresher one, so
   the Codex lamp and provider-pressure gate follow whichever machine ran Codex last.
+
+## Notes on earlier sections (documentation audit after v0.48)
+
+No contract changes; these notes correct or complete earlier sections, which are left as they were written.
+
+- **Node version.** The introduction says Node >= 20; the supported version is Node 22+, as in the README and AGENTS.md.
+- **Duplicate and skipped numbers.** `v0.23` names two sections (Amygdala identifiers, and Orders), two separate
+  changes. `v0.30: isle ghosts` appears twice: the second copy is the current one (it adds the helper's ciphertext
+  queue, the merge on unlock and fading on completion). There was no v0.26.
+- **The keeper relay** (shipped with v0.25, not specified until now). `POST /api/nodes/keeper {id, on}` (page
+  token) marks a live node pass `keeper` or clears it. On the gate, paths under `/keeper` (`/keeper`, `/keeper/…`,
+  `/keeper?…`) are served only with a keeper node pass in `Authorization: Bearer`; anything else gets 401
+  `Invalid keeper pass.` The gate strips the prefix and forwards the request to the loopback server with
+  `Host: 127.0.0.1:<port>`. `tools/amygdala-keeper.mjs --server <gate URL> --pass-file <file> [--port 8790]` (or
+  `AMYGDALA_SERVER`, `AMYGDALA_NODE_PASS`) serves that at `http://127.0.0.1:<port>`; because it rewrites `Host`, it
+  refuses (421) any request whose `Host` is not `127.0.0.1`, `localhost` or `amygdala.localhost` at its port.
+  `tools/setup-wsl.sh keeper` installs it as a user service.
+- **Dashboard host names.** The server accepts `Host` `127.0.0.1:<port>`, `localhost:<port>` and
+  `amygdala.localhost:<port>`, and answers 421 otherwise.
+- **Node passes** last 168 hours by default (`hours` 1 to 2160 on `POST /api/nodes/pass`).
+- **`governance/protected.json`'s `about`** says "SPEC v0.45"; the governance contract is v0.46.
+- **`CHANGELOG.md`** records each version in plain words. `tools/test-changelog.mjs` fails when a `## vX.Y` heading
+  here has no `## vX.Y` heading there, or no Unreleased line naming it, or when CHANGELOG.md lacks `## Unreleased`.

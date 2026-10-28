@@ -17,6 +17,8 @@ All assets were free ($0, no login). CC0 assets need no attribution; it is given
 
 ## Poly Pizza models (license per model as shown on its page)
 
+`models/polypizza/LICENSES.txt` points back to this list, which is the record of each model's licence.
+
 - `models/polypizza/cypress-tree-4phd.glb` - "cypress tree" by Andrea Zvinakis - CC-BY 3.0 - https://poly.pizza/m/4PHDVmmfFj9
   - Attribution: "cypress tree" by Andrea Zvinakis [CC-BY 3.0] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/4PHDVmmfFj9)
 - `models/polypizza/vines-evs4.glb` - "Vines" by Quaternius - CC0 1.0 - https://poly.pizza/m/EVS4viM9BL
