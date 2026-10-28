@@ -806,8 +806,9 @@ export function createPanel(opts) {
       const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));
       controls.append(h('label', {}, enabled, ' Audit autonomous heroes'));
       for (const [key, label] of [['tier1', 'First reviewer'], ['tier2', 'Escalation reviewer']]) {
-        const select = h('select', { 'aria-label': label }); for (const r of state.residents || []) select.append(h('option', { value: r.name, text: r.name, selected: r.name === s[key] }));
-        select.value = s[key]; select.addEventListener('change', () => opts.api('/api/audit/settings', { [key]: select.value })); controls.append(h('label', {}, label, select));
+        // Reviewers are picked by role (shown as title · model); a resident with a shared role is picked by name.
+        const select = h('select', { 'aria-label': label }), list = state.residents || [];
+        for (const r of list) { const value = r.role && list.filter(x => x.role === r.role).length === 1 ? r.role : r.name; select.append(h('option', { value, text: `${r.title || r.role || r.name} · ${r.model || r.agent}`, selected: value === s[key] || r.name === s[key] })); } select.addEventListener('change', () => opts.api('/api/audit/settings', { [key]: select.value })); controls.append(h('label', {}, label, select));
       }
       const cap = h('input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }); cap.addEventListener('change', () => opts.api('/api/audit/settings', { dailyCap: +cap.value })); controls.append(h('label', {}, 'Daily audit runs ', cap));
       for (const a of (state.audits || []).slice(-20).reverse()) controls.append(h('p', { text: `${a.severity} · ${a.rule} · ${a.status}: ${a.excerpt}` }));
@@ -1036,7 +1037,7 @@ export function createPanel(opts) {
     els.workshop.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'The Tablet of Omens' }), pending ? h('span', { class: 'count count-omen', text: String(pending) }) : null, modeSw));
     const tablet = h('div', { class: 'rune-tablet omens' });
     tablet.appendChild(h('div', { class: 'rune-tablet-title', text: list.length ? 'Omens read by the High Priest' : 'The tablet is blank' }));
-    if (!list.length) tablet.appendChild(h('div', { class: 'rune-tablet-hint', text: 'When a finding gathers a second, it becomes an omen for the Oracle to judge.' }));
+    if (!list.length) tablet.appendChild(h('div', { class: 'rune-tablet-hint', text: 'When a finding gathers a second, it becomes an omen for the High Priest to judge.' }));
     for (const f of list) tablet.appendChild(omenEntry(f));
     els.workshop.appendChild(tablet);
   }
@@ -1057,7 +1058,7 @@ export function createPanel(opts) {
       const v = f.verdict;
       e.appendChild(h('div', { class: 'omen-verdict' },
         h('span', { class: `pill ${v.verdict === 'implement' ? 'pill-running' : 'pill-error'}`, text: v.verdict === 'implement' ? 'implement' : 'reject' }),
-        ' ', h('b', { text: `${v.by || 'Oracle'}: ` }), String(v.reasoning || v.instructions || ''), v.ts ? h('span', { class: 'post-time', text: ` · ${relTime(v.ts)}` }) : null));
+        ' ', h('b', { text: `${v.by || 'High Priest'}: ` }), String(v.reasoning || v.instructions || ''), v.ts ? h('span', { class: 'post-time', text: ` · ${relTime(v.ts)}` }) : null));
     } else if (status === 'omen') {
       e.appendChild(h('div', { class: 'omen-verdict dim-note', text: 'Awaiting the High Priest’s judgement.' }));
     }

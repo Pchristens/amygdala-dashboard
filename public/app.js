@@ -1405,7 +1405,7 @@ function mockApi(path, body) {
     if (!w) return fail('No such hero.');
     if (w.sealed) return fail(isleLockedErr);
     state.tales ||= [];
-    state.tales.push({ id: `t${mockSeq++}`, zone: zoneOf(w), heroId: w.id, hero: w.title, project: w.project, site: w.site, tool: w.tool, host: w.host, startedAt: now - 120000, endedAt: now, workedMs: 120000, commits: [], fixed: [], stat: null, tale: null, bard: 'Quill' });
+    state.tales.push({ id: `t${mockSeq++}`, zone: zoneOf(w), heroId: w.id, hero: w.title, project: w.project, site: w.site, tool: w.tool, host: w.host, startedAt: now - 120000, endedAt: now, workedMs: 120000, commits: [], fixed: [], stat: null, tale: null, bard: 'The Bard' });
   } else if (path === '/api/human/move') {
     state.human = { ...state.human, x: body.x, y: body.y, zone: body.x >= 1150 ? 'isle' : 'village' };
     const near = state.places.find((p) => Math.hypot(p.x - body.x, p.y - body.y) < 60);

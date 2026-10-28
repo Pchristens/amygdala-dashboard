@@ -264,10 +264,10 @@ turn budget; a missing answer is retried once. You can cancel an open order from
 The local Steward can use either launcher (PowerShell: `tools/amygdala.ps1`; shell: `tools/amygdala.sh`):
 
 ```sh
-amygdala order Quill --brief-file brief.md --headline "Quill, inspect the north wall's mortar" --wait
-amygdala order Quill --brief-file brief.md --wait --json
+amygdala order <Name> --brief-file brief.md --headline "Inspect the north wall's mortar" --wait
+amygdala order <Name> --brief-file brief.md --wait --json
 amygdala order all --brief-file brief.md --headline "Inspect the village" --wait
-amygdala order Quill,Iris --brief-file brief.md --wait --json
+amygdala order <Name>,<Name> --brief-file brief.md --wait --json
 ```
 
 The CLI reads the local page token like `pass`. Without `--wait` it prints the order ID and status; with
@@ -330,8 +330,9 @@ This feature spends no model usage and launches no resident turns.
 ### Watchtower
 
 The Temple panel's **Watchtower** audits unattended village heroes. It starts enabled, reads only newly appended
-Claude/Codex tool records on the hero's own machine, and sends redacted keyword hits for review. Sable is the first
-reviewer and Terra handles escalation and critical batches directly; choose other residents, change the default
+Claude/Codex tool records on the hero's own machine, and sends redacted keyword hits for review. The Temple Examiner
+(gpt-6-luna) is the first reviewer and the Smith of the Forge (gpt-6.1-terra) handles escalation and critical batches
+directly. Reviewers are chosen by role, so renamed residents keep their duty; choose other residents, change the default
 20-model-run daily cap, disable
 it globally, or use **Audit on/off** on a hero card. Both review tiers count toward that cap. Reviews wait while the
 village is paused or provider usage is hot; critical keyword hits still ring an urgent bell immediately. Each hero
