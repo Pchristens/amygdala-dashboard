@@ -1377,3 +1377,13 @@ a fixed sentence (or "The Steward could not be started."), never the catch-all t
 `steward-down` is raised for an offline node (one raised earlier stays pending), and the existing bell paths are all
 there is. The duplicate check sees only processes on the node's own machine and only explicit resume/session-id
 arguments (`claude --continue` is not recognised).
+
+## v0.42: a Steward alive outside agent-deck is not down
+
+- The node report may carry `stewardLive: true` (boolean; any other type is an invalid report). A node sends it when the
+  session the server named as the Steward is `error` or `stopped` in agent-deck but a `claude` process is resuming its
+  conversation elsewhere on that machine (a plain terminal after a crash). It checks at most every 30 seconds, never on Windows.
+- `stewardScan` treats that as not down: no `steward-down` event, and a pending one clears. Nodes that never send the
+  field behave as in v0.41.
+- The Tailscale gate opens once Tailscale has its address: a server started before Tailscale looks again every 15 seconds
+  and retries a failed bind, instead of leaving the gate shut for the whole run.

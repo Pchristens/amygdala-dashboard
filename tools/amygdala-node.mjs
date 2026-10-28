@@ -32,6 +32,19 @@ export function resumingElsewhere(table, claudeId, self = process.pid) {
   });
 }
 const refuse = message => Object.assign(new Error(message), { safe: true });
+async function claudeId(s, run) {
+  let id = s.claude_session_id;
+  if (!id) { try { id = JSON.parse((await run('agent-deck', ['session', 'show', s.id, '--json'], { timeout: 15000, maxBuffer: 1 << 20 })).stdout).claude_session_id; } catch {} }
+  return typeof id === 'string' && /^[\w-]{8,80}$/.test(id) ? id : null;
+}
+const psTable = async run => (await run('ps', ['-eo', 'pid,args'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout;
+// agent-deck calls the Steward down when it was resumed in a plain terminal instead; the server should know it is alive.
+export async function stewardLive(sessions, steward, run = exec, ps = () => psTable(run), platform = process.platform) {
+  const s = steward && sessions.find(s => s.id === steward && !s.archived), w = s && toWorker(s, 'local');
+  if (!w || s.remote_name || s.ssh_host || w.tool !== 'claude' || !['error', 'stopped'].includes(w.status) || platform === 'win32') return false;
+  const id = await claudeId(s, run); if (!id) return false;
+  try { return resumingElsewhere(await ps(), id); } catch { return false; }
+}
 // opts.steward: the session the server named as the Steward; opts.ps: process table reader (tests stub it).
 export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail, pastes = null, opts = {}) {
   if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image', 'start'].includes(job.kind)) throw new Error('Unrequested job.');
@@ -58,10 +71,8 @@ export async function executeJob(job, latestJobs, sessions, village, run = exec,
     if (s.remote_name || s.ssh_host || w.tool !== 'claude') throw refuse('Only a local Claude session can be started this way.');
     if (!['error', 'stopped'].includes(w.status)) throw refuse('The Steward is already running.');
     if ((opts.platform || process.platform) === 'win32') throw refuse('Cannot check for a duplicate here.');
-    let id = s.claude_session_id;
-    if (!id) { try { id = JSON.parse((await run('agent-deck', ['session', 'show', s.id, '--json'], { timeout: 15000, maxBuffer: 1 << 20 })).stdout).claude_session_id; } catch {} }
-    if (typeof id !== 'string' || !/^[\w-]{8,80}$/.test(id)) throw refuse('No Claude conversation to check.');
-    let table; try { table = await (opts.ps || (async () => (await run('ps', ['-eo', 'pid,args'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout))(); } catch { throw refuse('Could not check for a duplicate.'); }
+    const id = await claudeId(s, run); if (!id) throw refuse('No Claude conversation to check.');
+    let table; try { table = await (opts.ps || (() => psTable(run)))(); } catch { throw refuse('Could not check for a duplicate.'); }
     if (resumingElsewhere(table, id)) throw refuse('Already running elsewhere.');
     return (await run('agent-deck', ['session', 'start', s.id], { timeout: 60000 })).stdout;
   }
@@ -120,7 +131,7 @@ export async function main(args = process.argv.slice(2)) {
   let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
-  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], steward = null;
+  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], steward = null, live = false, lastLive = 0;
   const terminals = new Map(); let output = [], pendingGrok = null;
   const poller = terminalPoller(async () => {
     try {
@@ -181,8 +192,9 @@ export async function main(args = process.argv.slice(2)) {
         }
         apprentices.push({ heroId: s.id, subagents: scanner.scan(w, village, children) });
       }
+      if (Date.now() - lastLive > 30000) { lastLive = Date.now(); live = await stewardLive(sessions, steward, exec); }
       const batch = results.slice(0, 40);
-      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, isleGhosts, auditHits: auditHits.slice(0, 500), results: batch, ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
+      const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, isleGhosts, auditHits: auditHits.slice(0, 500), results: batch, ...(live && { stewardLive: true }), ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('Report refused.');
       const next = await response.json(); for (const g of isleGhosts) for (const b of g.boxes) pendingGhosts.delete(b.slot); village = next.village || []; steward = next.steward || null; isle = next.isle || []; islePublicKey = next.islePublicKey || null; isleHeroPrefix = next.isleHeroPrefix || ''; audit = next.audit || { enabled: false, optOut: [] }; results.splice(0, batch.length);
       for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }

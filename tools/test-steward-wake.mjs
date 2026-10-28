@@ -7,7 +7,7 @@ import { Usage } from '../lib/usage.js';
 import { Watch } from '../lib/watch.js';
 import { LEGACY_FAILURE } from '../lib/nodes.js';
 import { createMcpHandler } from '../lib/mcp.js';
-import { executeJob, resumingElsewhere } from './amygdala-node.mjs';
+import { executeJob, resumingElsewhere, stewardLive } from './amygdala-node.mjs';
 // v0.41: the Watch wakes the Steward. No agent-deck, ps or model process runs here: the conductor, node and runners are stubs.
 Usage.prototype.pollDeck = () => {}; Usage.prototype.probe = () => {};
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-steward-wake-'));
@@ -21,7 +21,7 @@ try {
   const n = w.nodes, p = n.auth(n.issue('Test PC', 24).token);
   const base = { title: 'Steward', project: 'amygdala', path: '/home/test/amygdala', group: '', tool: 'claude' };
   const steward = { id: 'st-1', status: 'running', ...base }, codex = { id: 'cx-1', status: 'error', ...base, title: 'Other', tool: 'codex' }, isle = { id: 'is-1', status: 'error', ...base, title: 'Secret', group: 'isle' };
-  const report = (sessions, results = []) => { if (n.live.get(p.id)) n.live.get(p.id).at -= 2000; return n.report(p, { hostname: 'test', os: 'linux', deckAvailable: true, sessions, results }); };
+  const report = (sessions, results = [], extra = {}) => { if (n.live.get(p.id)) n.live.get(p.id).at -= 2000; return n.report(p, { hostname: 'test', os: 'linux', deckAvailable: true, sessions, results, ...extra }); };
   report([steward, codex, isle]);
   const sid = `node:${p.id}:st-1`;
 
@@ -58,6 +58,11 @@ try {
   // Archived is the human's choice, not a fall.
   report([{ ...steward, status: 'stopped', archived: true }, codex, isle]); w.watch.scan(t0 + 730000); assert.equal(pending().length, 0);
   report([{ ...steward, status: 'error' }, codex, isle]); w.watch.scan(t0 + 731000); w.watch.scan(t0 + 852000); assert.equal(pending().length, 1);
+  // Resumed in a plain terminal: agent-deck says error, the node says the conversation is live; not down, the event clears.
+  report([{ ...steward, status: 'error' }, codex, isle], [], { stewardLive: true }); w.watch.scan(t0 + 860000); assert.equal(pending().length, 0);
+  w.watch.scan(t0 + 1100000); assert.equal(pending().length, 0);
+  assert.throws(() => report([steward], [], { stewardLive: 'yes' }), /Invalid node report/);
+  report([{ ...steward, status: 'error' }, codex, isle]); w.watch.scan(t0 + 1110000); w.watch.scan(t0 + 1231000); assert.equal(pending().length, 1);
 
   // Server-side job gate: only the named Steward, only when down, and only through the start kind's exact payload.
   await assert.rejects(n.request(p.id, 'start', { sessionId: 'cx-1' }, `node:${p.id}:cx-1`), /Only the Steward/);
@@ -141,5 +146,13 @@ try {
   assert(resumingElsewhere(`9 node /usr/lib/claude-code/cli.js -r ${cid}`, cid));
   assert(!resumingElsewhere(`9 claude --resume ${cid}`, cid, 9), 'own pid is ignored');
   assert(!resumingElsewhere(`9 vim --resume ${cid}`, cid)); assert(!resumingElsewhere(`9 claude --resume other-${cid}`, cid)); assert(!resumingElsewhere(`9 claude ${cid}`, cid));
+  // The node's liveness report: only for the named Steward, down in agent-deck, with its conversation running elsewhere.
+  const livePs = async () => `  PID COMMAND\n 4242 claude --resume ${cid}\n`, idlePs = async () => '  PID COMMAND\n    1 /sbin/init\n';
+  assert.equal(await stewardLive([deckSession], 'st-1', run, livePs, 'linux'), true);
+  assert.equal(await stewardLive([deckSession], 'st-1', run, idlePs, 'linux'), false);
+  assert.equal(await stewardLive([{ ...deckSession, status: 'running' }], 'st-1', run, livePs, 'linux'), false);
+  assert.equal(await stewardLive([deckSession], null, run, livePs, 'linux'), false);
+  assert.equal(await stewardLive([deckSession], 'st-1', run, livePs, 'win32'), false);
+  assert.equal(await stewardLive([deckSession], 'st-1', run, async () => { throw new Error('no ps'); }, 'linux'), false);
   console.log('steward wake ok');
 } finally { w?.flush?.(); fs.rmSync(dir, { recursive: true, force: true }); }
