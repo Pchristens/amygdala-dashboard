@@ -1,5 +1,5 @@
 {
-  "about": "Temple governance (SPEC v0.45). A release is trivial only if it changes at most maxLines lines, every file is on the allowlist and no file matches a protected glob. Any change to this file is itself protected.",
+  "about": "Temple governance (SPEC v0.46). A release is trivial only if it changes at most maxLines lines, every file is on the allowlist and no file matches a protected glob. Any change to this file is itself protected.",
   "maxLines": 20,
   "protected": [
     "governance/**",
@@ -52,7 +52,7 @@
     ".gitattributes"
   ],
   "allowlist": {
-    "prose": ["README.md", "SPEC.md", "AGENTS.md"],
+    "prose": ["README.md", "SPEC.md", "AGENTS.md", "CHANGELOG.md"],
     "testsAddOnly": ["tools/test-*.mjs"],
     "anyChange": ["public/**/*.css"],
     "stringsAndComments": ["public/**/*.js", "public/**/*.html", "lib/**/*.js", "lib/**/*.html"]

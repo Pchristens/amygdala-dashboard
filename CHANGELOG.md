@@ -9,9 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
-- The Codex allowance reading stays fresh: every machine running a node reports its own newest Codex reading, and the
-  newest one wins, so the Codex lamp no longer goes stale when Codex runs away from the server (v0.48).
 - This changelog, and a test that keeps it in step with SPEC.md.
+- Changelog edits count as prose for the Temple's trivial check, like README, SPEC and AGENTS.
 - The README, AGENTS.md and SPEC.md were checked against the code: the environment variable table is complete, the
   page's controls (⚙ pace, hours, graphics, the daily turn budget, Wake now) are described, running a node and the
   keeper relay have their own sections, and settings are pointed to where they now live (the Temple tab's
