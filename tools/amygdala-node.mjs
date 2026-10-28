@@ -15,6 +15,7 @@ import { Sites, transcriptTail } from '../lib/sites.js';
 const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
 import { probeGrok } from '../lib/fleet.js';
+import { decodeImage, savePaste, pasteDir } from '../lib/pastes.js';
 export function reportSessions(sessions, village = []) {
   return sessions.map(s => {
     const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = w.zone === 'isle' || w.isleTagged || isleTagged(w);
@@ -22,14 +23,16 @@ export function reportSessions(sessions, village = []) {
     return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, model: w.model, archived: w.archived, lastActivityAt: w.lastActivityAt, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
   });
 }
-export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail) {
-  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget'].includes(job.kind)) throw new Error('Unrequested job.');
+export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail, pastes = null) {
+  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image'].includes(job.kind)) throw new Error('Unrequested job.');
   if (job.kind === 'commission') {
     const fake = { s: {}, changed() {}, addFeed() {} }, sites = new Sites(fake);
     const result = await sites.commission({ ...job.commission, node: null }); return JSON.stringify(result);
   }
   const s = sessions.find(s => s.id === job.sessionId && (!s.archived || ['revive', 'forget'].includes(job.kind))), w = s && toWorker(s, 'local');
   if (!w || w.zone === 'isle' || w.isleTagged || w.private || w.quarantined || w.sealed || isleTagged(w) || !village.includes(job.sessionId)) throw new Error('Session is private or unrequested.');
+  // A pasted image is saved here, on the hero's machine; a remote (ssh) hero would never see it.
+  if (job.kind === 'image') { if (s.remote_name || s.ssh_host) throw new Error('Remote sessions cannot take images.'); return savePaste(decodeImage(job.type, job.d), job.type, { dir: pastes || pasteDir() }); }
   if (job.kind === 'tail') {
     if (!Number.isInteger(job.maxChars) || job.maxChars < 1 || job.maxChars > 20000) throw new Error('Invalid tail bound.');
     return tail(w.transcriptPath, job.maxChars) || '';

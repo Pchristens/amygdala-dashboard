@@ -127,6 +127,10 @@ Terminal paste uses the browser's native shortcuts (Ctrl+V, Ctrl+Shift+V, Shift+
 or Cmd+V) and context-menu Paste. Ctrl+C copies a selection; without one it interrupts.
 Input entered while connecting is buffered. Update both the dashboard and node helper
 for faster terminal polling and retryable input backpressure; no new configuration is needed.
+Pasting (Cmd/Ctrl+V) or dropping a PNG, JPEG, GIF or WebP image (up to 8 MiB) into a hero terminal saves it on the
+hero's machine (`~/.cache/amygdala/pastes`, or `%LOCALAPPDATA%\Amygdala\pastes` on Windows; private, pruned after a
+day) and pastes its path, which Claude Code attaches. Update both the dashboard (restart the server) and each node
+helper: an old helper refuses image jobs, so node heroes show an error until it is updated.
 
 Bridge heroes can still report from Windows using `tools/amygdala-hero.ps1`. Cards show each hero's OS and
 commissions let you choose the host or an online agent-deck node. To run a Windows node, save its pass in

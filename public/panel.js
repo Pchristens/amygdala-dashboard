@@ -1,4 +1,4 @@
-import { terminalInput, terminalKeys } from './terminal-input.js';
+import { terminalInput, terminalKeys, terminalImages } from './terminal-input.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Side panel: Board / Exhibits / Residents / Workshop tabs, with a Village / Isle zone switch.
 import { h, agentClass, relTime, avatar, capitalize, commitmentEl, safeCssColor, runeTablet, toRunes } from './util.js';
@@ -1404,12 +1404,13 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   root.textContent = '';
   const body = h('div', { class: 'terminal-body' });
   const hint = h('div', { class: 'terminal-hint dim-note', text: 'Live terminal — what you type goes to the hero.' });
+  const note = h('div', { class: 'terminal-status dim-note', hidden: true });
   root.append(h('div', { class: 'terminal-header' },
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status }),
     h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
-    h('button', { class: 'btn btn-xs', type: 'button', text: 'End session', onClick: async () => { if (!mock) await fetch(`/api/term/${encodeURIComponent(worker.id)}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token }, body: '{}' }); onClose(); } })), hint, body);
+    h('button', { class: 'btn btn-xs', type: 'button', text: 'End session', onClick: async () => { if (!mock) await fetch(`/api/term/${encodeURIComponent(worker.id)}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token }, body: '{}' }); onClose(); } })), hint, note, body);
   if (mock) {
     body.append(h('div', { class: 'terminal-placeholder', text: `Mock terminal for ${worker.title || worker.id} — the live session appears here.` }));
     return () => { root.textContent = ''; };
@@ -1440,6 +1441,14 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     }),
     error: error => { if (!disposed && !ended) hint.textContent = error.message; },
   });
+  // Pasted or dropped images go to the hero's machine; capture runs before xterm's own paste handler.
+  let noteTimer;
+  const images = terminalImages({
+    term,
+    upload: data => fetch(`${base}/image`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token }, body: JSON.stringify(data), signal: controller.signal }),
+    status: (text, error) => { if (disposed) return; clearTimeout(noteTimer); note.textContent = text; note.hidden = !text; note.classList.toggle('terminal-status-error', !!error); if (error) noteTimer = setTimeout(() => { note.hidden = true; }, 8000); },
+  });
+  for (const kind of ['paste', 'drop', 'dragover']) mount.addEventListener(kind, images[kind], true);
   const resize = () => {
     if (disposed || ended || !mount.clientWidth || !mount.clientHeight) return;
     fit.fit();
@@ -1471,7 +1480,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   frame = requestAnimationFrame(() => { resize(); term.focus(); });
   return () => {
     disposed = true;
-    transport.dispose(); cancelAnimationFrame(frame);
+    transport.dispose(); images.dispose(); clearTimeout(noteTimer); cancelAnimationFrame(frame);
     source.close(); controller.abort(); observer.disconnect();
     dataListener.dispose(); term.dispose(); root.textContent = '';
   };

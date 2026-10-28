@@ -209,6 +209,15 @@ const server = http.createServer(async (req, res) => {
       res.on('close', () => clearInterval(heartbeat));
       return;
     }
+    // Images are the one body allowed past 1 MiB (8 MiB decoded); the gate and rate limit run before reading it.
+    const termImage = p.match(/^\/api\/term\/([^/]+)\/image$/);
+    if (termImage) {
+      if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
+      if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
+      termHub.imageGate(termImage[1]);
+      const b = JSON.parse((await readBody(req, 12 << 20)) || '{}');
+      return json(res, 200, { ok: true, path: await termHub.image(termImage[1], b.type, b.d) });
+    }
     const plog = p.match(/^\/api\/places\/([a-z0-9-]+)\/log$/);
     if (plog) return json(res, 200, { ok: true, log: world.placeLog(plog[1]) });
     const trail = p.match(/^\/api\/omens\/([a-z0-9]+)\/trail$/);

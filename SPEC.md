@@ -1163,3 +1163,41 @@ everything at rest.
 the other session lists. Mock mode adds `?hall=N` (N synthetic resting heroes) and `?hallAct=revive|forget[:ms]`
 (acts on the first after a delay), and its API handles `/api/heroes/revive` and `/api/heroes/forget` locally.
 `tools/mock-state.mjs [--hall N] [--out file]` writes the gitignored preview fixture from a throwaway World.
+
+## v0.36: image paste into hero terminals
+
+A hero's CLI reads images from the clipboard of the machine it runs on, not the browser's. Terminal viewers therefore
+upload pasted or dropped images to the hero's machine and paste the saved file's absolute path (`term.paste(path)`, so
+bracketed); Claude Code attaches an image when a path to one is pasted. A path containing whitespace is pasted in
+double quotes.
+
+**Viewer.** `paste`, `drop` and `dragover` listeners run in the capture phase on the terminal mount, before xterm's own
+paste handler. A paste or drop is handled only when its data holds image files (`image/png`, `image/jpeg`, `image/gif`,
+`image/webp`) and no non-empty `text/plain`; then the default is prevented and each image is uploaded in order. Anything
+else, including text with an image, is the normal v0.34 text paste. A drop of only non-image files is refused (so the
+browser does not navigate to the file). Files over 8 MiB are refused before reading. A status line under the hint shows
+"Uploading image…" and then clears, or shows the error for eight seconds. Nothing is pasted on failure.
+
+**Route.** `POST /api/term/:worker/image {type, d}` → `{ok: true, path}`, page token and human only. The terminal must be
+connected and pass exactly the input gate (`TermHub.active`, `TermHub.allowed`): isle, isle-tagged, quarantined, sealed
+and private heroes are refused. The gate and a rate limit (20 images a minute and 3 in flight, per server; HTTP 429)
+run before the body is read. This route alone reads bodies up to 12 MiB; every other route keeps the 1 MiB cap. `type`
+must be one of the four types, `d` must be canonical base64 of at most 8 MiB decoded, and the leading bytes must match
+the type (PNG signature, `FF D8 FF`, `GIF87a`/`GIF89a`, `RIFF….WEBP`). Image bytes are never logged or persisted in state.
+
+**Where it lands.** On the hero's machine, in `~/.cache/amygdala/pastes/` (POSIX) or `%LOCALAPPDATA%\Amygdala\pastes`
+(Windows), created mode 0700, as `<32 hex>.png|jpg|gif|webp` with mode 0600 (`lib/pastes.js`). Each write first deletes
+this folder's own-named files older than 24 hours. Local POSIX heroes and Windows ConPTY shells save on the server's
+machine. Node heroes save on their node.
+
+**Node relay: a node job, not the terminal channel.** `Nodes.request(node, 'image', {sessionId, type, d}, workerId)`;
+`image` is an allowed job kind on both sides. The terminal channel carries keystrokes through a 256 KiB queue per terminal and
+140 KB lines; an 8 MiB image would need about a hundred chunks, starve typing behind it and need reassembly state on the
+node. A job keeps images out of the keystroke path, needs no chunking (server-to-node report responses are not size
+capped and the node returns only a path), and reuses the job checks: the server re-checks the allow-list when it hands the
+job out and when the result arrives, and the node re-checks its own village allow-list and local isle, private,
+quarantined and sealed tags before writing. Remote (ssh) sessions are refused. Image jobs time out after 60 s, and
+at most one image rides each report response, so latency is one or two report intervals (about 4–8 s). The server accepts
+only a returned absolute path whose name matches the paste pattern (otherwise "Please update Amygdala on <node>"). An
+older helper refuses the unknown job kind, so the viewer shows its generic job failure until the helper is updated. The pasted path is the node's local path. No model
+calls are made.

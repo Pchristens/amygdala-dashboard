@@ -1203,6 +1203,8 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .terminal-header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px; }
 .terminal-header h2 { flex: 1 1 100%; margin: 0; font-size: 18px; overflow-wrap: anywhere; }
 .terminal-hint { padding: 0 12px 10px; }
+.terminal-status { padding: 0 12px 10px; margin-top: -6px; }
+.terminal-status-error { color: var(--red); }
 .terminal-body { flex: 1; min-height: 0; min-width: 0; position: relative; background: #171c21; overflow: hidden; }
 .terminal-mount { position: absolute; inset: 8px; }
 .terminal-mount .xterm { height: 100%; }
