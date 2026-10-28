@@ -332,12 +332,14 @@ async function nodeReport(req, res) {
 }
 
 // A second door on this Mac's Tailscale address only: visitor routes, nothing else (not the LAN, not the internet).
-const tsAddr = Object.values(os.networkInterfaces()).flat().find(i => i?.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(i.address))?.address;
+const tailscaleAddr = () => Object.values(os.networkInterfaces()).flat().find(i => i?.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(i.address))?.address;
 const GATE_PORT = +env('GATE_PORT') || 8795;
-const gateEnabled = env('GATE') === '1' && !env('NO_GATE') && !!tsAddr;
-world.gateUrl = gateEnabled ? `http://${tsAddr}:${GATE_PORT}` : null;   // shown to the human when issuing passes
-if (gateEnabled) {
-  http.createServer(async (req, res) => {
+world.gateUrl = null;   // shown to the human when issuing passes, once the gate is open
+// Started at logon, Tailscale may not have its address yet: keep looking instead of leaving the gate shut for the whole run.
+function openGate() {
+  const tsAddr = tailscaleAddr();
+  if (!tsAddr) return void setTimeout(openGate, 15000).unref();
+  const gate = http.createServer(async (req, res) => {
     try {
       const p = decodeURIComponent(new URL(req.url, 'http://gate').pathname);
       // A keeper pass reaches the dashboard itself (its relay prefixes paths); any other caller gets nothing here.
@@ -353,6 +355,9 @@ if (gateEnabled) {
       if (!p.startsWith('/visit/')) { gateLog(req, p, 404); res.writeHead(404); return res.end(); }
       await visit(req, res, p);
     } catch (e) { if (!res.headersSent) json(res, 400, { ok: false, error: e.message }); }
-  }).listen(GATE_PORT, tsAddr, () => console.log(`Visitor gate open on Tailscale at http://${tsAddr}:${GATE_PORT}/visit/mcp`));
+  });
+  gate.on('error', e => { console.error(`Visitor gate: ${e.message}; retrying.`); setTimeout(openGate, 15000).unref(); });
+  gate.listen(GATE_PORT, tsAddr, () => { world.gateUrl = `http://${tsAddr}:${GATE_PORT}`; console.log(`Visitor gate open on Tailscale at ${world.gateUrl}/visit/mcp`); });
 }
+if (env('GATE') === '1' && !env('NO_GATE')) openGate();
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { world.save(); process.exit(0); });
