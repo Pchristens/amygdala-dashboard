@@ -1319,3 +1319,14 @@ across re-renders. When the isle is sealed the tab shows the sealed tablet and t
 
 `tools/mock-state.mjs` now also writes a Temple fixture: open and closed offerings (one a scroll), findings in every
 state, one new counsel, three audit lines and the steward and Watchtower settings, all invented and all in the village.
+
+## v0.40: figures stand on buildings
+
+Walking figures (residents, visitors, heroes, apprentices) stand on building surfaces instead of the bare terrain. After
+each static rebuild, `public/walk3d.js` bakes every upward-facing triangle of the buildings' merged geometry (normal
+y ≥ 0.55: floors, stair treads, podiums, ramps) into a 0.5-unit grid of surface heights. At a point, the standable
+layers are the terrain and those surfaces with at least three quarters of a figure's height clear above them (so ground
+buried under a podium is never chosen, and a roof is never chosen over the floor beneath it). A figure takes the
+layer nearest its current height, the lowest when it has none, and eases toward it (45 units/s up, 70 down; snaps on
+placement and on jumps over 40). Seated and ceremonial figures keep their scripted heights. Buildings are unchanged;
+instanced steles, trees and props are not baked. Horizontal collision is unchanged: paths still decide where figures go.
