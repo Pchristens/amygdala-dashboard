@@ -43,10 +43,10 @@ try {
   assert.equal(w.s.usage.at(-1).resident, 'Quill'); assert.equal(w.s.usage.at(-1).web, true);
   assert.equal(w.usage.snapshot().village.recent[0].web, true);
 
-  // (b) An unaddressed human post goes to the Watch (a duty, never web); its @mention during that duty is the one web relay.
+  // (b) An unaddressed human post goes to the Watch, whose turn may search; its @mention during that duty is the one web relay.
   const asked = w.addPost('You', 'human', 'does anyone know when the next eclipse is?'); await go(() => { c.onPost(asked); });
   assert(w.watch.state.pending.some(e => e.key === `human-post:${asked.id}`));
-  assert.equal(last().r.name, 'Ione'); assert.equal(last().r.web, false); assert(last().prompt.includes('search the web,'));
+  assert.equal(last().r.name, 'Ione'); assert.equal(last().r.web, true); assert.match(last().prompt, /you may also use web search/);
   assert.equal(c.relayOf({ author: 'Ione', replyTo: null }), asked.id);
   // The relay is the human's wake: it ignores pause and cooldown, and wakes only the first resident named.
   w.s.paused = true; w.s.residents.Cody.lastTurnAt = Date.now();
@@ -64,6 +64,15 @@ try {
   assert.equal(last().r.name, 'Gro'); assert.equal(last().r.web, false); assert(last().prompt.includes('search the web,'));
   await release();
   assert(!w.s.usage.at(-1).web);
+
+  // The Watch resting: a human question goes to a stand-in who can search (never agy or grok), others to anyone.
+  w.s.residents.Ione.hibernate = true;
+  for (const n of ['Quill', 'Cody']) w.s.residents[n].lastTurnAt = Date.now() - 1000;
+  w.s.residents.Lyra.lastTurnAt = 0; w.s.residents.Gro.lastTurnAt = 0;
+  w.watch.state.pending = []; w.watch.state.seen = {};
+  const asked2 = w.addPost('You', 'human', 'any news today?'); await go(() => { c.onPost(asked2); });
+  assert(['Quill', 'Cody'].includes(last().r.name)); assert.equal(last().r.web, true); assert.equal(last().turn.job.standIn.for, 'Ione');
+  await release(); w.s.residents.Ione.hibernate = false; w.watch.state.pending = []; w.watch.state.seen = {};
 
   // A Watch duty turn with no human-post event relays nothing.
   await go(() => { w.watch.raise('test-event', 'x', 'village', 'A synthetic event.'); w.watch.notify(); });

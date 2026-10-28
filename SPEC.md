@@ -1290,3 +1290,8 @@ old wording verbatim.
 
 **Record.** The turn's usage record carries `web: true` (village records only), and so does its row in
 `usage.village.recent`; the Usage panel's recent turns show "web search" beside the kind.
+
+v0.38 follow-up: a Watch duty turn whose events include a `human-post` goes to a holder that can search (Claude or Codex;
+a stand-in when the Watch rests), falling back to any holder, and that turn itself may search, so the Watch can answer
+directly. The unaddressed fallback without a Watch also prefers Claude and Codex residents. The Watch's instructions
+route questions needing current information to them.
