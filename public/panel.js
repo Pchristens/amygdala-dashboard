@@ -1554,29 +1554,40 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     frame = requestAnimationFrame(resize);
   });
   observer.observe(mount);
-  const source = new EventSource(`${base}/stream?token=${encodeURIComponent(token)}`);
-  source.onopen = () => {
-    transport.connect();
-    hint.textContent = 'Live terminal — what you type goes to the hero.';
-    resize();
+  // A server or node restart can refuse the stream for a few seconds, and EventSource never retries a refusal: keep
+  // reopening it, and redraw from the fresh attach instead of appending it to the old screen.
+  let source, opened = false, retry, delay = 1000;
+  const connect = () => {
+    source = new EventSource(`${base}/stream?token=${encodeURIComponent(token)}`);
+    source.onopen = () => {
+      if (opened) term.reset(); opened = true; delay = 1000;
+      transport.connect();
+      hint.textContent = 'Live terminal — what you type goes to the hero.';
+      resize();
+    };
+    source.addEventListener('o', event => {
+      if (!disposed && !ended) term.write(Uint8Array.from(atob(event.data), ch => ch.charCodeAt(0)));
+    });
+    source.addEventListener('exit', () => {
+      ended = true; source.close();
+      transport.dispose();
+      hint.textContent = 'session ended';
+      term.options.disableStdin = true;
+      term.write('\r\n\x1b[90msession ended\x1b[0m\r\n');
+    });
+    source.onerror = () => {
+      if (disposed || ended) return;
+      hint.textContent = 'Terminal connection lost — reconnecting…';
+      if (source.readyState === EventSource.CLOSED) { clearTimeout(retry); retry = setTimeout(connect, delay); delay = Math.min(delay * 2, 15000); }
+    };
   };
-  source.addEventListener('o', event => {
-    if (!disposed && !ended) term.write(Uint8Array.from(atob(event.data), ch => ch.charCodeAt(0)));
-  });
-  source.addEventListener('exit', () => {
-    ended = true; source.close();
-    transport.dispose();
-    hint.textContent = 'session ended';
-    term.options.disableStdin = true;
-    term.write('\r\n\x1b[90msession ended\x1b[0m\r\n');
-  });
-  source.onerror = () => { if (!disposed && !ended) hint.textContent = 'Terminal connection lost — reconnecting…'; };
+  connect();
   const dataListener = term.onData(data => { if (!disposed && !ended) transport.data(data); });
   frame = requestAnimationFrame(() => { resize(); term.focus(); });
   return () => {
     disposed = true;
     transport.dispose(); images.dispose(); clearTimeout(noteTimer); cancelAnimationFrame(frame);
-    source.close(); controller.abort(); observer.disconnect();
+    clearTimeout(retry); source.close(); controller.abort(); observer.disconnect();
     dataListener.dispose(); term.dispose(); root.textContent = '';
   };
 }

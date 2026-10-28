@@ -8,6 +8,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { env } from './lib/bin.js';
 import { TermHub } from './lib/term.js';
 import { World } from './lib/world.js';
@@ -27,10 +28,17 @@ const PUBLIC = path.join(ROOT, 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 
-// The page's API key: injected into index.html, required on every /api call, never written to disk.
+// The page's API key: injected into index.html, required on every /api call.
 // Protects against web pages on other origins (CSRF/DNS rebinding), not local processes:
-// a local process can fetch the page and read the token.
-const API_TOKEN = crypto.randomBytes(24).toString('base64url');
+// a local process can fetch the page and read the token. It is kept (owner-only) in data/ so a restart doesn't log
+// out every open page and terminal; delete data/page-token to rotate it.
+const API_TOKEN = (() => {
+  const file = path.join(DATA, 'page-token');
+  try { const t = fs.readFileSync(file, 'utf8').trim(); if (/^[\w-]{32}$/.test(t)) return t; } catch {}
+  const t = crypto.randomBytes(24).toString('base64url');
+  try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(file, t, { mode: 0o600 }); } catch {}
+  return t;
+})();
 const tokenOk = (req, url) => {
   const got = String(req.headers['x-amygdala-token'] || req.headers['x-hearthfield-token'] || url.searchParams.get('token') || '');
   return got.length === API_TOKEN.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(API_TOKEN));
@@ -335,6 +343,8 @@ async function nodeReport(req, res) {
 const tailscaleAddr = () => Object.values(os.networkInterfaces()).flat().find(i => i?.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(i.address))?.address;
 const GATE_PORT = +env('GATE_PORT') || 8795;
 world.gateUrl = null;   // shown to the human when issuing passes, once the gate is open
+// The commit this server runs: nodes behind it update themselves from their own origin (v0.45).
+try { world.version = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { world.version = null; }
 // Started at logon, Tailscale may not have its address yet: keep looking instead of leaving the gate shut for the whole run.
 function openGate() {
   const tsAddr = tailscaleAddr();

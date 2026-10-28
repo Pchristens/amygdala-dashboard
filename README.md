@@ -239,6 +239,14 @@ prompts. Explicitly requested bounded village output can also cross the gate. Qu
 Remote git offerings and git statistics in tales remain unsupported. A helper restart or lost response can lose a dispatched
 job; jobs expire after 13 minutes. Check the machine before retrying a commission to avoid launching it twice.
 
+**Helpers keep themselves current.** The helper runs a worker copy of itself. When the server runs a commit the
+helper's clone lacks, the worker fast-forwards the clone to exactly that commit from the clone's own `origin`, checks the
+new code, and restarts. A clone with local edits, or one that has diverged, is left alone and the helper logs why. If an
+update keeps crashing, the helper goes back to the commit it came from. Push before restarting the server, so origin
+has the commit. Set `AMYGDALA_NODE_SUPERVISE=0` to run the helper without the supervisor (and so without updates).
+Open terminals survive a helper or server restart: the helper re-attaches them and the page keeps the same token
+(`data/page-token`; delete it to rotate).
+
 ### Steward
 
 The Watch can offer an outside Claude Code session useful work before unused Claude allowance resets. Enable

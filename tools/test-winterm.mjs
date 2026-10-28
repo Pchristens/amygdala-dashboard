@@ -43,6 +43,9 @@ assert.throws(() => openNodeTerm(term, [], sessions, ['s'], fake), /Unrequested/
 assert.throws(() => openNodeTerm(term, [term], sessions, [], fake));
 assert.throws(() => openNodeTerm(term, [term], [{ ...sessions[0], group: 'isle' }], ['s'], fake));
 assert(openNodeTerm(term, [term], sessions, ['s'], fake, () => 'tmux'));
+// A restarted node re-attaches a terminal the server still lists (open is false after the first poll); the isle stays shut.
+const again = { ...term, open: false }; assert(openNodeTerm(again, [again], sessions, ['s'], fake, () => 'tmux')); assert.throws(() => openNodeTerm(again, [again], [{ ...sessions[0], group: 'isle' }], ['s'], fake));
+const bare = { ...term, open: undefined }; assert.throws(() => openNodeTerm(bare, [bare], sessions, ['s'], fake), /Unrequested/);
 const report = { hostname: 'test', os: 'macos', deckAvailable: true, sessions: [], results: [], usage: { id: 'grok', secret: 'discard', windows: [{ kind: 'seven_day', used_percentage: 32, extra: 'discard' }] } };
 const clean = validateReport(report); assert.equal(clean.usage.id, 'grok'); assert(!JSON.stringify(clean).includes('discard'));
 assert.throws(() => validateReport({ ...report, usage: { id: 'grok', windows: [{ kind: 'weekly', used_percentage: 101 }] } }));

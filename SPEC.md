@@ -1416,3 +1416,22 @@ arguments (`claude --continue` is not recognised).
   node answers with HEAD, which the server rejects as an invalid snapshot.
 - A decree on a commit offering reports the code as unchanged while that commit still exists.
 - The standing note asks heroes to commit finished work locally and name the commit hash in their report.
+
+## v0.45: staying connected from another machine
+
+- The page token is kept in `data/page-token` (owner-only) and reused across restarts, so open pages and terminals
+  keep working. Deleting the file rotates it on the next start.
+- Terminal streams that are refused (for example while the server restarts or a node reconnects) are reopened by the
+  page with backoff (1 s doubling to 15 s); a reopened stream resets the screen before the fresh attach redraws it.
+- `openNodeTerm` accepts a terminal the server still lists whether `open` is true (first request) or false (already
+  sent), so a restarted node re-attaches open terminals. A node does not reopen a terminal it ended itself.
+- The node report response carries `version`, the server's full commit hash (absent if unknown).
+- `tools/amygdala-node.mjs` now supervises a worker copy of itself (`AMYGDALA_NODE_WORKER=1`;
+  `AMYGDALA_NODE_SUPERVISE=0` opts out). The worker, when idle and at most every ten minutes, compares `version` with
+  its clone: if behind, and the clone has no tracked edits, it fetches `origin`, requires the commit to be on the
+  fetched branch, fast-forwards to exactly that commit, runs `node --check` on `lib/*.js` and the node, and imports
+  the node. On success it exits 75 and the supervisor restarts it at once; on failure it returns to the old commit
+  with `git reset --keep`. The pre-update commit is kept in `.git/amygdala-node-prev` for five minutes; three quick
+  crashes in that window make the supervisor go back to it. Nothing is ever forced, stashed or discarded.
+- A failed commission on a node reports `Could not send the hero: <reason>` with the home folder masked, instead of
+  the generic node failure.

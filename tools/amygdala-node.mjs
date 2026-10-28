@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { spawn, bin, execFile, hostOs, deckAvailable, env } from '../lib/bin.js';
+import { spawn as spawnChild } from 'node:child_process';
 import { toWorker, mergeDeckLists } from '../lib/deck.js';
 import { extractSignals, classifyHero, isleTagged } from '../lib/heroclass.js';
 import { Sites, transcriptTail } from '../lib/sites.js';
@@ -16,7 +17,7 @@ const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
 import { probeGrok } from '../lib/fleet.js';
 import { decodeImage, savePaste, pasteDir } from '../lib/pastes.js';
-import { snapshotOf, digest, commitLines } from '../lib/snapshot.js';
+import { snapshotOf, digest, commitLines, run } from '../lib/snapshot.js';
 import { RESULT_MAX } from '../lib/nodes.js';
 export function reportSessions(sessions, village = []) {
   return sessions.map(s => {
@@ -101,7 +102,8 @@ export function termSession(term, sessions, village) {
   return s;
 }
 export function openNodeTerm(term, requested, sessions, village, start = spawn, tmux = () => bin('tmux')) {
-  if (!requested.includes(term) || term.open !== true) throw new Error('Unrequested terminal.');
+  // A terminal the server still lists is requested: a restarted node re-attaches it (open is false then) so the viewer keeps it.
+  if (!requested.includes(term) || typeof term.open !== 'boolean') throw new Error('Unrequested terminal.');
   const s = termSession(term, sessions, village);
   return start('python3', ['-I', fileURLToPath(new URL('./ptybridge.py', import.meta.url)), tmux(), 'attach-session', '-t', s.tmux_session], { stdio: ['pipe', 'pipe', 'ignore'] });
 }
@@ -143,8 +145,10 @@ export async function main(args = process.argv.slice(2)) {
   let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
-  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], steward = null, live = false, lastLive = 0;
-  const terminals = new Map(); let output = [], pendingGrok = null;
+  let village = [], results = [], lastUsage = 0, lastGrok = 0, latestSessions = [], steward = null, live = false, lastLive = 0, inflight = 0, updating = false, lastUpdate = 0;
+  // Up five minutes after an update: the new code holds, so forget the commit to roll back to.
+  setTimeout(() => fs.rm(path.join(REPO, '.git', PREV), { force: true }, () => {}), 300000).unref();
+  const terminals = new Map(), endedHere = new Set(); let output = [], pendingGrok = null;
   const poller = terminalPoller(async () => {
     try {
       for (const [id, t] of terminals) { try { termSession(t.term, latestSessions, village); } catch { terminals.delete(id); t.child.kill(); } }
@@ -157,10 +161,11 @@ export async function main(args = process.argv.slice(2)) {
       for (const term of terms) {
         let t = terminals.get(term.id);
         if (!t) {
+          if (!term.open && endedHere.has(term.id)) continue;
           try {
             const child = openNodeTerm(term, terms, latestSessions, village); t = { term, child }; terminals.set(term.id, t);
             t.lines = terminalOutput(term, child, terminals, output, () => poller.wake());
-            const ended = () => { if (!terminals.delete(term.id)) return; output.push({ id: term.id, exit: true }); poller.wake(); };
+            const ended = () => { if (!terminals.delete(term.id)) return; endedHere.add(term.id); output.push({ id: term.id, exit: true }); poller.wake(); };
             child.on('error', ended); child.on('close', ended);
           } catch { output.push({ id: term.id, exit: true }); continue; }
         }
@@ -214,9 +219,59 @@ export async function main(args = process.argv.slice(2)) {
       for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }
       // Jobs run concurrently so a long wrap-up cannot interrupt heartbeats.
       // A start's refusals are fixed sentences; the catch-all text is what the server reads as an un-updated node.
-      for (const job of next.jobs || []) executeJob(job, next.jobs, sessions, village, exec, transcriptTail, null, { steward }).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, ['snapshot', 'show'].includes(job.kind) ? RESULT_MAX : 24000), error: '' }), e => results.push({ id: job.id, ok: false, output: '', error: job.kind === 'start' ? (e?.safe ? e.message : 'The Steward could not be started.') : 'Local node job failed; check folder and agent-deck.' }));
+      // A failed commission says why (home folder masked), so the Steward can fix this machine without the human.
+      for (const job of next.jobs || []) { inflight++; executeJob(job, next.jobs, sessions, village, exec, transcriptTail, null, { steward }).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, ['snapshot', 'show'].includes(job.kind) ? RESULT_MAX : 24000), error: '' }), e => results.push({ id: job.id, ok: false, output: '', error: job.kind === 'start' ? (e?.safe ? e.message : 'The Steward could not be started.') : job.kind === 'commission' ? jobReason(e) : 'Local node job failed; check folder and agent-deck.' })).finally(() => inflight--); }
+      if (next.version && process.env.AMYGDALA_NODE_WORKER === '1' && !inflight && !updating && Date.now() - lastUpdate > 600000) {
+        lastUpdate = Date.now(); updating = true;
+        selfUpdate(REPO, next.version).then(r => { if (r === 'updated') { console.error('Node updated; restarting.'); process.exit(75); } if (r !== 'current') console.error(`Node update skipped: ${r}.`); }, () => {}).finally(() => { updating = false; });
+      }
     } catch { village = []; steward = null; isle = []; isleScanner.retain([]); auditScanner.retain([]); console.error('Node report failed; retrying.'); }
     await new Promise(resolve => setTimeout(resolve, 4000));
   }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(() => { console.error('Could not start node; check server and pass file.'); process.exitCode = 1; });
+const REPO = path.dirname(path.dirname(fileURLToPath(import.meta.url))), PREV = 'amygdala-node-prev';
+export function jobReason(e) {
+  const msg = String(e?.message || 'unknown error').split(os.homedir()).join('~').replace(/\s+/g, ' ').trim();
+  return `Could not send the hero: ${msg}`.slice(0, 240);
+}
+
+// The node keeps itself current (v0.45): when the server runs a commit this clone lacks, fast-forward to exactly that
+// commit from this clone's own origin, check the new code, and let the supervisor restart it. A clone with local
+// edits, or one that has diverged, is left alone; nothing is ever reset, stashed or forced.
+export async function selfUpdate(repo, version, git = (...a) => run('git', ['-C', repo, ...a], { timeout: 120000 }), node = (...a) => run(process.execPath, a, { timeout: 60000, cwd: repo })) {
+  if (!/^[0-9a-f]{40}$/.test(String(version))) return 'bad version';
+  const head = (await git('rev-parse', 'HEAD')).stdout.trim();
+  if (!head) return 'not a git clone';
+  if (head === version || !(await git('merge-base', '--is-ancestor', version, 'HEAD')).err) return 'current';
+  if ((await git('status', '--porcelain', '--untracked-files=no')).stdout.trim()) return 'local edits';
+  if ((await git('fetch', '-q', 'origin')).err) return 'fetch failed';
+  if ((await git('cat-file', '-e', `${version}^{commit}`)).err || (await git('merge-base', '--is-ancestor', version, 'FETCH_HEAD')).err) return 'version not on origin';
+  if ((await git('merge', '--ff-only', '-q', version)).err) return 'diverged';
+  const files = ['tools/amygdala-node.mjs', ...fs.readdirSync(path.join(repo, 'lib')).filter(f => f.endsWith('.js')).map(f => `lib/${f}`)];
+  const bad = (await Promise.all(files.map(f => node('--check', f)))).some(r => r.err) || (await node('--input-type=module', '-e', "await import('./tools/amygdala-node.mjs')")).err;
+  if (bad) { await git('reset', '-q', '--keep', head); return 'new code failed its checks; kept the old'; }
+  fs.writeFileSync(path.join(repo, '.git', PREV), head);
+  return 'updated';
+}
+
+// launchd and systemd keep running this file as before; it now runs a worker copy of itself, so a self-update (exit 75)
+// or a crash restarts the code without them. If a fresh update keeps crashing, go back to the commit before it.
+export function supervise(argv = process.argv.slice(2), start = spawnChild) {
+  let child = null, fails = 0;
+  const go = () => {
+    const at = Date.now();
+    child = start(process.execPath, [fileURLToPath(import.meta.url), ...argv], { stdio: 'inherit', env: { ...process.env, AMYGDALA_NODE_WORKER: '1' } });
+    child.on('exit', code => {
+      child = null; fails = code === 75 ? 0 : Date.now() - at < 60000 ? fails + 1 : 0;
+      if (fails >= 3) { const prev = path.join(REPO, '.git', PREV); try { const h = fs.readFileSync(prev, 'utf8').trim(); fs.rmSync(prev); if (/^[0-9a-f]{40}$/.test(h)) { console.error('Updated node keeps failing; going back.'); spawnChild('git', ['-C', REPO, 'reset', '-q', '--keep', h], { stdio: 'ignore' }).on('exit', () => setTimeout(go, 1000)); return; } } catch {} }
+      setTimeout(go, code === 75 ? 500 : Math.min(60000, 1000 * 2 ** fails));
+    });
+  };
+  for (const sig of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(sig, () => { child?.kill(sig); process.exit(0); });
+  go();
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.env.AMYGDALA_NODE_WORKER === '1' || process.env.AMYGDALA_NODE_SUPERVISE === '0') main().catch(() => { console.error('Could not start node; check server and pass file.'); process.exitCode = 1; });
+  else supervise();
+}

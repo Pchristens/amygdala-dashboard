@@ -5,3 +5,4 @@ node_modules/
 PLAN.md
 ART.md
 public/mock-state.json
+.claude/worktrees/
