@@ -385,6 +385,25 @@ history is scanned on startup or re-enabling. Bell notifications include the her
 excerpts. The pass is heuristic: it can miss obfuscated/unknown tool formats and flag harmless quoted commands. It
 provides a review signal, not enforcement of permissions or a guarantee that an unattended session is safe.
 
+### Temple governance
+
+What ships is decided at the Temple without a routine step from you (v0.46; the contract is in `SPEC.md`). The Steward
+offers a hero's finished commit with its report and test results. A small release (at most 20 lines) that touches only
+docs, CSS, added tests, or comment and string text passes a mechanical check and ships at once. Anything else waits for
+the High Priest's ruling, bound to that one commit, and the Steward records a receipt when it deploys. The protected
+paths and the allowlist live in `governance/protected.json`. Changes to that file always need a ruling.
+
+The High Priest gets a few reserved wakes a day for rulings (default 6; set it with `POST /api/governance/settings {"wakeBudget": n}` as the human). They never override
+hibernation, provider usage limits or a disabled resident: when the wakes run out, the work stays pending. Needs you
+shows only what you alone can decide: the Steward's own code, security or data-loss rejections, and appeals that have
+been decided. Each of these just stays unshipped until you act. The Governance fold holds the ledger of every skip,
+ruling, override, appeal, receipt and fix confirmation.
+
+Before the first release of a project there is no approved commit to measure from. Either let the High Priest accept
+one, or set a baseline (the human only):
+`curl -H "X-Amygdala-Token: $TOKEN" -H "X-Amygdala-Source: human" -d '{"workerId":"…","sha":"<full hash>","reason":"what is deployed"}' http://127.0.0.1:<port>/api/governance/baseline`.
+The Steward holds the same page token, so the source header is a record, not a lock: the ledger shows who did what.
+
 ### Isle ghosts
 
 After upgrading, unlock the Far Isle once to create its encrypted drop box. Update node helper checkouts too.

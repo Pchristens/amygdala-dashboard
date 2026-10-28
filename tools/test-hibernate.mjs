@@ -78,6 +78,8 @@ try {
   const smithTools = (await rpc('tools/list')).result.tools.map(t => t.name); assert(smithTools.includes('fix_check') && smithTools.includes('read_fix'));
   assert.match(mcp.lookFor('Atlas'), /Forge log/);
   w.temple.fixCheck('Atlas', { findingId: fix.id, verdict: 'holds', note: 'Advisory check only.' }); assert.equal(fix.status, 'awaiting_confirmation');
+  // v0.45: a fix that holds goes to the High Priest to confirm; drop that duty here so the Watch's turn is next.
+  assert(c.pendingDuties.some(d => d.key === 'confirm:f-fix' && d.confirm && d.role === 'priest')); c.pendingDuties = c.pendingDuties.filter(d => !d.confirm);
   finish(); assert.throws(() => w.temple.fixCheck('Atlas', { findingId: fix.id }), /Only the smith/);
   w.watch = new Watch(w, c, dir, { start: false }); w.watch.raise('test-event', 'test', 'village', 'A synthetic village event.'); w.watch.notify();
   assert.equal(runs.at(-1).r.name, 'Atlas'); assert((await rpc('tools/list')).result.tools.some(t => t.name === 'ring_bell'));

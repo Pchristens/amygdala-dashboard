@@ -1435,3 +1435,101 @@ arguments (`claude --continue` is not recognised).
   crashes in that window make the supervisor go back to it. Nothing is ever forced, stashed or discarded.
 - A failed commission on a node reports `Could not send the hero: <reason>` with the home folder masked, instead of
   the generic node failure.
+
+## v0.46: Temple governance
+
+What ships is decided at the Temple with no routine human step. A hero finishes and commits; the Steward offers the
+commit; the release is either classified trivial by a mechanical check and ships at once, or the High Priest rules on it
+and the Steward deploys what she accepted. Escalations are a digest the human reads at leisure: no bells, no waiting
+on the human, and a disputed change simply stays unshipped. Governance is village-only: isle, isle-tagged, quarantined,
+sealed, private and petition work is never classified, ruled, ledgered or shown.
+
+**The release.** Per project (`project@host`), governance keeps the last approved commit. A commit offering's release is
+`git diff <approved>..<commit>` (no renames), so a change split over several commits is judged as a whole. Working-change
+offerings are `uncommitted` and never approved; scrolls are outside governance. A project with no approved commit
+waits for a ruling until the High Priest accepts one or the human sets a baseline. Node heroes compute the facts on
+their machine with a new node job `release` (`{sessionId, base, commit}`, hex only; results within `RESULT_MAX`; an
+older node answers with the legacy failure, "Please update Amygdala on <machine>"). The server classifies with its own
+rules, so a node cannot loosen them. The sanitized diff (secret-looking paths left out) is kept for the High Priest.
+
+**The trivial check** (`lib/governance.js classify`, rules in `governance/protected.json`, the one place the protected
+list lives; it is itself protected). Trivial means every one of:
+- the release has at most `maxLines` (20) added plus removed lines, and touches no protected path;
+- every file matches the allowlist: `README.md`, `SPEC.md`, `AGENTS.md` (prose, any change); `tools/test-*.mjs`
+  (add-only: no removed lines); `public/**/*.css` (any change); `public/**/*.js|html`, `lib/**/*.js|html` only when
+  the change is comment- or string-text-only: both sides are tokenized with comments, string text and HTML text
+  masked, and the token streams must be identical. `${…}` is code; line breaks are tokens (ASI); module specifiers and
+  `'use …'` directives are code; regex literals are lexed only where unambiguous. Anything the tokenizer is unsure of
+  (a slash after `}`, an unterminated string, binary files, files over 100 changed lines) fails closed: not trivial.
+- Protected: `governance/**`, `lib/governance.js`, `server.js`, the gate and transport modules (`lib/visitors.js`,
+  `lib/bridge.js`, `lib/nodes.js`, `lib/keeper.js`, `lib/steward.js`, `lib/term.js`, `lib/conpty.js`, `lib/sites.js`),
+  Temple and privacy modules (`lib/temple.js`, `lib/snapshot.js`, `lib/bin.js`, `lib/world.js`, `lib/seal.js`,
+  `lib/isle-ghosts.js`, `lib/audit.js`, `lib/audit-rules.js`), cost and capability modules (`lib/guidance.js`,
+  `lib/triage.js`, `lib/conductor.js`, `lib/usage.js`, `lib/fleet.js`, `lib/orders.js`, `lib/mcp.js`), `residents.json`,
+  the launchers, keeper, node, hero, steward, order and install tools, `tools/reset-world.mjs`, every package manifest
+  and lockfile, `public/vendor/**`, `data/**`, `.gitignore`, `.gitattributes`.
+
+A trivial release is approved at once, logged as a `skip` with its reasons, closes its offering and is told to the
+hero. The High Priest sees the last week's skips and may send one back (`misclassified`), which counts as an override.
+
+**Offerings** carry evidence. `POST /api/temple/offer` takes `{workerId, note, commit, report, tests}`: `report` is at
+most 6000 characters (clipped, shown as untrusted), `tests` at most 20 of `{command, result, commit?, by?, at?}` with
+provenance. It returns `{ok, offeringId, governance}`. Missing evidence is shown as missing, and test results naming
+another commit are marked stale. The snapshot's offering carries `gov` (without the report text: `reportChars`).
+
+**Rulings.** The High Priest rules with the MCP tool `rule_offering {id, commit, verdict, reason, concern}` during her
+own turn: `accept`, `reject`, `evidence` ("pending: evidence requested") or `misclassified` (skips only), `concern`
+`none`, `security` or `data-loss`. `commit` must name the offering's commit: a ruling binds to exactly one SHA, and any
+further change needs a new offering. `examine_offering` gains `release: true` for the whole release diff; `look` lists
+what awaits her, the missing evidence, the skips to audit and the recent ledger. Accept or reject closes the offering
+(`closedBy {by, state, sha}`); evidence leaves it open; an appeal or a misclassified skip reopens one the Temple closed.
+The human's Close stays available. The decision is sent to the hero (agent-deck or the node's `send`) naming the commit.
+
+**The High Priest's reserved wakes.** A pending offering wakes her with a duty for her alone (never a stand-in), at most
+`settings.wakeBudget` (default 6, 0 to 24, human only) a day, one at a time per offering, retried after six hours.
+These wakes never pass usage hibernation, a hot provider, a disabled resident or the isle: an exhausted budget leaves
+the work pending. A queued wake is dropped once the offering no longer needs her. There is no timeout that ships work.
+
+**The Steward's routes** (page token; `X-Amygdala-Source: human` marks the human, anything else is the Steward):
+- `POST /api/governance/evidence {offeringId, report?, tests?}`: adds evidence; an evidence request goes back to pending.
+- `POST /api/governance/override {offeringId, verdict: accept|reject|misclassified, reason}` (reason 10 to 800
+  characters). The Steward may not override when there is no ruling yet, during an appeal, on any ruling with a
+  `security` or `data-loss` concern, on its own code (offerings from `world.s.stewardHero`'s session), or after the
+  human decided. The human's override is final.
+- `POST /api/governance/appeal {offeringId, reason, report?, tests?}`: once per ruling, only against a rejection or an
+  evidence request, and only with new evidence. It goes to a second reviewer: never the one who ruled, never a priest,
+  ready residents first, then another provider. The appeal reviewer gets a reserved wake and may only accept or reject;
+  an appeal's ruling cannot be appealed. After that only the human decides.
+- `POST /api/governance/receipt {sha, offeringId?, note?}`: records a deployment. Refused unless the commit was
+  accepted or classified trivial. `POST /api/governance/revert {receiptId, reason}` orders a rollback citing a receipt,
+  once per receipt.
+- `POST /api/governance/baseline {workerId, sha, reason}` (human only, full hash) and
+  `POST /api/governance/settings {wakeBudget}` (human only).
+- `GET /api/governance`: the snapshot below plus the whole ledger and its checkpoint `ledgerBase`.
+
+The Steward holds the same page token as the human, so the actor header is not a security boundary: these limits rest
+on the ledger, where every action is recorded with its actor, and on the human reading the digest.
+
+**Fix confirmation, without the human.** When a hero reports a decree fixed, the smith checks it (`fix_check`).
+`holds` sends it to the High Priest, who confirms with the new MCP tool `confirm_fix {id, verdict: fixed|not_fixed,
+reason}` (not on a finding she found, seconded or checked); `fixed` closes the finding and grows the tree. `partial`,
+`does_not_hold` or `not_fixed` return it to `decreed` and redeliver the decree, noting that the earlier fix did not
+hold. The smith alone never closes a finding, security and data-loss ones included. `judge_omen` takes an optional
+`concern`. Confirmations and returns are ledgered (`fix confirmed`, `fix returned`, village findings only). The human's
+"Confirm fixed" stays available and is ledgered too, but is never required.
+
+**The ledger** is append-only and hash-chained (`seq`, `ts`, `bodyHash`, `hash`), kinds `skip`, `ruling`,
+`appeal ruling`, `evidence`, `override`, `appeal`, `receipt`, `revert`, `baseline`, `fix confirmed`, `fix returned`.
+The newest 1000 entries are kept behind a checkpoint. When a project moves to the isle its entries are reduced to their
+hashes (the chain still verifies) and its approvals, receipts and release diffs are forgotten.
+
+**Snapshot.** The human's snapshot carries `governance: {settings, wakes {used, budget}, verified, approved, deployed,
+pending, digest, ledger (last 40)}`. Residents' and visitors' snapshots carry none of it. `digest` items are
+`{offeringId, project, sha, text, escalation}`; `escalation` is true only for what the human alone can move: a rejection
+of the Steward's own code, a security or data-loss rejection, and an appeal that upheld a rejection.
+
+**The page.** Needs you lists only waiting heroes and escalations, or "Nothing needs you". Open offerings sit at the top
+of the Offerings section with their ruling state (awaiting first look, under review, pending evidence, under appeal,
+accepted or rejected with the commit) and their findings; closed ones follow as the folded history. Omens awaiting
+judgement, delivery or a fix's confirmation sit at the top of the Tablet marked live; the inscribed record follows. A
+Governance fold shows the digest, what awaits a ruling and the ledger.

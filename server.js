@@ -121,6 +121,9 @@ function readBody(req, limit = 1 << 20) {
   });
 }
 const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+// Governance (v0.46) records who acted. The page says it is the human; anything else holding the token (the Steward's
+// CLIs, curl) counts as the Steward. Both share the page token, so this rests on the ledger, not on secrecy.
+const actorOf = req => String(req.headers['x-amygdala-source'] || '').toLowerCase() === 'human' ? 'human' : 'steward';
 
 const API = {
   'POST /api/naming/skip': () => { world.s.namingSkipped = true; world.changed(); },
@@ -132,7 +135,6 @@ const API = {
   'POST /api/seal/unlock': b => world.seal.unlock(b.passphrase),
   'POST /api/seal/lock': () => world.seal.lock(),
   'POST /api/seal/touch': () => world.seal.touch(),
-  'POST /api/temple/offer': b => world.temple.offer(String(b.workerId), b.note, b.commit == null || b.commit === '' ? undefined : String(b.commit)),
   'POST /api/temple/command': b => { for (const n of world.temple.command(String(b.offeringId), b.residents === 'all' ? 'all' : [].concat(b.residents || []), b.note)) conductor.wake(n, `the Temple commanded you to review offering ${b.offeringId}`); },
   'POST /api/temple/close': b => world.temple.close(String(b.offeringId)),
   'POST /api/findings/status': b => world.temple.setStatus(String(b.id), b.status),
@@ -228,6 +230,7 @@ const server = http.createServer(async (req, res) => {
     }
     const plog = p.match(/^\/api\/places\/([a-z0-9-]+)\/log$/);
     if (plog) return json(res, 200, { ok: true, log: world.placeLog(plog[1]) });
+    if (req.method === 'GET' && p === '/api/governance') return json(res, 200, { ok: true, ...world.governance.snapshot(), ledger: world.governance.g.ledger, ledgerBase: world.governance.g.ledgerBase });
     const trail = p.match(/^\/api\/omens\/([a-z0-9]+)\/trail$/);
     if (trail) return json(res, 200, { ok: true, trail: await world.tablet.trail(trail[1]) });
     if (p.startsWith('/api/')) {
@@ -239,6 +242,9 @@ const server = http.createServer(async (req, res) => {
       if (p === '/api/steward/claim') return json(res, 200, world.steward.claim(b));
       if (p === '/api/steward/summary') return json(res, 200, world.steward.summary(b));
       if (p === '/api/orders') return json(res, 200, await world.orders.create(b));
+      if (p === '/api/temple/offer') { const o = await world.temple.offer(String(b.workerId), b.note, b.commit == null || b.commit === '' ? undefined : String(b.commit), { report: b.report, tests: b.tests }); return json(res, 200, { ok: true, offeringId: o.id, governance: world.governance.view(o) }); }
+      const gov = p.match(/^\/api\/governance\/([a-z]+)$/);
+      if (gov) return json(res, 200, { ok: true, ...world.governance.api(gov[1], b, actorOf(req)) });
       if (orderRoute?.[2] === '/cancel') return json(res, 200, world.orders.cancel(orderRoute[1]));
       if (terminal) {
         if (terminal[2] === 'close') termHub.close(terminal[1]);

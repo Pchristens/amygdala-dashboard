@@ -804,11 +804,12 @@ export function createPanel(opts) {
     renderNeedsYou();
     renderGods();
     renderOfferings();
+    renderGovernance();
     renderTablet();
     renderHall();
     renderSettings();
   }
-  const foldOpen = { offerings: false, tablet: false, hall: false, settings: false };
+  const foldOpen = { offerings: false, governance: false, tablet: false, hall: false, settings: false };
   const needOpen = new Set(), expanded = new Set();
   let offeringsAll = false;
   function foldSection(key, label, count, ...extra) {
@@ -835,14 +836,14 @@ export function createPanel(opts) {
   }
   const waitingHero = (w) => zone === 'village' && w.status === 'waiting' && !w.stale;
   function needsJudgement(f) { return isOmenPending(f) || f.status === 'awaiting_confirmation'; }
+  // Only what the human alone can move (v0.46): waiting heroes and governance escalations. Routine Temple work lives
+  // in its own sections below, live items first.
+  const escalations = () => (zone === 'village' ? state.governance?.digest || [] : []).filter((d) => d && d.escalation);
   function renderNeedsYou() {
-    const heroes = heroesInZone().filter(waitingHero);
-    const omens = (state.findings || []).filter((f) => f && f.id && zoneOf(f) === zone && needsJudgement(f))
-      .sort((a, b) => (+b.omenAt || +b.verdict?.ts || 0) - (+a.omenAt || +a.verdict?.ts || 0));
-    const offerings = offeringsInZone().filter((o) => o.status !== 'closed').sort((a, b) => (+b.createdAt || 0) - (+a.createdAt || 0));
-    const n = heroes.length + omens.length + offerings.length;
-    if (!n) return;
-    els.workshop.appendChild(h('div', { class: 'temple-section-title needs-title' }, h('span', { text: 'Needs you' }), h('span', { class: 'count count-need', text: String(n) })));
+    const heroes = heroesInZone().filter(waitingHero), escs = escalations();
+    const n = heroes.length + escs.length;
+    els.workshop.appendChild(h('div', { class: 'temple-section-title needs-title' }, h('span', { text: 'Needs you' }), n ? h('span', { class: 'count count-need', text: String(n) }) : null));
+    if (!n) { els.workshop.appendChild(h('div', { class: 'empty needs-none', text: 'Nothing needs you' })); return; }
     const strip = h('div', { class: 'needs-you' });
     for (const w of heroes) {
       const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id && c.status === 'new').length;
@@ -850,18 +851,10 @@ export function createPanel(opts) {
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }), counsel ? h('span', { class: 'chip chip-other', text: `${counsel} counsel` }) : null,
         h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w)));
     }
-    for (const f of omens) {
-      const d = f.delivery?.state;
-      strip.appendChild(needItem(`f:${f.id}`, 'omen', [h('span', { class: `pill pill-status status-${f.status}`, text: statusLabel(f.status) }), h('span', { class: `pill pill-sev sev-${sev(f)}`, text: sev(f) }),
-        h('span', { class: 'need-name', text: String(f.claim || '') }), h('span', { class: 'worker-path', text: `${f.project || ''} · ${f.file || '?'}${f.line != null ? `:${f.line}` : ''}` }),
-        d && d !== 'landed' ? h('span', { class: `pill pill-delivery delivery-${d === 'awaiting approval' ? 'awaiting' : d}`, text: d === 'awaiting approval' ? 'awaiting your approval' : d === 'failed' ? 'delivery failed' : d }) : null],
-      () => h('div', { class: 'rune-tablet omens compact' }, omenEntry(f))));
-    }
-    for (const o of offerings) {
-      const findings = findingsFor(o.id).length, who = Array.isArray(o.reviewers) ? o.reviewers.length : 0;
-      strip.appendChild(needItem(`o:${o.id}`, 'offering', [h('span', { class: 'pill pill-running', text: 'open' }), h('span', { class: 'need-name', text: String(o.title || o.project || o.id) }),
-        h('span', { class: `chip ${agentClass(o.tool)}`, text: String(o.tool || 'tool') }), h('span', { class: 'chip chip-other', text: String(o.kind || 'working changes') }),
-        h('span', { class: 'need-sub', text: `${findings} finding${findings === 1 ? '' : 's'} · ${who ? `${who} reviewer${who === 1 ? '' : 's'}` : 'no reviewers yet'} · ${relTime(o.createdAt)}` })], () => offeringCard(o)));
+    for (const d of escs) {
+      const o = offeringsInZone().find((x) => x.id === d.offeringId);
+      strip.appendChild(needItem(`g:${d.offeringId}`, 'offering', [h('span', { class: 'pill pill-error', text: 'your decision' }), h('span', { class: 'need-name', text: String(o?.title || d.project || d.offeringId) }),
+        h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)}` }), h('span', { class: 'need-sub', text: String(d.text || '') })], () => (o ? offeringCard(o) : h('div', { class: 'dim-note', text: String(d.text || '') }))));
     }
     els.workshop.appendChild(strip);
   }
@@ -932,6 +925,32 @@ export function createPanel(opts) {
         els.workshop.appendChild(hg);
       }
     }
+  }
+  // v0.46 governance, read at leisure: escalations (a disputed change simply stays unshipped; no bell), what waits for a
+  // ruling, and the ledger of skips, rulings, overrides, appeals and receipts.
+  function renderGovernance() {
+    const g = state.governance;
+    if (zone !== 'village' || !g) return;
+    const digest = g.digest || [], pending = g.pending || [], ledger = (g.ledger || []).slice().reverse();
+    if (!digest.length && !pending.length && !ledger.length) return;
+    const fold = foldSection('governance', 'Governance', digest.length || null, h('span', { class: 'dim-note gov-meta', text: `wakes ${g.wakes?.used ?? 0}/${g.wakes?.budget ?? 0} · ledger ${g.verified ? 'intact' : 'BROKEN'}` }));
+    if (digest.length) {
+      const box = h('div', { class: 'panel-settings gov-digest' }, h('b', { text: 'For your reading' }));
+      for (const d of digest) box.append(h('p', {}, h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)} ` }), document.createTextNode(String(d.text || ''))));
+      fold.append(box);
+    }
+    if (pending.length) {
+      const box = h('div', { class: 'panel-settings' }, h('b', { text: 'Awaiting a ruling' }));
+      for (const r of pending) box.append(h('p', { class: 'gov-row' }, h('span', { class: `pill gov-state gov-${r.state}`, text: r.state }), h('span', { class: 'need-name', text: ` ${r.title || r.project} ` }), h('span', { class: 'worker-path', text: `${r.project} ${shortHash(r.sha)}${r.stewardOwn ? ' · the Steward’s own' : ''} · report ${r.report ? 'given' : 'missing'} · tests ${r.tests || 'missing'}` }),
+        h('span', { class: 'dim-note gov-why', text: (r.reasons || []).join('; ') })));
+      fold.append(box);
+    }
+    if (ledger.length) {
+      const lines = h('div', { class: 'audit-log' });
+      for (const e of ledger) lines.append(h('p', { text: e.redacted ? `#${e.seq} ${e.kind} · moved to the isle` : `#${e.seq} ${new Date(e.ts).toLocaleString()} · ${e.kind}${e.what ? ` (${e.what})` : ''} by ${e.actor}${e.verdict ? ` · ${e.verdict}` : ''}${e.sha ? ` · ${shortHash(e.sha)}` : ''}${e.id ? ` · ${e.id}` : ''}${e.reason ? ` · ${e.reason}` : ''}` }));
+      fold.append(h('div', { class: 'panel-settings' }, h('b', { text: 'Ledger' }), clamped('gov-ledger', lines, ledger.map((e) => e.reason || e.kind).join('\n'), 8)));
+    }
+    els.workshop.append(fold);
   }
   // Steward and Watchtower controls, with the audit log: every control as before, folded under Settings & logs.
   function renderSettings() {
@@ -1053,9 +1072,26 @@ export function createPanel(opts) {
     return box;
   }
   function counselCount() { return (state.counsel || []).filter((c) => c && c.status === 'new' && (zoneOf(c) !== 'isle' || !sealed())).length; }
-  // Closed offerings, folded: open ones sit in the Needs-you strip.
+  // Where an offering stands with the Temple, in words (v0.46 governance state when it has one).
+  function rulingState(o) {
+    const g = o.gov, sha = shortHash(g?.sha || o.headCommit), reviewers = Array.isArray(o.reviewers) ? o.reviewers.length : 0;
+    if (!g) return o.status === 'closed' ? ['closed', 'pill-stopped'] : reviewers ? ['under review', 'pill-running'] : ['awaiting first look', 'pill-waiting'];
+    if (g.state === 'trivial') return [`accepted (trivial) ${sha}`, 'pill-running'];
+    if (g.state === 'accepted') return [`accepted ${sha}`, 'pill-running'];
+    if (g.state === 'rejected') return [`rejected ${sha}`, 'pill-error'];
+    if (g.state === 'evidence') return ['pending evidence', 'pill-waiting'];
+    if (g.state === 'appealed') return ['under appeal', 'pill-waiting'];
+    return [reviewers || g.rulings?.length ? 'under review' : 'awaiting first look', reviewers ? 'pill-running' : 'pill-waiting'];
+  }
+  // Open offerings first, live, each with its ruling state and the findings and omens it produced; closed ones follow
+  // as the folded history.
   function renderOfferings() {
-    const all = offeringsInZone(), list = all.filter((o) => o.status === 'closed').sort((a, b) => (+b.createdAt || 0) - (+a.createdAt || 0));
+    const all = offeringsInZone(), byNew = (a, b) => (+b.createdAt || 0) - (+a.createdAt || 0);
+    const live = all.filter((o) => o.status !== 'closed').sort(byNew), list = all.filter((o) => o.status === 'closed').sort(byNew);
+    if (live.length) {
+      els.workshop.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Offerings' }), h('span', { class: 'count', text: String(live.length) })));
+      for (const o of live) els.workshop.appendChild(offeringCard(o));
+    }
     const fold = foldSection('offerings', 'Offerings history', list.length);
     if (!list.length) fold.appendChild(h('div', { class: 'empty', text: all.length ? 'No offerings have been closed yet.' : 'No offerings yet. Lay one from a hero above and the village will review it.' }));
     const shown = offeringsAll ? list : list.slice(0, 3);
@@ -1071,7 +1107,8 @@ export function createPanel(opts) {
     const card = h('div', { class: `offering ${open ? 'open' : 'closed'}`, dataset: { id: o.id } });
     card.appendChild(h('div', { class: 'offering-head' },
       h('span', { class: 'offering-title', text: String(o.title || o.project || o.id) }),
-      h('span', { class: `pill ${open ? 'pill-running' : 'pill-stopped'}`, text: open ? 'open' : 'closed' })));
+      h('span', { class: `pill ${open ? 'pill-running' : 'pill-stopped'}`, text: open ? 'open' : 'closed' }),
+      (([label, cls]) => h('span', { class: `pill gov-ruling ${cls}`, text: label, title: o.gov?.reasons?.join('; ') || '' }))(rulingState(o))));
     card.appendChild(h('div', { class: 'offering-sub' },
       h('span', { class: `chip ${agentClass(o.tool)}`, text: String(o.tool || 'tool') }),
       o.provider ? providerChip(o.provider) : null,
@@ -1151,10 +1188,17 @@ export function createPanel(opts) {
       h('span', { class: 'fix-check-note', text: String(check.note || '') }),
       h('span', { class: 'finding-by', text: `by ${check.by || '?'}` }));
   }
-  // The resolved Tablet, folded: omens still awaiting judgement or delivery sit in the Needs-you strip.
+  // The Tablet: omens awaiting judgement, delivery or a fix's confirmation sit on top marked live; the resolved,
+  // inscribed record follows, folded, as before.
   function renderTablet() {
-    const list = (state.findings || []).filter((f) => f && f.id && zoneOf(f) === zone && TABLET_STATUSES.includes(f.status) && !needsJudgement(f))
-      .sort((a, b) => (+b.omenAt || +b.verdict?.ts || 0) - (+a.omenAt || +a.verdict?.ts || 0));
+    const mine = (state.findings || []).filter((f) => f && f.id && zoneOf(f) === zone && TABLET_STATUSES.includes(f.status)), byNew = (a, b) => (+b.omenAt || +b.verdict?.ts || 0) - (+a.omenAt || +a.verdict?.ts || 0);
+    const live = mine.filter(needsJudgement).sort(byNew), list = mine.filter((f) => !needsJudgement(f)).sort(byNew);
+    if (live.length) {
+      els.workshop.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Omens in motion' }), h('span', { class: 'count', text: String(live.length) })));
+      const box = h('div', { class: 'rune-tablet omens compact tablet-live' });
+      for (const f of live) { const e = omenEntry(f); e.classList.add('live'); e.querySelector('.omen-head')?.prepend(h('span', { class: 'pill pill-running', text: 'live' })); box.appendChild(e); }
+      els.workshop.appendChild(box);
+    }
     const mode = state.decreeMode === 'approve' || state.world?.decreeMode === 'approve' ? 'approve' : 'auto';
     const modeSw = h('span', { class: 'decree-mode', title: 'auto: the High Priest\u2019s decrees are delivered to the session at once · approve: you confirm each decree first' },
       h('span', { class: 'decree-mode-label', text: 'decrees' }),

@@ -31,7 +31,8 @@ if (params.get('debug') === '1') {
 }
 // The server injects <meta name="hf-token"> when it serves index.html; every /api call carries it.
 const TOKEN = MOCK ? "" : (document.querySelector('meta[name="hf-token"]')?.getAttribute('content') || '');
-const authHeaders = () => (TOKEN ? { 'X-Amygdala-Token': TOKEN } : {});
+// The page speaks as the human (v0.45 governance records the actor; anything else with the token is the Steward).
+const authHeaders = () => (TOKEN ? { 'X-Amygdala-Token': TOKEN, 'X-Amygdala-Source': 'human' } : {});
 function sessionExpired() {
   if (expired) return;
   expired = true;
