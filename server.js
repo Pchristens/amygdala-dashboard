@@ -173,7 +173,7 @@ const server = http.createServer(async (req, res) => {
       return mcp(req, res, body, m ? m[1] : null);
     }
     if (p.startsWith('/api/') && !tokenOk(req, url)) return json(res, 401, { ok: false, error: 'missing or wrong page token — reload the page' });
-    if (p.startsWith('/api/') && (req.method === 'POST' || req.method === 'GET' && !['/api/state', '/api/events'].includes(p) && !p.endsWith('/wait')) && (!p.startsWith('/api/steward/') || p === '/api/steward/settings') && p !== '/api/bells/presence' && req.headers['x-amygdala-source'] !== 'steward') world.steward.activity();
+    if (p.startsWith('/api/') && (req.method === 'POST' || req.method === 'GET' && !['/api/state', '/api/events'].includes(p) && !p.endsWith('/wait')) && (!p.startsWith('/api/steward/') || ['/api/steward/settings', '/api/steward/hero'].includes(p)) && p !== '/api/bells/presence' && req.headers['x-amygdala-source'] !== 'steward') world.steward.activity();
     if (req.method === 'GET' && ['/api/steward/budget', '/api/steward/wait'].includes(p)) {
       const controller = new AbortController(); res.on('close', () => controller.abort());
       const result = await stewardGet(world.steward, p, url.searchParams, controller.signal);
@@ -227,6 +227,7 @@ const server = http.createServer(async (req, res) => {
       if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
       const b = JSON.parse((await readBody(req)) || '{}');
       if (p === '/api/steward/settings') return json(res, 200, world.steward.settings(b));
+      if (p === '/api/steward/hero') return json(res, 200, world.watch.setStewardHero(b.workerId));
       if (p === '/api/steward/claim') return json(res, 200, world.steward.claim(b));
       if (p === '/api/steward/summary') return json(res, 200, world.steward.summary(b));
       if (p === '/api/orders') return json(res, 200, await world.orders.create(b));

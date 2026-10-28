@@ -1330,3 +1330,50 @@ buried under a podium is never chosen, and a roof is never chosen over the floor
 layer nearest its current height, the lowest when it has none, and eases toward it (45 units/s up, 70 down; snaps on
 placement and on jumps over 40). Seated and ceremonial figures keep their scripted heights. Buildings are unchanged;
 instanced steles, trees and props are not baked. Horizontal collision is unchanged: paths still decide where figures go.
+
+## v0.41: the Watch wakes the Steward
+
+**Setting.** The human names the Steward's session: `world.s.stewardHero = { workerId, node, sessionId } | null`.
+`POST /api/steward/hero { workerId | null }` (page token) accepts only a node hero that is in the village, passes the
+node privacy gate (`Nodes.allowed`: not isle-tagged, quarantined, sealed or private), is not a petition hero and has
+tool `claude`; `null` clears it. Nothing is auto-detected by title. The human snapshot carries `stewardHero`; the
+Temple tab's **Settings & logs** fold has a **Steward session** select. Setting it counts as human activity.
+
+**Detection** (code only, `Watch.stewardScan` inside `scan`). While the Steward's node pass is online with agent-deck,
+the Steward is down when its worker's status is `error` or `stopped`, or it is missing from that node's report. After
+two minutes down, the Watch raises `steward-down:steward` with the summary "The Steward's session is down." (no paths,
+titles or transcript text). It is raised once (the usual two-hour `seen` window); when the Steward is next seen up
+(or archived, which is the human's choice), the pending event and its `seen` entry are cleared so a later fall raises
+again. A Steward that has turned private is neither reported down nor up.
+
+**Action.** MCP tool `wake_steward` (no arguments) is listed and works only for the resident acting as the Watch
+(primary or stand-in), during a turn whose job is the watch duty (`dutyKey: 'watch:pending'`), while
+`steward-down:steward` is pending. Refusals (thrown, not counted): not the Watch / not its watch turn; the Steward is
+not down; no Steward set; a try in the last fifteen minutes; six tries this UTC day. Otherwise the try is recorded in
+`s.stewardWakes` and a node job of the new kind `start` with payload `{ sessionId }` is queued. `Nodes.startable`
+refuses unless the worker is the named Steward ("Only the Steward may be started this way."), its node is online
+with agent-deck, it passes the privacy gate, and it is unarchived with status `error` or `stopped`; the report loop
+drops a `start` whose worker is no longer the named Steward. A synchronous refusal rings the bell at once and the tool
+says so. On success the feed says "<name> woke the Steward"; on failure an urgent bell (`kind: 'steward-wake'`, by the
+Watch's name) says "The Steward's session is down and could not be woken." plus, only for these fixed texts, the
+node's reason: "Please update Amygdala on <node name>.", "Already running elsewhere.", "That machine is offline or has
+no agent-deck.". The Watch's role prompt tells it to call `wake_steward` once and to ring the bell itself only when the
+tool refuses.
+
+**Node.** The report response carries `steward`: that node's Steward session id, or `null`. `executeJob` handles
+`start` only when `job.sessionId` equals it, after the existing privacy checks (session in `village`, not archived,
+not isle-tagged, private, quarantined or sealed). It refuses remote (ssh) and non-Claude sessions, a status other than
+`error`/`stopped`, and Windows (no duplicate check there). It reads the conversation id from the list's
+`claude_session_id` (else `agent-deck session show <id> --json`), reads `ps -eo pid,args`, and refuses with
+"Already running elsewhere." when any other process whose arguments mention `claude` carries `--resume <id>`,
+`-r <id>`, `--session-id <id>` or the `=` forms. Then it runs `agent-deck session start <id>`. A failed `start` reports
+a fixed sentence (or "The Steward could not be started."), never the catch-all text.
+
+**Old nodes.** A node without `start` rejects the unknown kind and reports its catch-all
+"Local node job failed; check folder and agent-deck."; for a `start` job the server reads that as
+"Please update Amygdala on <node name>.". The report format is unchanged, so old servers and new nodes still agree.
+
+**Known limits.** When the Steward's machine (or WSL) is down, its node helper is down too: nothing can start it, no
+`steward-down` is raised for an offline node (one raised earlier stays pending), and the existing bell paths are all
+there is. The duplicate check sees only processes on the node's own machine and only explicit resume/session-id
+arguments (`claude --continue` is not recognised).

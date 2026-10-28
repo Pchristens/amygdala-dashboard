@@ -946,6 +946,12 @@ export function createPanel(opts) {
       for (const [key, label] of [['idleHours', 'Human idle hours'], ['sevenDayHours', 'Weekly hours left'], ['sevenDaySpare', 'Weekly spare %'], ['fiveHourHours', 'Five-hour hours left'], ['fiveHourSpare', 'Five-hour spare %']]) {
         const input = h('input', { type: 'number', min: '0', max: key.endsWith('Spare') ? '90' : '168', step: '0.5', value: state.steward[key], 'aria-label': label }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: +input.value })); controls.append(h('label', {}, label, input));
       }
+      // The Steward's own session, which the Watch may restart when it falls over; chosen by hand, never by title.
+      const current = state.stewardHero?.workerId, select = h('select', { 'aria-label': 'Steward session' }, h('option', { value: '', text: 'None (the Watch never restarts it)' }));
+      for (const w of (state.workers || []).filter((w) => w.zone === 'village' && w.node && w.tool === 'claude' && !w.private && !w.archived || w.id === current)) select.append(h('option', { value: w.id, text: `${w.title} · ${w.host}`, selected: w.id === current }));
+      if (current && ![...select.options].some((o) => o.value === current)) select.append(h('option', { value: current, text: 'Set, not reporting now', selected: true }));
+      select.addEventListener('change', () => opts.api('/api/steward/hero', { workerId: select.value || null }));
+      controls.append(h('label', {}, 'Steward session', select));
       fold.append(controls);
     }
     if (state.auditSettings) {

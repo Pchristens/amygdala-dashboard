@@ -268,6 +268,14 @@ If the Watch declines, no candidate node is reachable, or the Steward does not c
 village life happen about twice as often, favouring conversation and tending the tree. Existing pause, daily budget,
 hibernation and provider guards still apply. It ends at 85% usage, reset, human activity or unavailable usage data.
 
+The Watch can also restart the Steward when its session falls over (v0.41). In the Temple tab's **Settings & logs**,
+pick the Steward's session under **Steward session** (a village Claude hero on an Amygdala node). If it shows `error`
+or `stopped` for two minutes while its node reports, the Watch runs `agent-deck session start` on that node, at most
+once per fifteen minutes and six times a day. The node first refuses if any `claude` process is already resuming that
+conversation (for example, one you resumed by hand in a terminal). Failures ring an urgent bell. Update Amygdala on
+the Steward's machine for this to work; an older node rings "update Amygdala on <host>". An offline machine (such as
+WSL not running) cannot be woken this way.
+
 ### Giving orders
 
 Open **Orders** in the dashboard to select one or more village residents, or **Whole village**, and write an
