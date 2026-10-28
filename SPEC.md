@@ -1614,3 +1614,11 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
   worker carries `home: 'stewards-house'` and the house's coordinates, and keeps its `site`. Resting, private or isle
   Stewards are not placed there; other heroes are unchanged. `setStewardHero` refreshes workers so the move is immediate.
 - No new route, MCP tool or permission. The pane reads the human snapshot, plus `orders` and `governance.digest`.
+
+## v0.50: drawer navigation and feed control
+
+- Closing the drawer stays closed: its close button does not trigger the tab-opening handler.
+- Header Lamps, omens and counsel shortcuts open their destination and synchronize the selected rail item.
+- A closed drawer is inert and `aria-hidden`; opening it restores interaction. It starts inert before the app loads.
+- Happening now is a native button, retaining the existing collapse behavior and saved preference.
+- No tab restructuring, API, visibility, terminal access, allowance or automation semantics change.

@@ -451,9 +451,9 @@ async function tellTale(workerId) {
   if (okResult(result)) toast('The labour is recorded; the bard has been summoned.');
 }
 function siteLabel(id) { return (state?.sites || []).find((s) => s && s.id === id)?.label || id; }
-$('counsel-chip').addEventListener('click', () => panel.selectTab('workshop'));
+$('counsel-chip').addEventListener('click', () => setDrawer(true, 'workshop'));
 const omenChip = $('omen-chip');
-omenChip.addEventListener('click', () => { panel.selectTab('workshop'); });
+omenChip.addEventListener('click', () => setDrawer(true, 'workshop'));
 function renderOmenChip(n) {
   omenChip.hidden = !n;
   $('omen-chip-text').textContent = `${n} ${n === 1 ? 'omen' : 'omens'}`;
@@ -947,6 +947,7 @@ function setDrawer(open, tab) {
   drawerOpen = !!open;
   if (!drawerOpen) disposeTerminal();
   drawer.classList.toggle('open', drawerOpen);
+  drawer.inert = !drawerOpen;
   drawer.setAttribute('aria-hidden', drawerOpen ? 'false' : 'true');
   document.body.classList.toggle('drawer-open', drawerOpen);
   if (tab) panel.selectTab(tab);
@@ -957,7 +958,7 @@ function setDrawer(open, tab) {
 function currentTab() { return panel.activeTab; }
 rail.addEventListener('click', (e) => { const b = e.target.closest('.rail-tab'); if (!b) return; if (drawerOpen && currentTab() === b.dataset.tab) setDrawer(false); else setDrawer(true, b.dataset.tab); });
 $('drawer-close').addEventListener('click', () => setDrawer(false));
-document.querySelector('.tabs').addEventListener('click', () => setTimeout(() => setDrawer(true), 0));
+document.querySelector('.tabs').addEventListener('click', (e) => { if (e.target.closest('.tab')) setDrawer(true); });
 // resize by dragging the handle
 (() => {
   const handle = $('drawer-handle');
@@ -1042,7 +1043,7 @@ function renderHeader() {
   if (!['normal', 'conserve', 'exhausted'].includes(guidance)) lg.hidden = true;
   else { lg.hidden = false; lg.dataset.guidance = guidance; lg.title = guidance === 'normal' ? 'Lamps: allowances fine' : guidance === 'conserve' ? 'Lamps: conserve oil — an allowance is running low' : 'Lamps: oil exhausted — an allowance is used up'; $('lamp-glyph-text').textContent = guidance; }
 }
-$('lamp-glyph').addEventListener('click', () => panel.selectTab('lamps'));
+$('lamp-glyph').addEventListener('click', () => setDrawer(true, 'lamps'));
 $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: !state?.world?.paused }));
 const updateBells = createBells($('gear-pop'));
 const bellPageId = crypto.randomUUID();

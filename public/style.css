@@ -1226,7 +1226,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 
 /* collapsible feed */
 .happening { pointer-events: auto; }
-.happening-title { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 85%, transparent); }
+.happening-title { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 85%, transparent); }
 .happening-title::before { content: '▾'; font-size: 10px; }
 .happening.collapsed .happening-title::before { content: '▸'; }
 .happening.collapsed ol { display: none; }

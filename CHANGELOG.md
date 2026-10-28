@@ -10,6 +10,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 ## Unreleased
 
 - Allowance reset times in Lamps roll over to days past 24 hours: 26 hours reads "resets in 1d 2h 0m".
+- (v0.50) Panel close and header shortcuts work consistently; closed panels stay out of keyboard focus, and Happening now can be toggled with the keyboard.
 
 ## v0.49 — 2026-10-28
 
