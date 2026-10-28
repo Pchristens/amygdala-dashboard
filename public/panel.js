@@ -774,8 +774,33 @@ export function createPanel(opts) {
       renderSealedTablet(t);
       els.workshop.appendChild(t.firstChild);
     }
+    renderHall();
     renderGods();
     if (!isleLocked()) { renderOfferings(); renderTablet(); }
+  }
+  let hallOpen = false;
+  const hallErrors = new Map(), hallBusy = new Set();
+  function renderHall() {
+    if (zone !== 'village' || !state.hall) return;
+    const details = h('details', { id: 'hall-heroes' }); details.open = hallOpen;
+    details.addEventListener('toggle', () => { hallOpen = details.open; });
+    details.append(h('summary', { text: `Hall of Heroes (${state.hall.length})` }));
+    for (const w of state.hall) {
+      const row = h('div', { class: 'panel-settings' }, h('b', { text: w.title }), h('p', { text: `${w.tool} · ${w.model || 'unknown model'} · ${w.host} (${w.os || 'unknown OS'}) · ${w.project} · ${w.lastActivityAt == null ? 'activity unknown' : new Date(w.lastActivityAt).toLocaleString()}` }));
+      for (const action of ['revive', 'forget']) {
+        const key = `${w.id}:${action}`, error = h('span', { role: 'status', text: hallErrors.get(key) || '' });
+        const button = h('button', { class: 'btn btn-xs', type: 'button', text: action === 'revive' ? 'Revive' : 'Forget', disabled: hallBusy.has(w.id) });
+        button.addEventListener('click', async () => {
+          if (action === 'forget' && !confirm(`Forget “${w.title}” from agent-deck? It can't be revived afterwards.`)) return;
+          hallBusy.add(w.id); button.disabled = true; error.textContent = '';
+          try { const result = await opts.api(`/api/heroes/${action}`, { workerId: w.id }); if (!result || result.ok === false) throw new Error(result?.error || 'Action failed.'); hallErrors.delete(key); }
+          catch (e) { hallErrors.set(key, e.message); error.textContent = e.message; }
+          finally { hallBusy.delete(w.id); button.disabled = false; }
+        }); row.append(button, error);
+      }
+      details.append(row);
+    }
+    els.workshop.append(details);
   }
   function renderGods() {
     const workers = (state.workers || []).filter((w) => w && w.id);

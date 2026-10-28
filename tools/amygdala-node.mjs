@@ -16,23 +16,29 @@ const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
 import { probeGrok } from '../lib/fleet.js';
 export function reportSessions(sessions, village = []) {
-  return sessions.filter(s => !s.archived).map(s => {
+  return sessions.map(s => {
     const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = w.zone === 'isle' || w.isleTagged || isleTagged(w);
     const signals = scanAllowed({ ...w, id: s.id, zone: s.zone || 'village' }, village) ? classifyHero({ ...w, ...extractSignals(w.transcriptPath, w.tool) }) : undefined;
-    return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, model: w.model, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
+    return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, model: w.model, archived: w.archived, lastActivityAt: w.lastActivityAt, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
   });
 }
 export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail) {
-  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop'].includes(job.kind)) throw new Error('Unrequested job.');
+  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget'].includes(job.kind)) throw new Error('Unrequested job.');
   if (job.kind === 'commission') {
     const fake = { s: {}, changed() {}, addFeed() {} }, sites = new Sites(fake);
     const result = await sites.commission({ ...job.commission, node: null }); return JSON.stringify(result);
   }
-  const s = sessions.find(s => s.id === job.sessionId && !s.archived), w = s && toWorker(s, 'local');
-  if (!w || isleTagged(w) || !village.includes(job.sessionId)) throw new Error('Session is private or unrequested.');
+  const s = sessions.find(s => s.id === job.sessionId && (!s.archived || ['revive', 'forget'].includes(job.kind))), w = s && toWorker(s, 'local');
+  if (!w || w.zone === 'isle' || w.isleTagged || w.private || w.quarantined || w.sealed || isleTagged(w) || !village.includes(job.sessionId)) throw new Error('Session is private or unrequested.');
   if (job.kind === 'tail') {
     if (!Number.isInteger(job.maxChars) || job.maxChars < 1 || job.maxChars > 20000) throw new Error('Invalid tail bound.');
     return tail(w.transcriptPath, job.maxChars) || '';
+  }
+  if (['revive', 'forget'].includes(job.kind)) {
+    if (!w.archived && w.status !== 'stopped') throw new Error('Hero is still active.');
+    if (job.kind === 'forget') return (await run('agent-deck', ['session', 'remove', s.id], { timeout: 60000 })).stdout;
+    if (w.archived) await run('agent-deck', ['session', 'unarchive', s.id], { timeout: 60000 });
+    return (await run('agent-deck', ['session', 'start', s.id], { timeout: 60000 })).stdout;
   }
   if (job.kind === 'stop') return (await run('agent-deck', ['session', 'stop', s.id], { timeout: 60000 })).stdout;
   if (typeof job.message !== 'string' || job.message.length > 12000) throw new Error('Invalid message.');
@@ -92,7 +98,7 @@ export async function main(args = process.argv.slice(2)) {
     try {
       const available = deckAvailable(), sessions = [];
       if (available) {
-        const local = JSON.parse((await exec('agent-deck', ['list', '--json'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout);
+        const local = JSON.parse((await exec('agent-deck', ['list', '--json', '--all'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout);
         sessions.push(...(Array.isArray(local) ? local : local.sessions || []));
         try { const remote = JSON.parse((await exec('agent-deck', ['remote', 'sessions', '--json'], { timeout: 15000, maxBuffer: 8 << 20 })).stdout); sessions.push(...(Array.isArray(remote) ? remote : remote.sessions || [])); } catch {}
       }

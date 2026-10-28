@@ -406,6 +406,17 @@ export const BUILDERS = {
     aoDisc(ao, x, y, z + 2, 70, 44);
     return { h: 50, hit: [120, 52, 70] };
   },
+  hall(b, e, pool, ao, x, y, z) {
+    b.box(x, y, z, 78, 2, 44, P.marbleShade); b.box(x, y + 2, z, 72, 2, 38, P.marble);
+    b.box(x, y + 4, z - 15, 66, 22, 3, P.ivory);
+    for (const dx of [-28, -14, 0, 14, 28]) {
+      b.box(x + dx, y + 4, z + 12, 6, 2, 6, P.marbleShade);
+      b.cyl(x + dx, y + 6, z + 12, 2, 2.4, 19, P.ivory, 8);
+      b.box(x + dx, y + 25, z + 12, 6, 2, 6, P.marble);
+    }
+    b.box(x, y + 27, z, 74, 3, 38, P.marble); b.prism(x, y + 30, z, 76, 7, 40, P.terracotta, 0);
+    aoDisc(ao, x, y, z, 43, 27); return { h: 37, hit: [80, 40, 46] };
+  },
   garden(b, e, pool, ao, x, y, z) { // walled sun garden on ancient foundations
     b.box(x, y, z - 24, 74, 5, 3, P.ancientDark); b.box(x - 22, y, z + 24, 30, 5, 3, P.ancientDark); b.box(x + 26, y, z + 24, 22, 5, 3, P.ancientDark);
     b.box(x - 37, y, z, 3, 5, 48, P.ancientDark); b.box(x + 37, y, z + 8, 3, 5, 32, P.ancientDark);
@@ -585,7 +596,7 @@ export const BUILDERS = {
     return { h: 78, hit: [44, 80, 44], beam: { x, y: y + 65, z } };
   },
 };
-const SCALE_OF = { temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
+const SCALE_OF = { hall:0.9, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
 function scaleParts(builder, from, x, y, z, s) { // scale new parts of `builder` about (x,y,z)
   const m = new THREE.Matrix4().makeTranslation(x, y, z).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-x, -y, -z));
   for (let i = from; i < builder.parts.length; i++) builder.parts[i].applyMatrix4(m);

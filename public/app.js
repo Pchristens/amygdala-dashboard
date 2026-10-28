@@ -816,6 +816,7 @@ document.addEventListener('keydown', sealTouch, { passive: true });
 // ---------- Place pane: description, who is here, and the place log ----------
 let placePane = { id: null, log: null, fetchedAt: 0 };
 async function openPlacePane(id, refresh = false) {
+  if (id === 'hall') { panel.selectTab('workshop'); setDrawer(true); const hall = $('hall-heroes'); if (hall) { hall.open = true; hall.scrollIntoView({ block: 'nearest' }); } return; }
   const el = $('place-pane');
   if (!refresh) { placePane = { id, log: null, fetchedAt: 0 }; closeCard(); panel.selectTab('place'); setDrawer(true); el.textContent = ''; el.appendChild(h('div', { class: 'dim-note', text: 'Reading the record…' })); }
   if (!state) return;
@@ -1153,6 +1154,7 @@ function stripIsle(s) {
   delete out.isleGhosts; delete out.petitions; delete out.bells; delete out.audits; delete out.auditSettings;
   out.offerings = (out.offerings || []).filter(o => o.kind !== 'audit' && !o.humanOnly);
   out.workshops = [];
+  delete out.hall;
   // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.
   if (params.get('public') === '1') { out.workers = []; out.visitors = []; out.heroPasses = []; out.nodes = []; out.visitorPasses = []; out.petitions = []; }
   if (out.usage?.isle) { out.usage = { ...out.usage }; delete out.usage.isle; }

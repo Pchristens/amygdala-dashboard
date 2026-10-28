@@ -357,3 +357,9 @@ seal; boxes received while locked remain ciphertext. Locked, visitor, resident a
 The village apprentice and Watchtower paths continue to exclude isle work. Critical keyword hits can ring only the
 redacted Far Isle bell, at most once an hour when the human views the unlocked isle. Keyword detection and redaction
 are heuristic; inspect the human-only card with the same care as other session output.
+
+### Hall of Heroes
+
+Finished heroes rest in the Hall, replacing the Glasshouse Garden. Open the Hall on the map or expand its section in
+Heroes. Revive restores an archived session and starts it at its previous site; Forget removes it from agent-deck after
+confirmation. Update Amygdala on each node to enable these actions. Private and Far Isle heroes are excluded.

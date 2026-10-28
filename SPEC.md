@@ -1064,3 +1064,24 @@ voice. Ordinary village life turns use half the usual interval and may wake for 
 without new news. Life stays serial, respects pause, the daily automatic budget, manual/provider hibernation and
 all provider 95% guards. A festival closes at spare <= 5 (85% used), at reset, on stale/missing usage, on human or
 hero activity, or when either relevant enable toggle is disabled. No reset identity opens a second festival.
+
+## v0.32: the Hall of Heroes
+
+Stopped or archived heroes leave active snapshot `workers`, map figures, site lists, waiting lists and counts.
+Human snapshots add `hall`, listing only village heroes without private, isle-tagged, quarantined or sealed flags:
+`{id,title,tool,model,host,os,project,lastActivityAt,archived,status,site}`. Non-human snapshots omit the Hall and private heroes.
+The Heroes panel has a collapsed Hall section; clicking the Hall place opens it. Revive and Forget report errors inline;
+Forget requires confirmation.
+
+Human page-token routes `POST /api/heroes/revive {workerId}` and `POST /api/heroes/forget {workerId}` require a stopped
+or archived village deck hero. Revive unarchives when necessary then starts the session; saved site assignments remain.
+Forget removes the session from agent-deck. Local sessions use agent-deck directly; node sessions use new job kinds
+`revive` and `forget` with `{sessionId}`, under the same ownership and village privacy gates as stop, checked at queueing,
+dispatch and result acceptance. SSH-only and bridge sessions cannot use these actions.
+
+Nodes and local deck sync list with `--all`. Session reports add optional `archived` (boolean) and `lastActivityAt`
+(nonnegative safe integer milliseconds or null). Older reports remain valid; lifecycle actions require the new fields
+and otherwise ask the human to update Amygdala on the named machine. Unknown fields remain rejected.
+
+The `glasshouse` place becomes `{id:'hall',name:'Hall of Heroes',kind:'hall',x:165,y:470}`, a modest limestone stoa.
+Saved place references and dictionary keys migrate to `hall` on load; sealed payloads remain opaque.

@@ -142,6 +142,8 @@ const API = {
   'POST /api/nodes/notify': b => world.nodes.setNotify(b.id, b.on),
   'POST /api/nodes/revoke': b => world.nodes.revoke(String(b.id)),
   'POST /api/nodes/keeper': b => setKeeper(world, String(b.id), b.on === true),
+  'POST /api/heroes/revive': b => world.sites.heroAction(b.workerId, 'revive'),
+  'POST /api/heroes/forget': b => world.sites.heroAction(b.workerId, 'forget'),
   'POST /api/heroes/pass': b => world.bridge.issue(b.name, b.zone, b.hours, b.label),
   'POST /api/heroes/revoke': b => world.bridge.revoke(String(b.id)),
   'POST /api/quarantine': b => world.setQuarantine(String(b.project), String(b.host), !!b.on),
