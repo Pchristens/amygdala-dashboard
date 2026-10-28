@@ -115,6 +115,11 @@ set a baseline (the human only):
 `curl -H "X-Amygdala-Token: $T" -H "X-Amygdala-Source: human" -H 'Content-Type: application/json' -d '{"workerId":"…","sha":"<full hash>","reason":"what is deployed"}' http://127.0.0.1:8790/api/governance/baseline`.
 The Steward holds the same page token, so the source header is a record, not a lock: the ledger shows who did what.
 
+The Steward's House stands under the cliff beside the Quiet Stone (v0.49), and the Steward's own session stands at it.
+The stone is the deploy stone: gold when what runs is what the Temple approved, a dim red ember when they differ or a
+deploy has no receipt, unlit when nothing is known. Click the house or the stone for a read-only account of approvals,
+receipts, overrides, node health, orders and commissions in flight, and your digest. Work is still offered at the Temple.
+
 When a hero reports a Temple decree fixed, the smith checks it and the High Priest confirms it; you never have to, though
 **Confirm fixed** stays available.
 

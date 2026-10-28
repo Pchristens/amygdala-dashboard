@@ -234,14 +234,14 @@ export async function createMap3D(container, opts = {}) {
   const placeLabels = new Map();
   let graph = null, isleGraph = null, hasIsleAssets = false;
   let walk = null;   // baked floors, stairs and terraces figures stand on
-  let emberEmitter = null, beamCone = null, smokeEmitters = [], armillary = null, plotMesh = null, hallPlace = null;
+  let emberEmitter = null, beamCone = null, smokeEmitters = [], armillary = null, plotMesh = null, hallPlace = null, deployStone = null;
   function rebuildStatic(places, workshops, plots, objects, sites) {
     const key = JSON.stringify([places.map((p) => [p.id, p.kind, p.x, p.y, p.name, zoneOf(p)]), workshops.map((w) => [w.id, w.x, w.y, w.project, w.host]), plots.map((p) => [p.id, p.x, p.y]), objects.map((o) => [o.id, o.kind, o.x, o.y]), isleBuilt]);
     if (key === placesKey) return;
     placesKey = key;
     for (const c of [...staticGroup.children]) { staticGroup.remove(c); c.geometry?.dispose?.(); }
     for (const [, o] of placeLabels) o.removeFromParent();
-    placeLabels.clear(); placeInfo.clear(); smokeEmitters = []; emberEmitter = null; hallPlace = null;
+    placeLabels.clear(); placeInfo.clear(); smokeEmitters = []; emberEmitter = null; hallPlace = null; deployStone = null;
     if (beamCone) { beamCone.removeFromParent(); beamCone = null; }
     if (armillary) { armillary.grp.removeFromParent(); armillary = null; }
     const b = new Builder(), e = new Builder(), pool = new Builder(), ao = new Builder(), decals = new Builder(), hits = [];
@@ -259,6 +259,7 @@ export async function createMap3D(container, opts = {}) {
       if (info.ember) emberEmitter = info.ember;
       if (info.beam) { beamCone = makeBeam(info.beam); staticGroup.add(beamCone); }
       if (info.armillary) { armillary = makeArmillary(info.armillary); staticGroup.add(armillary.grp); aimArmillary(); }
+      if (info.bowl) { deployStone = makeDeployStone(info.bowl); staticGroup.add(deployStone.grp); setDeployStone(current?.stewardHouse?.stone); }
       if (p.kind === 'hall' && zoneOf(p) === 'village') { // the heroon: a Linear B dedication painted on the side wing's architrave (decoration only), shown up close
         hallPlace = { x: p.x, y: p.y, y0: info.y0 || 0 }; hallDirty = true;
         const f = document.createElement('div'); f.className = 'lbl lbl-frieze'; f.textContent = '\u{10000}\u{1002D}\u{10024}\u{10003}\u{10012}\u{1001B}\u{1002B}\u{10033}\u{10014}';
@@ -404,6 +405,30 @@ export async function createMap3D(container, opts = {}) {
     pointer.add(new THREE.Mesh(armG, bronze));
     const sunBead = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 1), gold); sunBead.position.z = R + 3.6; pointer.add(sunBead);
     return { grp, spin, pointer, sunBead, bronze, beads, gold, glow: 0 };
+  }
+  // The deploy stone (v0.49): the Quiet Stone's bowl holds a calm gold flame when what runs is what the Temple approved,
+  // a low red ember when they differ or a deploy has no receipt, and nothing when that is unknown (always so for visitors
+  // and ?shot=1, whose snapshots carry no stewardHouse). A soft halo lets the state read at map scale.
+  const DEPLOY = { ok: { bowl: '#E9B949', glow: '#E9B949', flame: '#F6CF62', halo: '#F2C14E', op: 0.38, s: 1 }, drift: { bowl: '#3A2620', glow: '#7A2214', flame: '#B8402A', halo: '#C2412B', op: 0.2, s: 0.7 }, unknown: { bowl: '#5B4A3D', flame: null, halo: null, op: 0, s: 0 } };
+  let haloTex = null;
+  function makeDeployStone(at) {
+    const grp = new THREE.Group(); grp.position.set(at.x, at.y, at.z);
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(at.r, at.r, 0.5, 10), new THREE.MeshStandardMaterial({ color: '#5B4A3D', emissive: new THREE.Color('#000000'), emissiveIntensity: 1, flatShading: true, roughness: 0.7 }));
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(at.r * 0.42, at.r * 1.5, 6), new THREE.MeshBasicMaterial({ color: '#F6CF62' })); flame.position.y = at.r * 0.75 + 0.25; flame.geometry.translate(0, 0, 0);
+    if (!haloTex) { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); haloTex = new THREE.CanvasTexture(c); }
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color: '#F2C14E', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); halo.position.y = at.r * 0.9; halo.scale.setScalar(at.r * 6);
+    grp.add(bowl, flame, halo);
+    return { grp, bowl, flame, halo, r: at.r, state: null };
+  }
+  function setDeployStone(stone) {
+    if (!deployStone) return;
+    const k = DEPLOY[stone] ? stone : 'unknown', d = DEPLOY[k], ds = deployStone;
+    if (ds.state === k) return; ds.state = k;
+    ds.bowl.material.color.set(d.bowl); ds.bowl.material.emissive.set(d.glow || '#000000'); ds.bowl.material.emissiveIntensity = k === 'ok' ? 0.55 : 0.3;
+    ds.flame.visible = !!d.flame; if (d.flame) { ds.flame.material.color.set(d.flame); ds.flame.scale.setScalar(d.s); }
+    ds.halo.visible = !!d.halo; if (d.halo) ds.halo.material.color.set(d.halo); ds.halo.material.opacity = d.op;
+    const lbl = placeLabels.get('quiet-stone')?.element; if (lbl) { lbl.classList.toggle('deploy-ok', k === 'ok'); lbl.classList.toggle('deploy-drift', k === 'drift'); }
+    needsRender = true;
   }
   function aimArmillary() {
     if (!armillary) return;
@@ -559,7 +584,7 @@ export async function createMap3D(container, opts = {}) {
       const rec = upsert('god', w.id, { name: w.title || w.id, toolColor: TOOL_COLORS[w.tool] || TOOL_COLORS.other, hooded: !!w.sealed, appearance: null }, +w.x || 0, +w.y || 0, zoneOf(w), w.site);
       setStatus(rec.F, w.stale ? 'stale' : w.status);
       setWaiting(rec.F, w.status === 'waiting' && !w.stale);
-      rec.placeKind = { library: 'greatlibrary', forge: 'forge', quarry: 'quarry', temple: 'temple' }[w.site] || '';
+      rec.placeKind = w.home ? '' : { library: 'greatlibrary', forge: 'forge', quarry: 'quarry', temple: 'temple' }[w.site] || '';   // the Steward at home works at no site
       rec.F.label.textContent = w.sealed ? rec.F.label.textContent : String(w.title || w.id).slice(0, 26);
     }
     const h = state.human;
@@ -785,6 +810,7 @@ export async function createMap3D(container, opts = {}) {
     const locked = !!(state.seal?.enabled && state.seal.locked);
     container.classList.toggle('sealed', locked);
     updateDome(locked, Array.isArray(state.seal?.runes) ? state.seal.runes : []);
+    setDeployStone(state.stewardHouse?.stone);
     busyForge = (state.workers || []).some((w) => w && w.site === 'forge' && w.status === 'running' && !w.stale);
     busyWs = new Set((state.workers || []).filter((w) => w && w.status === 'running' && !w.stale).map((w) => `${w.project}@${w.host}`));
     needsRender = true;
@@ -905,6 +931,7 @@ export async function createMap3D(container, opts = {}) {
       else if (armillary.beads[0].scale.x !== 1) for (const b of armillary.beads) b.scale.setScalar(1);
     }
     // lighthouse beam & water shimmer at night
+    if (deployStone?.state === 'drift') { const k = 0.5 + 0.5 * Math.sin(time * 1.3); deployStone.halo.material.opacity = 0.14 + 0.1 * k; deployStone.flame.scale.setScalar(0.62 + 0.12 * k); active = true; }   // the ember breathes, slowly
     if (beamCone) { for (const c of beamCone.children) c.material.opacity = night ? c.userData.op : 0; if (night) { beamCone.rotation.y = time * 0.3; active = true; } }
     terrain.glint.material.opacity = 0.42 + Math.sin(time * 0.8) * 0.14;
     // follow mode

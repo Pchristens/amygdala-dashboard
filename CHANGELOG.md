@@ -9,6 +9,10 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Steward's House: a small whitewashed house under the cliff beside the Quiet Stone, where the Steward now stands.
+  The Quiet Stone becomes the deploy stone: gold when what's running is what the Temple approved, a dim red ember when
+  they differ or a deploy has no receipt. Click either for a read-only account of approvals, receipts, overrides, node
+  health, orders in flight and your digest (v0.49).
 - This changelog, and a test that keeps it in step with SPEC.md.
 - Changelog edits count as prose for the Temple's trivial check, like README, SPEC and AGENTS.
 - The README, AGENTS.md and SPEC.md were checked against the code: the environment variable table is complete, the

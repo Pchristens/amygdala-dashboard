@@ -1577,3 +1577,40 @@ No contract changes; these notes correct or complete earlier sections, which are
 - **`governance/protected.json`'s `about`** says "SPEC v0.45"; the governance contract is v0.46.
 - **`CHANGELOG.md`** records each version in plain words. `tools/test-changelog.mjs` fails when a `## vX.Y` heading
   here has no `## vX.Y` heading there, or no Unreleased line naming it, or when CHANGELOG.md lacks `## Unreleased`.
+
+## v0.49: the Steward's House
+
+A read-only place for the human: what the Temple approved against what is running. It writes nothing and keeps no
+record of its own; the Temple ledger, `governance.approved` and `governance.deployed` stay the one source of truth.
+
+- **Landmark** `{ id: 'stewards-house', name: "The Steward's House", kind: 'stewardhouse', x: 250, y: 300, home: false }`,
+  under the cliff beside the Quiet Stone. It is not a home for residents and not a site: heroes are not commissioned or
+  offered there.
+- **Human snapshot only:** `world.version` (the server's git `HEAD`, or absent) and `stewardHouse`:
+  `{ version, stone, why[], projects[], receipts[], notes[], steward, commissions[] }`, derived on every snapshot by
+  `lib/stewards-house.js`. Residents' and visitors' snapshots carry neither, and the page drops `stewardHouse` under `?shot=1`,
+  so there the stone is unlit and the house shows only its name and description.
+  - `projects[]`: `{ key, approved: {sha, offeringId, baseline, at, cites} | null, deployed: {sha, receiptId, at} | null,
+    state: 'matches'|'differs'|'undeployed'|'unapproved', running }`. `cites` is `{kind, seq, by}`: `trivial check` (the
+    skip), `ruling`, `appeal ruling` or `override`, the last accepting entry for that offering and commit.
+  - `receipts[]`: the last 12 receipts, newest first: `{ id, seq, ts, actor, offeringId, key, sha, how, note, reverted,
+    cites, standing }`. `cites` is what authorised it, recorded before it; `standing` is false once the offering's state
+    is no longer `trivial` or `accepted`.
+  - `notes[]`: the last 15 `override`, `skip`, `appeal` and `appeal ruling` entries.
+  - `steward`: `{ set: false }`, or `{ set, workerId, onMap, title, status, stale, reachable, down }` (`title`/`status`
+    only while the session is on the village map). Node health is the existing `nodes` field.
+  - `commissions[]`: the human's commissions of the last 24 hours, kept in memory only (`sites.sent`, max 20; lost on
+    restart): `{ id, at, site, tool, machine, state: 'sent'|'started'|'confirmed'|'failed', title }`. `confirmed` means
+    the hero is on the map; `title` is shown only then. The task text is never kept. Petition commissions are never
+    recorded, and one whose hero turns out isle-bound or hidden is dropped.
+- **The deploy stone** (`stone`): `drift` when any of these is listed in `why`: the running commit has no deploy receipt;
+  a project's deployed commit is not its approved one (or nothing is approved); a non-reverted receipt cites no ruling or
+  trivial check, or cites an approval that no longer stands. Otherwise `ok` when the running commit or some project
+  matches, else `unknown`. The page draws gold for `ok`, a dim red ember for `drift`, unlit for `unknown`.
+- **Village only.** A `project@host` key is left out entirely (projects, receipts, notes, stone) when it is quarantined,
+  matches a quarantine hash, belongs to any private, isle-zoned, isle-tagged, quarantined or sealed hero, or to an
+  offering that is not village-safe. Redacted ledger entries are skipped.
+- **The Steward hero** (`world.s.stewardHero.workerId`), while it is a live village hero, stands at the house: its
+  worker carries `home: 'stewards-house'` and the house's coordinates, and keeps its `site`. Resting, private or isle
+  Stewards are not placed there; other heroes are unchanged. `setStewardHero` refreshes workers so the move is immediate.
+- No new route, MCP tool or permission. The pane reads the human snapshot, plus `orders` and `governance.digest`.

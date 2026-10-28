@@ -1204,6 +1204,25 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .log-item .what { color: var(--ink-2); overflow-wrap: anywhere; }
 .log-item .who { font-weight: 700; color: var(--ink); margin-right: 4px; }
 .log-item .lk { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); grid-column: 1 / -1; }
+/* v0.49 the Steward's House: a read-only ledger view; the deploy stone's state also marks the Quiet Stone's label up close */
+.steward-desc .steward-pane { font-family: var(--font-sans); font-style: normal; color: var(--ink); }
+.sh-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 5px 8px; border-radius: 8px; background: var(--panel-2); margin-bottom: 4px; font-size: 12.5px; }
+.sh-row .sh-detail { flex-basis: 100%; color: var(--ink-2); font-size: 11.5px; overflow-wrap: anywhere; }
+.sh-key { font-weight: 700; opacity: 1; }
+.sh-stone { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); font-size: 12.5px; margin: 6px 0; }
+.sh-stone .sh-why { color: var(--red); font-size: 11.5px; margin-top: 2px; }
+.sh-flame { flex: none; width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; background: var(--line); box-shadow: inset 0 0 0 2px var(--panel-3); }
+.sh-ok .sh-flame { background: var(--amber); box-shadow: 0 0 8px color-mix(in srgb, var(--amber) 70%, transparent); }
+.sh-drift { border-color: color-mix(in srgb, var(--red) 45%, var(--line)); }
+.sh-drift .sh-flame { background: var(--red); box-shadow: 0 0 6px color-mix(in srgb, var(--red) 60%, transparent); }
+.sh-steps { display: inline-flex; gap: 3px; }
+.sh-steps i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--ink-dim); }
+.sh-steps i.on { background: var(--green); border-color: var(--green); }
+.sh-steps.failed i.on { background: var(--red); border-color: var(--red); }
+.sh-word { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); }
+.sh-foot { font-size: 11.5px; margin-top: 6px; }
+.lbl-place.deploy-ok::before, .lbl-place.deploy-drift::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin: 0 5px 1px 0; vertical-align: middle; background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+.lbl-place.deploy-drift::before { background: var(--red); box-shadow: 0 0 5px var(--red); }
 
 /* collapsible feed */
 .happening { pointer-events: auto; }

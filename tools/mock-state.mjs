@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { World } from '../lib/world.js';
 import { Usage } from '../lib/usage.js';
 Usage.prototype.pollDeck = () => {}; Usage.prototype.probe = () => {};
@@ -52,6 +53,33 @@ try {
   world.s.steward ??= { enabled: true, festivalEnabled: true, idleHours: 2, sevenDayHours: 12, sevenDaySpare: 15, fiveHourHours: 1.5, fiveHourSpare: 30 };
   world.s.auditSettings ??= { enabled: true, tier1: 'examiner', tier2: 'smith', dailyCap: 20, optOut: [] };
   world.s.audits = [0, 1, 2].map(i => ({ id: `au${i}`, heroId: live[0].id, severity: ['low', 'medium', 'low'][i], rule: ['secrets', 'scope', 'destructive'][i], status: 'pending', excerpt: ['printed an env var name', 'edited a file outside the project', 'ran rm on a build directory'][i], ts: now - i * 1200000 }));
+  // The Steward's House (v0.49): `--deploy ok|drift|unknown` sets the deploy stone. Live hero 2 is named the Steward, so it
+  // stands at its house; approvals, receipts, a skip, an override and an appeal go through the real ledger.
+  const deploy = arg('--deploy', 'ok'), sha = (n) => crypto.createHash('sha1').update(`mock-${n}`).digest('hex'), gv = world.governance;
+  world.s.stewardHero = { workerId: live[2].id, node: null, sessionId: live[2].sessionId };
+  if (deploy !== 'unknown') {
+    const gov = (o, s, state, extra = {}) => { o.headCommit = s; o.gov = { key: `${o.project}@${o.host}`, sha: s, base: null, stewardOwn: false, report: 'Ran the tide tests.', tests: [{ command: 'node tools/test-tides.mjs', result: 'pass', commit: s }], state, class: state === 'trivial' ? 'trivial' : 'review', reasons: [], rulings: [], appeals: [], at: now - 7200000, ...extra }; };
+    const [a, b, c] = [sha(1), sha(2), sha(3)];
+    gov(closed[0], a, 'accepted', { rulings: [{ by: priest, verdict: 'accept', concern: 'none', reason: 'The wrap is fixed and tested.', at: now - 6000000 }] });
+    gov(closed[1], b, 'trivial', { reasons: ['trivial: 4 changed line(s) in 1 file(s) (prose)'] });
+    gov(closed[2], c, 'accepted', { rulings: [{ by: priest, verdict: 'accept', concern: 'none', reason: 'Granary roof change reviewed.', at: now - 3000000 }] });
+    gv.append({ kind: 'ruling', actor: priest, offeringId: closed[0].id, key: closed[0].gov.key, sha: a, verdict: 'accept', concern: 'none', reason: 'The wrap is fixed and tested.' });
+    gv.append({ kind: 'skip', actor: 'mechanical check', offeringId: closed[1].id, key: closed[1].gov.key, sha: b, base: null, reason: 'trivial: 4 changed line(s) in 1 file(s) (prose)' });
+    gv.append({ kind: 'appeal', actor: 'Steward', offeringId: closed[2].id, key: closed[2].gov.key, sha: c, reviewer: smith, reason: 'New evidence: the roof test now covers the gable.' });
+    gv.append({ kind: 'appeal ruling', actor: smith, offeringId: closed[2].id, key: closed[2].gov.key, sha: c, verdict: 'accept', concern: 'none', reason: 'With the new test the change holds.' });
+    gv.append({ kind: 'override', what: 'misclassified', actor: priest, offeringId: closed[3].id, key: `${closed[3].project}@${closed[3].host}`, sha: sha(4), reason: 'A one-line change to the charter parser is not prose; it needs a ruling.' });
+    for (const o of [closed[0], closed[1], closed[2]]) gv.approve(o);
+    gv.receipt({ sha: a, offeringId: closed[0].id, note: 'Deployed to the village server.' }, 'Steward');
+    gv.receipt({ sha: b, offeringId: closed[1].id }, 'Steward');
+    if (deploy === 'ok') gv.receipt({ sha: c, offeringId: closed[2].id }, 'Steward');
+    world.version = deploy === 'ok' ? a : sha(9);   // drift: the server runs a commit no receipt names
+  }
+  world.orders.reserve(0);
+  world.s.orders.push({ id: 'ord-m1', from: 'steward', to: roster[0].name, headline: 'Count the amphorae in the Archive cellar', status: 'queued', createdAt: now - 300000, answeredAt: null, chat: '', error: '' },
+    { id: 'ord-m2', from: 'human', to: roster[1].name, headline: 'Draft a note on the tide tables', status: 'working', createdAt: now - 900000, answeredAt: null, chat: '', error: '' },
+    { id: 'ord-m3', from: 'steward', to: roster[2].name, headline: 'Check the cistern seams', status: 'answered', createdAt: now - 5400000, answeredAt: now - 3600000, chat: 'Done.', error: '' });
+  world.sites.sent = [{ id: 'cm-m1', at: now - 120000, site: 'forge', tool: 'codex', node: null, state: 'started', heroId: 'local:hx' }, { id: 'cm-m2', at: now - 2400000, site: 'library', tool: 'claude', node: null, state: 'started', heroId: live[1].id }];
+  world.setWorkers([...live, ...resting]);
   const snap = world.snapshot({ human: true });
   snap.world = { ...snap.world, name: 'Amygdala', paused: false, day: 12, phase: 'morning', sun: null, now };
   fs.writeFileSync(out, JSON.stringify(snap));

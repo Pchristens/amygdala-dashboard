@@ -5,7 +5,7 @@ const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os
 import { createMap, GIFT_KINDS, giftIconSVG } from './map.js';
 import { createMap3D } from './map3d.js';
 import * as map3d from './map3d.js';
-import { createPanel, mountHeroTerminal, residentIdentity } from './panel.js';
+import { createPanel, mountHeroTerminal, residentIdentity, stewardPane } from './panel.js';
 import { h, agentClass, relTime, avatar, toast, capitalize, commitmentEl, runeTablet } from './util.js';
 import { STAGE_NAMES, STAGE_THRESHOLDS, stageOf, stageProgress } from './trees.js';
 import { zoneOf, laLine, LA_GLYPHS } from './svg-util.js';
@@ -858,11 +858,14 @@ function renderPlacePane() {
   const here = log.here || {};
   const site = (state.sites || []).find((s) => s && s.placeId === id);
   const residentsHere = Array.isArray(here.residents) ? here.residents : (state.residents || []).filter((r) => r && r.placeId === id).map((r) => r.name);
-  const heroesHere = Array.isArray(here.heroes) ? here.heroes : (site ? (state.workers || []).filter((w) => w && w.site === site.id).map((w) => w.id) : []);
+  // The Steward stands at its house (v0.49), so it is counted there rather than at its work site.
+  const heroesHere = (Array.isArray(here.heroes) ? here.heroes : (site ? (state.workers || []).filter((w) => w && w.site === site.id).map((w) => w.id) : [])).filter((wid) => !(state.workers || []).some((w) => w && w.id === wid && w.home)).concat((state.workers || []).filter((w) => w && w.home === id).map((w) => w.id));
   const visitorsHere = Array.isArray(here.visitors) ? here.visitors : [];
   el.textContent = '';
-  el.appendChild(h('div', { class: 'place-pane-head' }, h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: '← Back', onClick: () => panel.selectTab(currentTabBeforePlace || 'board') }), h('div', {}, h('h3', { text: String(p.name || p.project || id) }), h('div', { class: 'kind', text: `${p.kind || 'workshop'}${site ? ` · ${site.label}` : ''}${zoneOf(p) === 'isle' ? ' · the Far Isle' : ''}` }))));
+  el.appendChild(h('div', { class: 'place-pane-head' }, h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: '← Back', onClick: () => panel.selectTab(currentTabBeforePlace || 'board') }), h('div', {}, h('h3', { text: String(p.name || p.project || id) }), h('div', { class: 'kind', text: `${p.kind === 'stewardhouse' ? 'house' : p.kind || 'workshop'}${site ? ` · ${site.label}` : ''}${zoneOf(p) === 'isle' ? ' · the Far Isle' : ''}` }))));
   if (p.description || site?.purpose) el.appendChild(h('details', { class: 'place-desc', open: true }, h('summary', { text: 'About this place' }), h('div', { text: String(p.description || site.purpose) }), p.keeper ? h('div', { class: 'dim-note', text: `kept by ${p.keeper}` }) : null, p.builtBy ? h('div', { class: 'dim-note', text: `built by ${p.builtBy}` }) : null));
+  // The Steward's pane, at the house and at the deploy stone: the human's snapshot only, never in ?shot=1 or for visitors.
+  if ((id === 'stewards-house' || id === 'quiet-stone') && state.stewardHouse && !SHOT) el.appendChild(h('details', { class: 'place-desc steward-desc', open: true }, h('summary', { text: id === 'quiet-stone' ? 'The deploy stone' : 'The Steward’s accounts' }), stewardPane(state, { onHero: (wid) => pinCard({ type: 'worker', id: wid }) })));
   const chips = h('div', { class: 'here-list' });
   for (const n of residentsHere) { const r = (state.residents || []).find((x) => x && x.name === n); chips.appendChild(h('span', { class: 'here-chip', onClick: () => pinCard({ type: 'resident', id: n }) }, avatar(n, r?.color, 'xs'), n)); }
   for (const n of visitorsHere) chips.appendChild(h('span', { class: 'here-chip' }, avatar(n, 'var(--other)', 'xs'), n, h('span', { class: 'chip chip-other', text: 'visitor' })));
@@ -1175,7 +1178,7 @@ function stripIsle(s) {
   const isIsle = (x) => x && typeof x === 'object' && (x.zone === 'isle' || x.isleTagged || x.sealed);
   const out = {};
   for (const [k, v] of Object.entries(s)) out[k] = Array.isArray(v) ? v.filter((x) => !isIsle(x)) : v;
-  delete out.isleGhosts; delete out.petitions; delete out.bells; delete out.audits; delete out.auditSettings;
+  delete out.isleGhosts; delete out.petitions; delete out.bells; delete out.audits; delete out.auditSettings; delete out.stewardHouse;   // the deploy stone stays unlit and the house shows only its name
   out.offerings = (out.offerings || []).filter(o => o.kind !== 'audit' && !o.humanOnly);
   out.workshops = [];
   // ?shot=1&public=1: a showcase capture, so the human's sessions, visitors and passes stay out of the picture too.

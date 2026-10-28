@@ -1635,3 +1635,54 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     dataListener.dispose(); term.dispose(); root.textContent = '';
   };
 }
+
+// The Steward's House (v0.49): read-only, for the human only, every line from the snapshot (stewardHouse is derived on
+// the server from the Temple ledger, approvals, receipts and the running commit; it keeps no records of its own). A
+// dispatch is not proof of arrival: orders and commissions keep sent, started and confirmed or answered apart.
+export function stewardPane(s, { onHero } = {}) {
+  const sh = s.stewardHouse, out = h('div', { class: 'steward-pane' }), short = (x) => (x ? String(x).slice(0, 7) : '—');
+  const sec = (title, ...kids) => out.append(h('div', { class: 'card-section-title', text: title }), ...kids.filter(Boolean));
+  const row = (...kids) => h('div', { class: 'sh-row' }, ...kids), chip = (cls, text) => h('span', { class: `chip ${cls}`, text });
+  const cite = (c) => (c ? `${c.kind} #${c.seq}${c.by ? ` by ${c.by}` : ''}` : '');
+  const stone = { ok: 'The stone burns gold: what runs is what the Temple approved.', drift: 'The stone holds an ember: what runs and what was approved differ.', unknown: 'The stone is unlit: nothing deployed is known yet.' }[sh.stone] || '';
+  out.append(h('div', { class: `sh-stone sh-${sh.stone}` }, h('span', { class: 'sh-flame', 'aria-hidden': 'true' }), h('div', {}, h('b', { text: stone }), h('div', { class: 'worker-path', text: `running commit ${sh.version ? short(sh.version) : 'unknown'}` }), ...(sh.why || []).map((w) => h('div', { class: 'sh-why', text: w })))));
+  // a. deploy state per project
+  sec(`Deploy state · ${sh.projects.length}`, sh.projects.length ? null : h('div', { class: 'dim-note', text: 'No project has an approval or a receipt yet.' }));
+  for (const p of sh.projects) {
+    const st = { matches: ['yes', 'deployed = approved'], differs: ['no', 'deployed ≠ approved'], undeployed: ['warn', 'approved, never deployed'], unapproved: ['no', 'deployed, nothing approved'] }[p.state] || ['', p.state];
+    out.append(row(h('span', { class: 'worker-path sh-key', text: p.key }), chip(st[0], st[1]), p.running ? chip('', 'running here') : null,
+      h('div', { class: 'sh-detail', text: `approved ${short(p.approved?.sha)}${p.approved ? (p.approved.baseline ? ' · baseline set by you' : ` · offering ${p.approved.offeringId}`) : ''}${p.approved?.cites ? ` · ${cite(p.approved.cites)}` : ''}` }),
+      h('div', { class: 'sh-detail', text: `deployed ${short(p.deployed?.sha)}${p.deployed ? ` · receipt ${p.deployed.receiptId} · ${relTime(p.deployed.at)}` : ''}` })));
+  }
+  // b. receipts, each with what authorised it
+  sec(`Deploy receipts · ${sh.receipts.length}`, sh.receipts.length ? null : h('div', { class: 'dim-note', text: 'No deploys recorded.' }));
+  for (const r of sh.receipts) out.append(row(h('span', { class: 'worker-path', text: `${r.id} · ${short(r.sha)} ` }), r.reverted ? chip('warn', 'reverted') : null, !r.cites ? chip('no', 'no citation') : !r.standing ? chip('no', 'approval withdrawn') : chip('yes', cite(r.cites)),
+    h('div', { class: 'sh-detail', text: `${r.key} · offering ${r.offeringId} · by ${r.actor} · ${relTime(r.ts)}${r.note ? ` · ${r.note}` : ''}` })));
+  // c. overrides, trivial-rule skips and appeals
+  sec(`Overrides, skips and appeals · ${sh.notes.length}`, sh.notes.length ? null : h('div', { class: 'dim-note', text: 'None in the ledger.' }));
+  for (const e of sh.notes) out.append(row(chip(e.kind === 'override' ? 'warn' : '', `#${e.seq} ${e.kind}${e.what ? ` (${e.what})` : ''}`), h('span', { class: 'sh-detail', text: ` by ${e.actor}${e.verdict ? ` · ${e.verdict}` : ''}${e.final ? ' · final' : ''} · ${short(e.sha)} · ${relTime(e.ts)}` }), e.reason ? h('div', { class: 'sh-detail dim-note', text: e.reason }) : null));
+  // d. nodes and the Steward's own session
+  const nodes = s.nodes || [], st = sh.steward || {};
+  sec(`Nodes · ${nodes.filter((n) => n.online).length} of ${nodes.length} online`, nodes.length ? null : h('div', { class: 'dim-note', text: 'No node passes.' }));
+  for (const n of nodes) out.append(row(chip(n.online ? 'yes' : 'no', n.online ? 'online' : 'offline'), h('span', { text: ` ${n.name}` }), h('span', { class: 'sh-detail', text: ` · ${n.os || 'unknown os'} · ${n.deckAvailable ? 'agent-deck' : 'no agent-deck'} · last report ${n.lastReport ? relTime(n.lastReport) : 'never'}` })));
+  out.append(row(h('b', { text: 'The Steward’s session ' }), !st.set ? chip('warn', 'not named') : !st.onMap ? chip('no', 'not on the map') : chip(st.reachable ? 'yes' : 'no', st.reachable ? 'reachable' : 'unreachable'), st.down ? chip('no', 'down') : null,
+    st.onMap ? h('div', { class: 'sh-detail' }, h('span', { class: 'here-chip', onClick: () => onHero?.(st.workerId) }, `${String(st.title || '').slice(0, 32)} · ${st.stale ? 'last seen a while ago' : st.status}`)) : null));
+  // e. orders and commissions in flight: sent → started → answered or confirmed
+  const steps = (n, fail) => h('span', { class: `sh-steps${fail ? ' failed' : ''}`, title: ['sent', 'started', 'confirmed'].slice(0, n).join(' → ') }, ...[0, 1, 2].map((i) => h('i', { class: i < n ? 'on' : '' })));
+  const hero = (to) => (s.workers || []).find((w) => w.id === to && w.zone === 'village');
+  const village = (to) => (s.residents || []).some((r) => r.name === to && r.zone === 'village') || !!hero(to);
+  const orders = (s.orders || []).filter((o) => village(o.to) && (['queued', 'working'].includes(o.status) || Date.now() - (o.answeredAt || o.createdAt) < 86400000)).slice(-12).reverse();
+  const coms = sh.commissions || [];
+  sec(`Orders and commissions · ${orders.length + coms.length}`, orders.length + coms.length ? null : h('div', { class: 'dim-note', text: 'Nothing in flight today.' }));
+  for (const o of orders) {
+    const n = { queued: 1, working: 2, answered: 3 }[o.status] || 1, word = { queued: 'sent', working: 'started', answered: hero(o.to) ? 'delivered' : 'answered', failed: 'failed', cancelled: 'cancelled' }[o.status] || o.status;
+    out.append(row(steps(n, ['failed', 'cancelled'].includes(o.status)), h('span', { class: 'sh-word', text: word }), h('span', { text: ` ${o.headline || ''}` }), h('div', { class: 'sh-detail', text: `order to ${hero(o.to)?.title || o.to} · from ${o.from} · ${relTime(o.answeredAt || o.createdAt)}${o.error ? ` · ${o.error}` : ''}` })));
+  }
+  for (const c of coms) out.append(row(steps({ sent: 1, started: 2, confirmed: 3 }[c.state] || 1, c.state === 'failed'), h('span', { class: 'sh-word', text: c.state === 'started' ? 'launched, not yet seen' : c.state }), h('span', { text: ` ${c.title || `a ${c.tool} hero for the ${c.site}`}` }), h('div', { class: 'sh-detail', text: `commission on ${c.machine} · ${relTime(c.at)}` })));
+  // f. the human's digest
+  const digest = s.governance?.digest || [];
+  sec(`Your digest · ${digest.length}`, digest.length ? null : h('div', { class: 'dim-note', text: 'Nothing for your reading.' }));
+  for (const d of digest) out.append(row(d.escalation ? chip('no', 'only you') : null, h('span', { class: 'worker-path', text: `${d.project || ''} ${short(d.sha)} ` }), h('span', { text: String(d.text || '') })));
+  out.append(h('div', { class: 'dim-note sh-foot', text: 'Read-only. The Temple ledger is the record, and work is still offered at the Temple.' }));
+  return out;
+}

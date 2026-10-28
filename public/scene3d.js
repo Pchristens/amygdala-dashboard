@@ -630,14 +630,39 @@ export const BUILDERS = {
     e.sphere(x, y + 51, z, 2.2, P.gold); door(b, x, y + 6, z + 11.4, 7, 11, P.red); aoDisc(ao, x, y, z, 24, 24);
     return { h: 76, hit: [40, 78, 40] };
   },
-  shrine(b, e, pool, ao, x, y, z) {
+  shrine(b, e, pool, ao, x, y, z, seed, place) {
     b.cyl(x, y, z, 16, 18, 1.5, P.sand, 12);
     b.cyl(x, y + 1.5, z, 3, 5, 12, P.marbleShade, 10); b.sphere(x, y + 14, z, 4.2, P.marbleShade);
     b.box(x + 14, y + 1.5, z - 2, 4, 16, 4, P.marble); b.sphere(x + 14, y + 19, z - 2, 2.6, P.marble);
-    b.cyl(x - 16, y + 1.5, z + 6, 5, 3.5, 2, P.terracotta, 10); e.cyl(x - 16, y + 3.5, z + 6, 3.6, 3.6, 0.6, P.gold, 10);
+    b.cyl(x - 16, y + 1.5, z + 6, 5, 3.5, 2, P.terracotta, 10);
+    // The Quiet Stone's bowl is the deploy stone (v0.49): map3d lights it from the human's snapshot, so it is left empty here.
+    const deploy = place?.id === 'quiet-stone';
+    if (deploy) b.cyl(x - 16, y + 3.4, z + 6, 3.7, 3.7, 0.3, P.ancientDark, 10); else e.cyl(x - 16, y + 3.5, z + 6, 3.6, 3.6, 0.6, P.gold, 10);
     b.cyl(x - 30, y, z - 6, 0.8, 1.2, 6, P.woodDark, 5); b.cone(x - 30, y + 5, z - 6, 5, 24, P.cypress, 7); b.cone(x - 36, y + 3, z + 4, 4, 18, P.cypressLight, 7);
     lampPost(b, e, pool, x + 26, y, z + 10, 7);
-    return { h: 22, hit: [60, 26, 40] };
+    return { h: 22, hit: [60, 26, 40], ...(deploy && { bowl: { x: x - 16, y: y + 3.7, z: z + 6, r: 3.4 } }) };
+  },
+  // The Steward's House (v0.49): a plain whitewashed house with a low tiled roof under the cliff, beside the Quiet Stone.
+  // Deliberately humble (no columns, no podium, no tower) and smaller than the Kettle: the Steward keeps accounts here, it
+  // does not rule. Its forecourt of travertine flags runs to the stone's sand ring, so the two read as one precinct.
+  stewardhouse(b, e, pool, ao, x, y, z) {
+    const W = 34, D = 22, H = 14, R = 7, F = y + 1.2, front = z + D / 2;
+    b.box(x, y, z, W + 3, 1.2, D + 3, P.ancientDark);                                                     // a low rubble footing
+    b.box(x, F, z, W, H, D, P.ivory);
+    b.box(x, F + H - 1.2, z, W + 0.6, 1.2, D + 0.6, P.plaster);                                           // the wall head under the eaves
+    b.prism(x, F + H, z, D + 6, R, W + 5, P.terracotta, Math.PI / 2);                                           // the roof: a low gable of terracotta tile
+    b.box(x, F + H + R - 0.7, z, W + 5.6, 1.1, 1.8, P.tile);                                          // ridge tiles
+    for (const sx of [-1, 1]) b.box(x + sx * (W / 2 + 2.6), F + H - 0.4, z, 0.6, 1.4, D + 6, P.tile); // eave ends
+    b.box(x + W * 0.28, F + H + 1, z - 3.5, 3.4, 8.5, 3.4, P.plaster); b.box(x + W * 0.28, F + H + 9.5, z - 3.5, 4.4, 1, 4.4, P.tile);   // chimney
+    door(b, x - 6, F, front + 0.4, 6.5, 10, P.blue); b.box(x - 6, F + 10, front + 0.5, 9, 1, 1.4, P.stone); b.box(x - 6, y, front + 2.4, 9.5, 1.2, 4, P.stone);   // door, lintel, step
+    e.box(x + 7, F + 5.5, front + 0.4, 5.5, 5.5, 0.6, P.shallows); for (const sx of [-1, 1]) b.box(x + 7 + sx * 4.1, F + 5.5, front + 0.7, 2, 5.5, 0.7, P.blue);   // the lamp-lit window, shutters open
+    e.box(x + W / 2 + 0.4, F + 5.5, z + 2, 0.6, 5, 5, P.shallows);
+    b.box(x + 7, y, front + 3.4, 11, 1.8, 3, P.stoneDark); b.box(x + 7, y + 1.8, front + 3.4, 12, 0.7, 3.6, P.wood);   // a bench under the window
+    amphora(b, x - W / 2 - 2.6, y, front - 2.5, 0.85); bougainvillea(b, x - W / 2 - 1.5, y + 3, front - 7);
+    b.box(x + 2, y, front + 4.5, W + 10, 0.45, 8, P.travertine);                                          // a paved forecourt
+    for (let i = 0; i < 6; i++) b.box(x + W / 2 + 10 + i * 5.2, y, front + 5 + (i % 2) * 0.6, 4.4, 0.45, 4.6, i % 2 ? P.travertine : P.marbleDark);   // flags across to the stone's ring
+    aoDisc(ao, x, y, z, W + 8, D + 8);
+    return { h: H + R + 4, hit: [W + 8, H + R + 4, D + 10] };
   },
   cafe(b, e, pool, ao, x, y, z, seed) { // café on a fractured ancient terrace; a stair that ends in air
     b.box(x - 10, y, z + 6, 76, 6, 44, P.ancientDark); b.box(x + 34, y, z + 16, 30, 3.5, 24, P.ancientDark, 0.08);
@@ -731,7 +756,7 @@ export const BUILDERS = {
     return { h: 78, hit: [44, 80, 44], beam: { x, y: y + 65, z } };
   },
 };
-const SCALE_OF = { hall:1, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
+const SCALE_OF = { stewardhouse:0.8, hall:1, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
 function scaleParts(builder, from, x, y, z, s) { // scale new parts of `builder` about (x,y,z)
   const m = new THREE.Matrix4().makeTranslation(x, y, z).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-x, -y, -z));
   for (let i = from; i < builder.parts.length; i++) builder.parts[i].applyMatrix4(m);
@@ -743,12 +768,13 @@ export function buildPlace(place, b, e, pool, ao) {
   const isleScale={temple:1.6,greatlibrary:1.8,forge:1.6,quarry:1.6,market:1.45,library:1.5,cafe:1.5,house:1.5,studio:1.5,workshop:1.5,garden:1.4,tower:1.3,observatory:1.4,shrine:1.3,pier:1.2,works:1.3,plaza:1.15,lighthouse:1.2};
   const s = zoneOf(place)==='isle' ? isleScale[kind] || 1.4 : SCALE_OF[kind] || 0.85;
   const marks = [b.parts.length, e.parts.length, pool.parts.length, ao.parts.length];
-  const info = fn(b, e, pool, ao, place.x, y0, place.y, hashStr(place.id)) || { h: 20, hit: [60, 30, 50] };
+  const info = fn(b, e, pool, ao, place.x, y0, place.y, hashStr(place.id), place) || { h: 20, hit: [60, 30, 50] };
   [b, e, pool, ao].forEach((bb, i) => scaleParts(bb, marks[i], place.x, y0, place.y, s));
   info.h = (info.h || 20) * s; info.hit = (info.hit || [60, 30, 50]).map((v) => v * s);
   if (info.hitAt) info.hitAt = { x: place.x + (info.hitAt.x - place.x) * s, z: place.y + (info.hitAt.z - place.y) * s };
   if (info.labelAt) info.labelAt = { x: place.x + (info.labelAt.x - place.x) * s, z: place.y + (info.labelAt.z - place.y) * s };
   if (info.brazier) info.brazier = { x: place.x + (info.brazier.x - place.x) * s, y: y0 + (info.brazier.y - y0) * s, z: place.y + (info.brazier.z - place.y) * s };
+  if (info.bowl) info.bowl = { x: place.x + (info.bowl.x - place.x) * s, y: y0 + (info.bowl.y - y0) * s, z: place.y + (info.bowl.z - place.y) * s, r: info.bowl.r * s };
   if (info.ember) info.ember = { x: place.x + (info.ember.x - place.x) * s, y: y0 + (info.ember.y - y0) * s, z: place.y + (info.ember.z - place.y) * s };
   if (info.beam) info.beam = { x: place.x, y: y0 + (info.beam.y - y0) * s, z: place.y };
   if (info.armillary) info.armillary = { x: place.x, y: y0 + (info.armillary.y - y0) * s, z: place.y, s };
