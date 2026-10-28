@@ -16,6 +16,8 @@ const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
 import { probeGrok } from '../lib/fleet.js';
 import { decodeImage, savePaste, pasteDir } from '../lib/pastes.js';
+import { snapshotOf, digest, commitLines } from '../lib/snapshot.js';
+import { RESULT_MAX } from '../lib/nodes.js';
 export function reportSessions(sessions, village = []) {
   return sessions.map(s => {
     const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = w.zone === 'isle' || w.isleTagged || isleTagged(w);
@@ -47,7 +49,7 @@ export async function stewardLive(sessions, steward, run = exec, ps = () => psTa
 }
 // opts.steward: the session the server named as the Steward; opts.ps: process table reader (tests stub it).
 export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail, pastes = null, opts = {}) {
-  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image', 'start'].includes(job.kind)) throw new Error('Unrequested job.');
+  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image', 'start', 'snapshot', 'show'].includes(job.kind)) throw new Error('Unrequested job.');
   if (job.kind === 'commission') {
     const fake = { s: {}, changed() {}, addFeed() {} }, sites = new Sites(fake);
     const result = await sites.commission({ ...job.commission, node: null }); return JSON.stringify(result);
@@ -56,6 +58,16 @@ export async function executeJob(job, latestJobs, sessions, village, run = exec,
   if (!w || w.zone === 'isle' || w.isleTagged || w.private || w.quarantined || w.sealed || isleTagged(w) || !village.includes(job.sessionId)) throw new Error('Session is private or unrequested.');
   // A pasted image is saved here, on the hero's machine; a remote (ssh) hero would never see it.
   if (job.kind === 'image') { if (s.remote_name || s.ssh_host) throw new Error('Remote sessions cannot take images.'); return savePaste(decodeImage(job.type, job.d), job.type, { dir: pastes || pasteDir() }); }
+  // A Temple offering of this hero's work (v0.43): git only, in its own folder. Our own errors go back as data, so the
+  // server can tell "not a git repository" (offer a scroll instead) from a failure.
+  if (job.kind === 'snapshot' || job.kind === 'show') {
+    if (s.remote_name || s.ssh_host) throw new Error('Remote sessions cannot be offered.');
+    try {
+      if (job.kind === 'show') return JSON.stringify(await (opts.lines || commitLines)(w.path, job.commit, job.file, job.start, job.end));
+      const { head, kind, diff } = await (opts.snapshot || snapshotOf)(w.path), d = digest(diff);
+      return JSON.stringify({ head, kind, diff: d.kept, hash: d.hash, allFiles: d.allFiles, truncated: d.truncated });
+    } catch (e) { return JSON.stringify({ error: String(e?.message || 'The change could not be read.').slice(0, 200) }); }
+  }
   if (job.kind === 'tail') {
     if (!Number.isInteger(job.maxChars) || job.maxChars < 1 || job.maxChars > 20000) throw new Error('Invalid tail bound.');
     return tail(w.transcriptPath, job.maxChars) || '';
@@ -193,14 +205,16 @@ export async function main(args = process.argv.slice(2)) {
         apprentices.push({ heroId: s.id, subagents: scanner.scan(w, village, children) });
       }
       if (Date.now() - lastLive > 30000) { lastLive = Date.now(); live = await stewardLive(sessions, steward, exec); }
-      const batch = results.slice(0, 40);
+      // At most 40 results and ~1.5 MB a report (the server reads 2 MiB); a big snapshot waits for the next one.
+      const batch = []; let size = 0;
+      for (const r of results.slice(0, 40)) { if (batch.length && size + r.output.length > 1.5e6) break; size += r.output.length; batch.push(r); }
       const response = await fetch(new URL('/node/report', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ bellAck, hostname: os.hostname(), os: hostOs(), deckAvailable: available, sessions: reportSessions(sessions, village), apprentices, isleGhosts, auditHits: auditHits.slice(0, 500), results: batch, ...(live && { stewardLive: true }), ...(usage && { usage }) }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('Report refused.');
       const next = await response.json(); for (const g of isleGhosts) for (const b of g.boxes) pendingGhosts.delete(b.slot); village = next.village || []; steward = next.steward || null; isle = next.isle || []; islePublicKey = next.islePublicKey || null; isleHeroPrefix = next.isleHeroPrefix || ''; audit = next.audit || { enabled: false, optOut: [] }; results.splice(0, batch.length);
       for (const bell of next.bells || []) { if (bell.id <= bellAck) continue; bellAck = bell.id; if (!options.noNotify) await notify(bell); }
       // Jobs run concurrently so a long wrap-up cannot interrupt heartbeats.
       // A start's refusals are fixed sentences; the catch-all text is what the server reads as an un-updated node.
-      for (const job of next.jobs || []) executeJob(job, next.jobs, sessions, village, exec, transcriptTail, null, { steward }).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, 24000), error: '' }), e => results.push({ id: job.id, ok: false, output: '', error: job.kind === 'start' ? (e?.safe ? e.message : 'The Steward could not be started.') : 'Local node job failed; check folder and agent-deck.' }));
+      for (const job of next.jobs || []) executeJob(job, next.jobs, sessions, village, exec, transcriptTail, null, { steward }).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, ['snapshot', 'show'].includes(job.kind) ? RESULT_MAX : 24000), error: '' }), e => results.push({ id: job.id, ok: false, output: '', error: job.kind === 'start' ? (e?.safe ? e.message : 'The Steward could not be started.') : 'Local node job failed; check folder and agent-deck.' }));
     } catch { village = []; steward = null; isle = []; isleScanner.retain([]); auditScanner.retain([]); console.error('Node report failed; retrying.'); }
     await new Promise(resolve => setTimeout(resolve, 4000));
   }

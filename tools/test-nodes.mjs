@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Nodes, validateReport } from '../lib/nodes.js';
+import { Nodes, validateReport, RESULT_MAX } from '../lib/nodes.js';
 import { Sites } from '../lib/sites.js';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -30,7 +30,7 @@ await assert.rejects(executeJob(job, [], [{ id: 's1' }], ['s1'], null, () => { r
 await assert.rejects(executeJob(job, [job], [{ id: 's1', group: 'isle' }], ['s1'], null, () => { reads++; })); assert.equal(reads, 0);
 assert.equal(await executeJob(job, [job], [{ id: 's1', transcript_path: '/local-only' }], ['s1'], null, (file, bound) => { assert.equal(file, '/local-only'); assert.equal(bound, 100); return 'village output'; }), 'village output');
 assert.throws(() => n.report(p, body), /rate exceeded/);
-assert.throws(() => validateReport({ ...body, results: [{ id: 'bad', ok: true, output: 'x'.repeat(24001), error: '' }] }));
+assert.throws(() => validateReport({ ...body, results: [{ id: 'bad', ok: true, output: 'x'.repeat(RESULT_MAX + 1), error: '' }] }));
 Usage.prototype.pollDeck = () => {}; Usage.prototype.probe = () => {};
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-nodes-'));
 let real;

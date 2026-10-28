@@ -1390,3 +1390,19 @@ arguments (`claude --continue` is not recognised).
 - Commissioning a Claude hero refuses a folder Claude has not been told to trust (that folder or a parent marked
   `hasTrustDialogAccepted` in the commissioning machine's `.claude.json`): the task's first Enter would answer the trust
   prompt with its preselected "No, exit" and the hero would die at launch. An unreadable config does not block.
+
+## v0.43: offerings from node heroes; the standing note
+
+- `POST /api/temple/offer` now accepts village heroes on a node. The server asks the hero's node for a `snapshot` job
+  (git only, in the hero's own folder, via `lib/snapshot.js`, shared with the server's local path) and gets back
+  `{head, kind, diff (first 80 KiB), hash (whole change), allFiles, truncated}` or `{error}`. "Not a git repository"
+  falls back to a scroll read with the existing `tail` job. Isle heroes on a node are refused. The offering records `node`.
+- Reviewers' `read_offering_file` for a node offering is a `show` job (`{commit, file, start, end}`; at most 800 lines),
+  with the same path rules as local reads (no traversal, absolute paths or secret files). A decree's staleness check
+  re-snapshots through the node.
+- Node job results may be up to 200 KiB (`RESULT_MAX`); a node sends at most ~1.5 MB of results per report. An old node
+  answers the new jobs with the legacy failure, shown as "Please update Amygdala on <machine>."
+- Commissioned heroes' first message ends with a standing note: report to the Steward when done or blocked
+  (`agent-deck session send <steward session>`, only when the Steward is on the hero's machine; otherwise finish with a
+  summary), don't push, deploy or restart servers, and use your own subagents, not new sessions or Fable models.
+  A visitor's petition hero never gets the note.
