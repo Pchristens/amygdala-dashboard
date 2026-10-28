@@ -4,6 +4,7 @@
 # Idempotent; rerun to update. Uses only vendor installers. Logins and the node pass stay with the human.
 #   bash tools/setup-wsl.sh            # install/update everything
 #   AMYGDALA_SERVER=http://<gate>:8795 bash tools/setup-wsl.sh service   # then install the node as a user service
+#   bash tools/setup-wsl.sh keeper     # optional: the dashboard at 127.0.0.1:8790 inside WSL (pass must be keeper)
 set -euo pipefail
 BIN=$HOME/.local/bin REPO=${AMYGDALA_REPO:-$HOME/amygdala} CONF=$HOME/.config/amygdala
 mkdir -p "$BIN" "$CONF"; chmod 700 "$CONF"
@@ -39,7 +40,32 @@ EOF
   systemctl --user daemon-reload; systemctl --user enable --now amygdala-node.service
   systemctl --user --no-pager status amygdala-node.service | head -5
 }
+# The server listens only on Windows' loopback, which WSL can't reach. A keeper relay serves the dashboard and API at
+# 127.0.0.1:8790 inside WSL through the Tailscale gate, so a Steward running here can use the usual tools.
+# The node pass must be marked keeper on the server first.
+keeper() {
+  [ -s "$CONF/node.env" ] || { echo 'Run the service step first (it records AMYGDALA_SERVER).' >&2; exit 1; }
+  cat >"$HOME/.config/systemd/user/amygdala-keeper.service" <<EOF
+[Unit]
+Description=Amygdala keeper relay (the server's dashboard at 127.0.0.1:8790 inside WSL)
+After=network-online.target
+
+[Service]
+EnvironmentFile=$CONF/node.env
+Environment=PATH=$BIN:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=$REPO
+ExecStart=$BIN/node $REPO/tools/amygdala-keeper.mjs --server \${AMYGDALA_SERVER} --pass-file $CONF/node.pass --port 8790
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+  systemctl --user daemon-reload; systemctl --user enable --now amygdala-keeper.service
+  systemctl --user --no-pager status amygdala-keeper.service | head -5
+}
 [ "${1:-}" = service ] && { service; exit; }
+[ "${1:-}" = keeper ] && { keeper; exit; }
 
 say 'System packages (tmux, python3 for the terminal bridge, git, jq for agent-deck)'
 sudo apt-get update -qq && sudo apt-get install -y -qq tmux python3 git curl ca-certificates xz-utils jq >/dev/null
