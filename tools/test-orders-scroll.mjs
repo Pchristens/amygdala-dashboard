@@ -1,0 +1,21 @@
+// Long details use the real renderer. CSS contract is paired with desktop browser scroll-to-end captures.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { panelDocument } from './panel-dom.mjs';
+import { createPanel } from '../public/panel.js';
+globalThis.document = panelDocument(); globalThis.window = {}; globalThis.requestAnimationFrame = fn => fn();
+const full = { id: 'synthetic-order', brief: 'Invented brief line.\n'.repeat(120) + 'BRIEF END', report: 'Invented report line.\n'.repeat(160) + 'REPORT END' };
+const calls = [];
+const panel = createPanel({ api: async (...args) => { calls.push(args); return full; } });
+panel.update({ zones: [{ id: 'village' }], residents: [], workers: [], posts: [], exhibits: [], orders: [{ id: full.id, to: 'Synthetic resident', status: 'done', headline: 'Synthetic task' }] });
+const details = document.getElementById('orders').querySelector('details'); details.open = true;
+for (const listener of details.listeners.get('toggle')) await listener();
+assert.equal(calls.length, 1); assert.deepEqual(calls[0], ['/api/orders/synthetic-order', null, 'GET']);
+const blocks = details.querySelectorAll('pre'); assert.equal(blocks[0].textContent, full.brief); assert.equal(blocks[1].textContent, full.report);
+const css = process.argv.includes('--baseline') ? execFileSync('git', ['show', '556ece3:public/style.css'], { encoding: 'utf8' }) : fs.readFileSync(new URL('../public/style.css', import.meta.url), 'utf8');
+const rules = [...css.matchAll(/#orders\s*\{([^}]+)\}/g)].map(m => m[1]).join(';');
+assert.match(rules, /overflow-y:\s*auto/, 'expanded details must have a vertical scroll owner');
+assert.match(rules, /min-height:\s*0/, 'Orders must shrink within the bounded drawer');
+assert.match(rules, /flex:\s*1/, 'Orders must fill the available drawer body');
+console.log('orders: full brief/report retained, existing GET unchanged, bounded vertical scroll contract');

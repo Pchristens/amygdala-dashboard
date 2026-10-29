@@ -1641,6 +1641,19 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
 - Successful close and mock close still detach the terminal. The endpoint, request, authentication and terminal
   access rules are unchanged. This is error handling only, not an access-path change.
 
+## v0.53: desktop Orders scrolling and Settings popover
+
+- Orders owns a bounded vertical scroll area within the drawer, so its form, long history and expanded Brief and
+  Report stay reachable through their final lines above the footer. Recipient selection, private order data and
+  submission behavior are unchanged.
+- Settings opens below its gear button, clamps within the viewport and scrolls when height is limited. Resizing
+  repositions an open popover. Its button reports `aria-expanded` and `aria-controls`; Escape closes the popover
+  before underlying drawer/card dismissal and returns focus to the gear. Outside clicks and intro replay reset
+  the expanded state too. Settings values, figures, requests and automation semantics are unchanged.
+- Paused appears once when connected. If the connection status is reconnecting/expired, the separate paused
+  indicator remains available. Idle indication is unchanged.
+- This phase targets desktop/laptop widths (900, 1280, 1728px), both themes, per the human's revised scope. Phone
+  header caps and phone-specific layout work are deferred; no responsive breakpoint or header-height change.
 ## v0.54: weekly allowance per turn
 
 - **What it measures.** For each village resident, the average rise in the weekly allowance that gates its model across one
