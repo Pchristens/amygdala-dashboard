@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Sending a hero to work on another machine works again; since v0.49 it failed with "this.w.id is not a function".
 - Themis no longer wakes for every offering: she wakes on her own once five wait or one has waited 12 hours, and a Wake Themis button under the Temple's Offerings heading wakes her now (v0.75).
 - A test record with an impossible time is refused when it is offered, and one already stored no longer stops the High Priest from reading the Temple.
 - Terminals for heroes on other machines answer keystrokes as soon as they arrive, instead of on the node's next 25 ms check, and an idle machine opens a new terminal at once instead of within 2 s (v0.74).

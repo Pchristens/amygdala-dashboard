@@ -50,11 +50,13 @@ export async function stewardLive(sessions, steward, run = exec, ps = () => psTa
   const id = await claudeId(s, run); if (!id) return false;
   try { return resumingElsewhere(await ps(), id); } catch { return false; }
 }
+// The stand-in world a node's commission runs against: it records nothing, but Sites names its record and the hero's site.
+export const jobWorld = () => ({ s: { siteOf: {} }, id: prefix => `${prefix}${Date.now()}`, changed() {}, addFeed() {} });
 // opts.steward: the session the server named as the Steward; opts.ps: process table reader (tests stub it).
 export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail, pastes = null, opts = {}) {
   if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image', 'start', 'snapshot', 'show', 'release'].includes(job.kind)) throw new Error('Unrequested job.');
   if (job.kind === 'commission') {
-    const fake = { s: {}, changed() {}, addFeed() {} }, sites = new Sites(fake);
+    const sites = new Sites(jobWorld());
     const result = await sites.commission({ ...job.commission, node: null }); return JSON.stringify(result);
   }
   const s = sessions.find(s => s.id === job.sessionId && (!s.archived || ['revive', 'forget'].includes(job.kind))), w = s && toWorker(s, 'local');

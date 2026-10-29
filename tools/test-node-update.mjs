@@ -64,5 +64,9 @@ try {
   assert.equal(n.report(p, body).version, 'a'.repeat(40));
   world.version = 'nope'; n.live.get(p.id).at -= 2000;
   assert.equal(n.report(p, body).version, undefined);
-  console.log('node update: self-update, supervisor, commission reasons and version passed');
+  // A node's commission (v0.49 regression): the stand-in world names the record, so it fails only for a real reason.
+{ const { Sites } = await import('../lib/sites.js'), { jobWorld } = await import('./amygdala-node.mjs');
+  await assert.rejects(new Sites(jobWorld()).commission({ site: 'forge', path: path.join(os.tmpdir(), 'amygdala-no-such-folder'), tool: 'claude', prompt: 'x' }), e => !/is not a function|Cannot (set|read) prop/.test(e.message));
+  assert.deepEqual(jobWorld().s.siteOf, {}); }
+console.log('node update: self-update, supervisor, commission reasons and version passed');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }
