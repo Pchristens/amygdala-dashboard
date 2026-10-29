@@ -277,6 +277,10 @@ select {
 .resident-card-status { color: var(--ink-dim); font-size: 12px; }
 .resident-card-work { display: flex; flex-wrap: wrap; gap: 4px 8px; }
 .resident-card-post { display: block; max-height: 2.8em; overflow: hidden; }
+/* Top-align the portrait beside the name stack, and keep the four actions on one row. */
+.resident-card .card-head { align-items: flex-start; }
+.resident-card .card-actions { gap: 6px; flex-wrap: nowrap; }
+.resident-card .card-actions .btn { white-space: nowrap; padding-inline: 8px; }
 .card-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 .card-row b { color: var(--ink); font-weight: 600; }
 .card-quote { font-family: var(--font-serif); font-style: italic; color: var(--ink-2); font-size: 13px; margin-top: 8px; border-left: 2px solid var(--line); padding-left: 8px; }
