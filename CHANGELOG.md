@@ -9,6 +9,12 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A secret file committed by a hero (an .env, a key) is left out of the change residents review at the Temple, not just
+  out of the release diff (v0.60).
+- An appeal whose reviewer is turned off or leaves the village goes to another reviewer instead of waiting forever (v0.60).
+- The High Priest sending a trivial change back for a ruling no longer uses up one of her reserved wakes for the day
+  (v0.60).
+- The smith's fix checks count toward a resident's limit of actions per turn.
 - The web-search test no longer fails when the suite runs outside the village's active hours (after midnight).
 - A hero's release on another machine is checked against the last approved commit itself, so a release measured from a
   later commit can no longer slip past the Temple's trivial check (v0.59).

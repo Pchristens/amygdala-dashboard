@@ -12,6 +12,7 @@ import vm from 'node:vm';
 import { World } from '../lib/world.js';
 import { Usage } from '../lib/usage.js';
 import { Governance, releaseFacts, classify, loadRules, validFacts } from '../lib/governance.js';
+import { snapshotOf } from '../lib/snapshot.js';
 Usage.prototype.pollDeck = () => {}; Usage.prototype.probe = () => {};
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-foundations-')), repo = path.join(dir, 'proj');
@@ -37,6 +38,13 @@ try {
   assert(!rf.diff.includes('SYNTHETIC_SECRET_VALUE') && !rf.diff.includes('PLAIN_SECRET_VALUE'), 'secret file contents stay out of the release diff');
   assert(rf.diff.includes('+b'), 'the rest of the diff is kept');
   assert.equal(rf.files.length, 3); assert(!classify(rf, loadRules()).trivial, 'the secret files still count against the release');
+  // Offering snapshots (a commit, the last commit, working changes) leave committed secret files out too (v0.60).
+  const commitSnap = await snapshotOf(repo, h0), lastSnap = await snapshotOf(repo);
+  assert.equal(lastSnap.kind, 'last commit');
+  for (const s of [commitSnap, lastSnap]) { assert(!s.diff.includes('SYNTHETIC_SECRET_VALUE') && !s.diff.includes('PLAIN_SECRET_VALUE'), `secret contents stay out of the ${s.kind} snapshot`); assert(s.diff.includes('+b') && s.diff.startsWith(`commit ${h0}`)); }
+  fs.appendFileSync(path.join(repo, '.env'), 'WORKING_SECRET_VALUE=1\n'); fs.appendFileSync(path.join(repo, 'README.md'), 'c\n');
+  const work = await snapshotOf(repo); assert.equal(work.kind, 'working changes'); assert(!work.diff.includes('WORKING_SECRET_VALUE') && work.diff.includes('+c'));
+  git('checkout', '--', '.');
 
   // ---------- deleting a test file is never "tests added" ----------
   const del = classify({ files: [{ path: 'tools/test-a.mjs', added: 0, removed: 0, binary: false, status: 'D' }], lines: 0, tooMany: false }, loadRules());

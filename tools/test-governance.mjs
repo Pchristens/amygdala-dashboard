@@ -207,6 +207,26 @@ try {
   c.dispatchDuties(); assert(!c.queue.some(j => j.duty?.offeringId === o2.id)); assert(!c.pendingDuties.some(d => d.offeringId === o2.id));
 
   assert.equal(o2.status, 'closed');
+  // The High Priest's own "misclassified" spends no reserved wake: she is awake and rules in this turn (v0.60).
+  c.pendingDuties.length = 0; c.queue.length = 0;
+  const tr3 = commit('docs3', { 'README.md': fs.readFileSync(path.join(repo, 'README.md'), 'utf8') + 'Yet another line.\n' });
+  const o3 = await offer(hero, tr3); assert.equal(o3.gov.state, 'trivial'); assert(G.canWake('Themis'));
+  const woke = G.wakesUsed(); G.rule('Themis', { id: o3.id, commit: tr3, verdict: 'misclassified', reason: 'it changes the setup steps' });
+  assert.equal(o3.gov.state, 'pending'); assert.equal(G.wakesUsed(), woke, 'no reserved wake spent'); assert(!c.pendingDuties.some(d => d.offeringId === o3.id), 'no second wake queued');
+  G.rule('Themis', { id: o3.id, commit: tr3, verdict: 'accept', reason: 'setup steps unchanged after all' });
+  // An appeal whose reviewer is disabled or leaves the village passes to another independent reviewer (v0.60).
+  const code3 = commit('code3', { 'public/a.js': 'export const f = x => x * 6;\n' }), oa = await offer(hero, code3);
+  G.rule('Themis', { id: oa.id, commit: code3, verdict: 'reject', reason: 'needs a test for the factor' });
+  assert.equal(api('appeal', { offeringId: oa.id, reason: 'a test now covers the factor', tests: [{ command: 'node t.mjs', result: 'ok', commit: code3, by: 'Hero' }] }).reviewer, 'Atlas');
+  w.s.residents.Atlas.enabled = false; G.pump();
+  assert.equal(oa.gov.appeals.at(-1).reviewer, 'Lyra', 'handed on'); assert(c.pendingDuties.some(d => d.offeringId === oa.id && d.resident === 'Lyra'), 'the new reviewer is woken');
+  assert.throws(() => G.rule('Atlas', { id: oa.id, commit: code3, verdict: 'accept', reason: 'I was assigned first' }), /not awaiting your ruling/);
+  w.s.residents.Lyra.enabled = false; G.pump();
+  assert.equal(oa.gov.appeals.at(-1).reviewer, null, 'nobody independent is left: it waits'); assert.match(G.digest().map(d => d.text).join(), /waits for a reviewer/);
+  w.s.residents.Atlas.enabled = true; w.s.residents.Lyra.enabled = true; G.pump();
+  assert.equal(oa.gov.appeals.at(-1).reviewer, 'Atlas');
+  G.rule('Atlas', { id: oa.id, commit: code3, verdict: 'reject', reason: 'the test does not exercise the factor' });
+  c.pendingDuties.length = 0; c.queue.length = 0;
   // The human's close stays available on an open offering.
   const oh = await offer(hero, commit('code2', { 'public/a.js': 'export const f = x => x * 5;\n' }));
   assert.notEqual(oh.status, 'closed'); w.temple.close(oh.id); assert.equal(oh.status, 'closed');
@@ -238,6 +258,11 @@ try {
   // She cannot confirm a fix to her own finding.
   const f3 = finding('fx3', { reviewer: 'Themis' }); w.temple.reportFixed(f3.id); w.temple.fixCheck('Lyra', { findingId: f3.id, verdict: 'holds', note: 'fine' });
   assert.throws(() => w.temple.confirmFix('Themis', { id: f3.id, verdict: 'fixed', reason: 'mine is fixed' }), /cannot confirm/);
+  // fix_check counts against the turn's action limit like every other Temple verdict (v0.60).
+  const lt = 'tok_' + 'l'.repeat(30); w.beginTurn('Lyra', lt, { kind: 'duty' });
+  const fixCall = args => new Promise(resolve => mcp({ method: 'POST' }, { writeHead() {}, end: s => resolve(JSON.parse(s)) }, JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'fix_check', arguments: args } }), lt));
+  const fixOuts = []; for (let i = 0; i < 9; i++) fixOuts.push(JSON.stringify(await fixCall({ findingId: f3.id, verdict: 'holds', note: 'still holds' })));
+  assert.match(fixOuts[7], /High Priest will confirm/); assert.match(fixOuts[8], /done plenty this turn/);
   // The page: Needs you holds only escalations and waiting heroes.
   const panel = fs.readFileSync(new URL('../public/panel.js', import.meta.url), 'utf8');
   assert(panel.includes("'Nothing needs you'") && panel.includes('.filter((d) => d && d.escalation)'));
