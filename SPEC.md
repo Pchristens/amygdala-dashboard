@@ -1622,3 +1622,13 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
 - A closed drawer is inert and `aria-hidden`; opening it restores interaction. It starts inert before the app loads.
 - Happening now is a native button, retaining the existing collapse behavior and saved preference.
 - No tab restructuring, API, visibility, terminal access, allowance or automation semantics change.
+
+## v0.51: settings survive snapshot refreshes
+
+- Temple Settings & logs and Tales threshold controls remain mounted across snapshots. A focused field edited by
+  the human keeps its draft, focus and native caret; no value assignment interrupts that edit. Untouched fields,
+  including focused but unedited fields, still receive server updates. After blur the server value is authoritative.
+- The existing change events save the same values, conversions and request bodies to the same endpoints. Rendering
+  does not save settings. Settings removed from a snapshot disappear rather than retaining stale controls.
+- Logs and other panel content still refresh. No automation, allowance, budget, permission or API semantics change.
+- This change requires full review: it preserves inputs adjacent to cost controls, and is not a trivial release.
