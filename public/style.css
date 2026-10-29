@@ -1185,6 +1185,8 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .chip-cluster { display: inline-flex; align-items: center; gap: 4px; }
 .gear-btn { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; }
 .gear-pop { position: fixed; top: calc(var(--header-h) + 6px); left: 8px; width: min(320px, calc(100vw - 16px)); overflow-y: auto; z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.gear-pop h3 { margin: 6px 0 2px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-dim); }
+.gear-pop .pace-note { margin: 0; font-size: 12px; color: var(--ink-dim); }
 .gear-pop[hidden] { display: none; }
 .gear-pop .pace, .gear-pop .budget { border: none; padding: 0; }
 
@@ -1363,6 +1365,9 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 #orders { padding: 16px; overflow-y: auto; flex: 1; min-height: 0; }
 .order-form { display: grid; gap: 10px; }
 .order-form textarea { min-height: 150px; }
+.order-to { display: flex; flex-wrap: wrap; gap: 6px 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.order-to label { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-size: 13px; }
+.order-to input { accent-color: var(--accent); }
 .order-card { padding: 14px 0; border-bottom: 1px solid var(--ink-dim); }
 .order-card pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 

@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+const app = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+const keyStart = app.indexOf("document.addEventListener('keydown'", app.indexOf('// resize by dragging'));
+const keyEnd = app.indexOf("{ const pref = loadPref(); if (pref.open)", keyStart);
+const tabs = ['board', 'exhibits', 'residents', 'workshop', 'orders', 'lamps'].map(tab => ({ dataset: { tab } }));
+const handlers = [], calls = [];
+const document = { activeElement: null, querySelector: () => null, querySelectorAll: selector => selector === '.tabs [role="tab"]' ? tabs : [], addEventListener: (type, fn) => { if (type === 'keydown') handlers.push(fn); } };
+const context = vm.createContext({ document, setDrawer: (open, tab) => calls.push([open, tab]), drawerOpen: false, card: { info: null }, gift: { active: false } });
+vm.runInContext(app.slice(keyStart, keyEnd), context);
+for (const handler of handlers) handler({ key: '6', preventDefault() {} });
+assert.deepEqual(calls, [[true, 'lamps']]);
+calls.length = 0;
+document.activeElement = { tagName: 'INPUT' };
+for (const handler of handlers) handler({ key: '1', preventDefault() {} });
+assert.deepEqual(calls, []);
+assert.match(html, /Esc closes · 1–6 switch panels/);
+assert.match(html, /<span class="rail-text">Residents<\/span>/);

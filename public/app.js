@@ -996,8 +996,9 @@ document.addEventListener('keydown', (e) => {
     if (!typing && drawerOpen) { setDrawer(false); return; }
   }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
-  const tabs = { 1: 'board', 2: 'exhibits', 3: 'residents', 4: 'workshop', 5: 'lamps' };
-  if (tabs[e.key]) { setDrawer(true, tabs[e.key]); e.preventDefault(); }
+  const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
+  const index = Number(e.key) - 1;
+  if (Number.isInteger(index) && index >= 0 && index < tabs.length) { setDrawer(true, tabs[index].dataset.tab); e.preventDefault(); }
 });
 { const pref = loadPref(); if (pref.open) setDrawer(true, pref.tab === 'terminal' ? 'board' : pref.tab); else setDrawer(false); }
 // credits
@@ -1046,6 +1047,7 @@ function renderHeader() {
   const b = state?.budget;
   const hrs = b?.activeHours;
   if (hrs) for (const [id, v] of [['hours-start', hrs.start], ['hours-end', hrs.end]]) if (document.activeElement !== $(id)) $(id).value = String(v);
+  $('hours-zone').textContent = w.tz ? `(${w.tz})` : '(server local time; zone unavailable)';
   const budgetEl = $('budget');
   if (b && Number.isFinite(+b.dailyTurnBudget)) {
     budgetEl.hidden = false;
@@ -1067,7 +1069,7 @@ function renderHeader() {
 }
 $('lamp-glyph').addEventListener('click', () => setDrawer(true, 'lamps'));
 $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: !state?.world?.paused }));
-const updateBells = createBells($('gear-pop'));
+const updateBells = createBells($('bell-settings'));
 const bellPageId = crypto.randomUUID();
 const bellPresence = () => { if (!SHOT && !MOCK) void api('/api/bells/presence', { id: bellPageId, visible: !document.hidden }); };
 function positionGear() {
@@ -1103,8 +1105,9 @@ $('budget-dec').addEventListener('click', () => budgetStep(-1));
 $('budget-inc').addEventListener('click', () => budgetStep(1));
 
 // ---------- Happening now ----------
-$('happening').querySelector('.happening-title').addEventListener('click', () => { const hp = $('happening'); hp.classList.toggle('collapsed'); savePref({ feed: hp.classList.contains('collapsed') ? 'collapsed' : 'open' }); });
-if (loadPref().feed === 'collapsed') $('happening').classList.add('collapsed');
+const happeningButton = $('happening').querySelector('.happening-title');
+happeningButton.addEventListener('click', () => { const hp = $('happening'); hp.classList.toggle('collapsed'); happeningButton.setAttribute('aria-expanded', String(!hp.classList.contains('collapsed'))); savePref({ feed: hp.classList.contains('collapsed') ? 'collapsed' : 'open' }); });
+if (loadPref().feed === 'collapsed') { $('happening').classList.add('collapsed'); happeningButton.setAttribute('aria-expanded', 'false'); }
 const happeningList = $('happening-list');
 function renderHappening() {
   const feed = (state?.feed || []).filter((f) => f && f.id).slice(-5);

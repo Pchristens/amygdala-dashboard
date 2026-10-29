@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source = fs.readFileSync(new URL('../public/panel.js', import.meta.url), 'utf8');
+const start = source.indexOf('function orderRecipientSelection(');
+const end = source.indexOf('function renderOrders()', start);
+assert(start >= 0 && end > start, 'order recipient selection helper exists');
+const context = vm.createContext({});
+vm.runInContext(source.slice(start, end), context);
+const select = context.orderRecipientSelection;
+assert.deepEqual(JSON.parse(JSON.stringify(select(['A', 'B'], ['A', 'gone']))), ['A']);
+assert.deepEqual(JSON.parse(JSON.stringify(select(['A', 'B'], ['all', 'A']))), ['all']);
+assert.deepEqual(JSON.parse(JSON.stringify(select(['A', 'B'], ['A', 'all']))), ['all']);
+const orders = source.slice(source.indexOf('  function renderOrders()'), source.indexOf('\n  // ---- tabs ----'));
+// The request body keeps its shape: 'all' alone, or the checked names.
+assert.ok(orders.includes("to: (picked => picked.includes('all') ? 'all' : picked)(to._checks.filter(c => c.checked).map(c => c.value))"));
+assert.doesNotMatch(source, /defineProperty\(root\._to/);
+assert.match(source, /for \(const c of checks\) c\.checked = eligible && c\.value === name/);
+assert.match(orders, /class: 'input'/);
+console.log('ok: order recipients');

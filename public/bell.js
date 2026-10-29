@@ -2,9 +2,10 @@ export function createBells(root) {
   let volume = .4, muted = false, cursor = null, audio;
   try { volume = Math.max(0, Math.min(1, Number(localStorage.getItem('bellVolume') ?? .4))); muted = localStorage.getItem('bellMuted') === 'true'; } catch {}
   if (!Number.isFinite(volume)) volume = .4;
-  const label = document.createElement('label'), slider = document.createElement('input'), mute = document.createElement('input');
-  slider.type = 'range'; slider.min = 0; slider.max = 1; slider.step = .05; slider.value = volume; slider.setAttribute('aria-label', 'Bell volume'); mute.type = 'checkbox'; mute.checked = muted;
-  label.append('Bell volume ', slider, ' Mute ', mute); root.append(label);
+  const volumeRow = document.createElement('label'), volumeText = document.createElement('span'), muteRow = document.createElement('label'), muteText = document.createElement('span'), slider = document.createElement('input'), mute = document.createElement('input');
+  volumeRow.className = muteRow.className = 'pace'; volumeText.className = muteText.className = 'pace-label'; volumeText.textContent = 'Bell volume'; muteText.textContent = 'Mute bells';
+  slider.type = 'range'; slider.min = 0; slider.max = 1; slider.step = .05; slider.value = volume; slider.setAttribute('aria-label', 'Bell volume'); mute.type = 'checkbox'; mute.checked = muted; mute.setAttribute('aria-label', 'Mute bells');
+  volumeRow.append(volumeText, slider); muteRow.append(muteText, mute); root.append(volumeRow, muteRow);
   const save = () => { volume = +slider.value; muted = mute.checked; try { localStorage.setItem('bellVolume', volume); localStorage.setItem('bellMuted', muted); } catch {} };
   slider.addEventListener('input', save); mute.addEventListener('change', save);
   const unlock = () => { try { audio ??= new AudioContext(); void audio.resume().catch(() => {}); } catch {} };

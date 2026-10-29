@@ -23,7 +23,7 @@ const timers = [], prefs = new Map(), panel = { activeTab: 'board', selectTab(ta
 const context = vm.createContext({ document, panel, $: id => ids[id], localStorage: { getItem: k => prefs.get(k), setItem: (k,v) => prefs.set(k,v) }, setTimeout: f => timers.push(f), disposeTerminal() {}, repositionCard() {}, refreshCardBounds() {}, currentTabBeforePlace: 'board' });
 vm.runInContext(app.slice(app.indexOf('const drawer ='), app.indexOf('// resize by dragging the handle')), context);
 for (const line of app.split('\n').filter(l => /^\$\('(lamp-glyph|counsel-chip)'\)\.addEventListener|^omenChip\.addEventListener/.test(l))) vm.runInContext(line.replace('omenChip.', "$('omen-chip')."), context);
-vm.runInContext(app.slice(app.indexOf("$('happening').querySelector('.happening-title').addEventListener"), app.indexOf('const happeningList =')), context);
+vm.runInContext(app.slice(app.indexOf("const happeningButton ="), app.indexOf('const happeningList =')), context);
 const cases = [
   ['close click does not reopen through tabs', () => { vm.runInContext("setDrawer(true, 'board')", context); ids['drawer-close'].click(); while(timers.length) timers.shift()(); assert.equal(ids.drawer.classList.contains('open'), false); }],
   ...[['lamp-glyph','lamps'],['omen-chip','workshop'],['counsel-chip','workshop']].map(([id,tab]) => [id + ' opens and synchronizes navigation', () => { vm.runInContext('setDrawer(false)', context); ids[id].click(); assert.equal(ids.drawer.classList.contains('open'), true); assert.equal(panel.activeTab, tab); assert.deepEqual(nav.filter(el => el.attrs['aria-selected'] === 'true').map(el => el.dataset.tab), [tab]); }]),

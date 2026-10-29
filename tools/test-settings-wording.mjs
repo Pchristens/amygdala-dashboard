@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+const app = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const bells = fs.readFileSync(new URL('../public/bell.js', import.meta.url), 'utf8');
+assert.match(html, /Village/);
+assert.match(html, /This browser/);
+assert.match(html, /Minimum gap/);
+assert.match(html, /id="hours-zone"/);
+assert.match(app, /w\.tz/);
+assert.match(html, /id="budget-dec"/); assert.match(html, /id="budget-inc"/); assert.match(app, /function budgetStep\(dir\)/);
+assert.match(bells, /Bell volume/);
+assert.match(bells, /Mute bells/);
+console.log('ok: settings wording');

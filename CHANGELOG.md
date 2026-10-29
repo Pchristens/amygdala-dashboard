@@ -9,6 +9,13 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Happening now feed tells screen readers and the keyboard whether it is open.
+- Order recipients are themed checkboxes (Whole village is one click and exclusive), and picked names survive a roster change.
+- The Residents tab now opens on the people: open petitions sit above them (nothing shows when there are none), and visitor passes and "Notify me" are tucked into one closed "Visitors & passes" section.
+- Number keys 1–6 now open the six panels in drawer order, and the Residents rail label matches its tab.
+- Settings now separates village automation from this browser, labels the minimum gap and schedule timezone; the daily turn budget sits with the village settings.
+- The drawer's tabs now work from the keyboard: arrow keys, Home and End move between them, and screen readers announce them as tabs.
+- The terminal's copy hint (Option-drag on Mac) stays visible while connecting and after a session ends.
 - Fix checks for work on another machine now really ask that machine: they no longer come back empty, and a machine can only answer the questions asked.
 - Temple fix checks can now read evidence from heroes working on another machine (v0.76).
 - Sending a hero to work on another machine works again; since v0.49 it failed with "this.w.id is not a function".

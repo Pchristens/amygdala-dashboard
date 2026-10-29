@@ -134,6 +134,7 @@ export function createPanel(opts) {
   }
   const petitionSeen = new Set();
   let notifyPetitions = false, titleTimer = null;
+  let visitorFoldOpen = false;
   const baseTitle = document.title;
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { clearInterval(titleTimer); titleTimer = null; document.title = baseTitle; } });
   function petitionDecision(p, deny = false) {
@@ -181,14 +182,8 @@ export function createPanel(opts) {
       }
       petitionSeen.add(p.id);
     }
+    if (!petitions.length) return;
     root.append(h('h2', { text: `Petitions${pending.length ? ` (${pending.length})` : ''}` }));
-    root.append(h('button', { class: 'btn btn-xs', text: notifyPetitions ? 'Notifications on · turn off' : 'Notify me', onClick: async () => {
-      if (notifyPetitions) notifyPetitions = false;
-      else if (window.Notification) notifyPetitions = (await Notification.requestPermission()) === 'granted';
-      renderOrders();
-    renderGate();
-    } }));
-    if (!petitions.length) root.append(h('p', { class: 'dim-note', text: 'No petitions yet. Visitors can ask privately for guidance; each request needs your decision.' }));
     const live = ['pending', 'allowed', 'answering', 'commissioning', 'commissioned'];
     const active = petitions.filter(p => live.includes(p.status));
     const history = petitions.filter(p => !live.includes(p.status)).slice(-20).reverse();
@@ -208,22 +203,33 @@ export function createPanel(opts) {
   }
   function renderGate() {
     const root = $('gate'); root.textContent = '';
-    renderPetitions(root);
-    root.append(h('h2', { text: 'Visitors' }));
+    const petitionRoot = $('petitions'); if (petitionRoot) { petitionRoot.textContent = ''; renderPetitions(petitionRoot); }
+    const fold = h('details', { class: 'temple-fold' }); fold.open = visitorFoldOpen;
+    fold.addEventListener('toggle', () => { visitorFoldOpen = fold.open; });
+    fold.append(h('summary', { text: 'Visitors & passes' }), h('div', { class: 'panel-settings' }));
+    const content = fold.lastChild;
+    content.append(h('h2', { text: 'Visitors' }));
+    content.append(h('button', { class: 'btn btn-xs', text: notifyPetitions ? 'Notifications on · turn off' : 'Notify me', onClick: async () => {
+      if (notifyPetitions) notifyPetitions = false;
+      else if (window.Notification) notifyPetitions = (await Notification.requestPermission()) === 'granted';
+      renderOrders();
+    renderGate();
+    } }));
     const date = (ts) => ts ? new Date(ts).toLocaleString() : 'never';
     for (const [kind, key, title] of [['visitors', 'visitorPasses', 'Visitor'], ['heroes', 'heroPasses', 'Hero'], ['nodes', 'nodes', 'Node']]) {
-      root.append(h('div', { class: 'temple-section-title', text: `${title} passes` }), h('button', { class: 'btn btn-xs', type: 'button', text: `Issue a ${title.toLowerCase()} pass…`, onClick: () => issuePass(kind) }));
+      content.append(h('div', { class: 'temple-section-title', text: `${title} passes` }), h('button', { class: 'btn btn-xs', type: 'button', text: `Issue a ${title.toLowerCase()} pass…`, onClick: () => issuePass(kind) }));
       const list = state[key] || [];
-      if (!list.length) root.append(h('p', { class: 'dim-note', text: 'No passes issued.' }));
+      if (!list.length) content.append(h('p', { class: 'dim-note', text: 'No passes issued.' }));
       for (const pass of list) {
         const revoke = h('button', { class: 'btn btn-xs', type: 'button', text: 'Revoke', disabled: !!pass.revoked });
         revoke.addEventListener('click', async () => { revoke.disabled = true; const result = await opts.api(`/api/${kind}/revoke`, { id: pass.id }); if (result?.ok === false) revoke.disabled = false; });
-        root.append(h('div', { class: 'gate-pass' }, h('b', { text: String(pass.name || 'Unnamed') }), ' ',
+        content.append(h('div', { class: 'gate-pass' }, h('b', { text: String(pass.name || 'Unnamed') }), ' ',
           kind === 'nodes' ? h('button', { class: 'btn btn-xs', text: pass.notify === false ? 'Notifications off' : 'Notifications on', onClick: () => opts.api('/api/nodes/notify', { id: pass.id, on: pass.notify === false }) }) : null,
           kind === 'heroes' ? h('span', { class: 'chip', text: pass.zone || 'village' }) : null,
           h('div', { text: String(pass.label || '') }), h('div', { class: 'dim-note', text: `${pass.revoked ? 'Revoked · ' : ''}expires ${date(pass.expiresAt)}${kind === 'visitors' ? ` · last seen ${date(pass.lastSeen)}` : ''}` }), revoke));
       }
     }
+    root.append(fold);
   }
   let exhibitView = 'art';
   $('exhibit-tabs').addEventListener('click', (e) => {
@@ -262,17 +268,27 @@ export function createPanel(opts) {
   }
 
   let ordersKey = '';
+  function orderRecipientSelection(residents, selected) {
+    const keep = new Set(residents), prior = selected.includes('all') ? ['all'] : selected.filter(name => keep.has(name));
+    return prior;
+  }
   function renderOrders() {
     const root = document.getElementById('orders'); if (!root || !state.orders) return;
     if (!root._form) {
-      const to = h('select', { 'aria-label': 'Residents', multiple: true, size: 5 }), headline = h('input', { placeholder: 'Headline (optional)', maxLength: 180, 'aria-label': 'Headline' }), brief = h('textarea', { placeholder: 'Private brief', maxLength: 12000, required: true, 'aria-label': 'Private brief' });
+      const to = h('div', { class: 'order-to', 'aria-label': 'Recipients' }), headline = h('input', { class: 'input', placeholder: 'Headline (optional)', maxLength: 180, 'aria-label': 'Headline' }), brief = h('textarea', { class: 'input', placeholder: 'Private brief', maxLength: 12000, required: true, 'aria-label': 'Private brief' });
       const submit = h('button', { class: 'btn btn-primary', type: 'submit', text: 'Give an order' }), error = h('div', { class: 'dim-note' });
-      const form = h('form', { class: 'order-form' }, h('h3', { text: 'Give an order' }), h('label', { text: 'Recipients (select several or Whole village)' }), to, headline, brief, submit, error);
-      form.addEventListener('submit', async e => { e.preventDefault(); submit.disabled = true; const result = await opts.api('/api/orders', { to: [...to.selectedOptions].some(o => o.value === 'all') ? 'all' : [...to.selectedOptions].map(o => o.value), headline: headline.value, brief: brief.value }); submit.disabled = false; error.textContent = result?.error || ''; if (result?.id) { brief.value = ''; headline.value = ''; } });
+      const form = h('form', { class: 'order-form' }, h('h3', { text: 'Give an order' }), h('label', { text: 'Recipients' }), to, headline, brief, submit, error);
+      form.addEventListener('submit', async e => { e.preventDefault(); submit.disabled = true; const result = await opts.api('/api/orders', { to: (picked => picked.includes('all') ? 'all' : picked)(to._checks.filter(c => c.checked).map(c => c.value)), headline: headline.value, brief: brief.value }); submit.disabled = false; error.textContent = result?.error || ''; if (result?.id) { brief.value = ''; headline.value = ''; } });
       root._form = form; root._to = to; root._list = h('div'); root.append(form, root._list);
     }
     const residents = (state.residents || []).filter(r => r.zone === 'village' && r.enabled && !r.hibernate);
-    const key = residents.map(r => r.name).join('|'); if (root._key !== key) { const selected = root._to.value; root._to.textContent = ''; root._to.append(h('option', { value: 'all', text: 'Whole village' })); for (const r of residents) root._to.append(h('option', { value: r.name, text: r.name })); if (residents.some(r => r.name === selected)) root._to.value = selected; root._key = key; }
+    const key = residents.map(r => r.name).join('|'); if (root._key !== key) {
+      const prior = [...(root._to._checks || [])].filter(c => c.checked).map(c => c.value), selected = new Set(orderRecipientSelection(residents.map(r => r.name), prior));
+      root._to.textContent = ''; root._to._checks = [];
+      const addRecipient = (name, labelText) => { const input = h('input', { type: 'checkbox', value: name }); input.checked = selected.has(name); input.addEventListener('change', () => { if (!input.checked) return; if (name === 'all') { for (const other of root._to._checks) if (other !== input) other.checked = false; } else { const all = root._to._checks.find(c => c.value === 'all'); if (all) all.checked = false; } }); root._to._checks.push(input); root._to.append(h('label', {}, input, h('span', { text: labelText }))); };
+      addRecipient('all', 'Whole village'); for (const r of residents) addRecipient(r.name, r.name);
+      root._key = key;
+    }
     const next = JSON.stringify(state.orders); if (ordersKey === next) return; ordersKey = next; root._list.textContent = '';
     const groups = new Map(); for (const o of state.orders) { const key = o.group || o.id; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(o); }
     for (const members of [...groups.values()].reverse()) {
@@ -288,10 +304,18 @@ export function createPanel(opts) {
 
   // ---- tabs ----
   for (const t of els.tabs) t.addEventListener('click', () => selectTab(t.dataset.tab));
+  // WAI-ARIA tabs: arrows move focus and select (wrapping), Home/End jump to the ends; the close button is not in els.tabs.
+  function tabKey(e, tabs = els.tabs) {
+    const list = [...tabs]; const i = list.indexOf(e.target); if (i < 0) return;
+    const to = e.key === 'ArrowRight' ? (i + 1) % list.length : e.key === 'ArrowLeft' ? (i - 1 + list.length) % list.length : e.key === 'Home' ? 0 : e.key === 'End' ? list.length - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault(); selectTab(list[to].dataset.tab); list[to].focus();
+  }
+  for (const t of els.tabs) t.addEventListener('keydown', tabKey);
   function selectTab(name) {
     if (!els.bodies.some((b) => b.dataset.tab === name)) return;
     activeTab = name;
-    for (const t of els.tabs) t.setAttribute('aria-selected', t.dataset.tab === name ? 'true' : 'false');
+    for (const t of els.tabs) { const on = t.dataset.tab === name; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; }
     for (const b of els.bodies) b.hidden = b.dataset.tab !== name;
     if (name === 'board') scrollBoardToBottom(true);
     opts.onViewChange?.(name);
@@ -1583,8 +1607,8 @@ export function createPanel(opts) {
   function orderTo(name) {
     selectTab('orders'); renderOrders();
     const root = document.getElementById('orders'); if (!root?._to) return;
-    const options = [...root._to.options], eligible = options.some(o => o.value === name && o.value !== 'all');
-    for (const option of options) option.selected = eligible && option.value === name;
+    const checks = root._to._checks || [], eligible = checks.some(c => c.value === name && c.value !== 'all');
+    for (const c of checks) c.checked = eligible && c.value === name;
     if (eligible) root._form.querySelector('[aria-label="Headline"]')?.focus();
   }
   function showResident(name) { selectTab('residents'); residentOpen.add(name); const row = residentRows.get(name); if (!row) return; applyResidentOpen(row); row.scrollIntoView?.({ block: 'nearest' }); row._toggle.focus(); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1200); }
@@ -1664,6 +1688,8 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   root.textContent = '';
   const body = h('div', { class: 'terminal-body' });
   const hint = h('div', { class: 'terminal-hint dim-note', text: `Live terminal — what you type goes to the hero. To select text to copy, hold ${/Mac/.test(navigator.platform) ? 'Option' : 'Shift'} while dragging.` });
+  const connection = h('div', { class: 'terminal-connection terminal-status dim-note', role: 'status', hidden: true });
+  const setConnection = text => { connection.textContent = text; connection.hidden = !text; };
   const note = h('div', { class: 'terminal-status dim-note', hidden: true });
   // A failed close must not look like a detached terminal, or be cleared by image-paste status timers.
   const endError = h('div', { class: 'terminal-end-error terminal-status terminal-status-error', role: 'alert', hidden: true });
@@ -1684,7 +1710,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status }),
     h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
-    endButton), hint, note, endError, body);
+    endButton), hint, connection, note, endError, body);
   if (mock) {
     body.append(h('div', { class: 'terminal-placeholder', text: `Mock terminal for ${worker.title || worker.id} — the live session appears here.` }));
     return () => { root.textContent = ''; };
@@ -1714,7 +1740,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token },
       body: JSON.stringify(data), signal: controller.signal,
     }),
-    error: error => { if (!disposed && !ended) hint.textContent = error.message; },
+    error: error => { if (!disposed && !ended) setConnection(error.message); },
   });
   // Pasted or dropped images go to the hero's machine; capture runs before xterm's own paste handler.
   let noteTimer;
@@ -1742,7 +1768,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     source.onopen = () => {
       if (opened) term.reset(); opened = true; delay = 1000;
       transport.connect();
-      hint.textContent = 'Live terminal — what you type goes to the hero.';
+      setConnection('');
       resize();
     };
     source.addEventListener('o', event => {
@@ -1751,13 +1777,13 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     source.addEventListener('exit', () => {
       ended = true; source.close();
       transport.dispose();
-      hint.textContent = 'session ended';
+      setConnection('session ended');
       term.options.disableStdin = true;
       term.write('\r\n\x1b[90msession ended\x1b[0m\r\n');
     });
     source.onerror = () => {
       if (disposed || ended) return;
-      hint.textContent = 'Terminal connection lost — reconnecting…';
+      setConnection('Terminal connection lost — reconnecting…');
       if (source.readyState === EventSource.CLOSED) { clearTimeout(retry); retry = setTimeout(connect, delay); delay = Math.min(delay * 2, 15000); }
     };
   };

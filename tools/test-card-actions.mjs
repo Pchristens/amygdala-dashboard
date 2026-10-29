@@ -27,17 +27,17 @@ const tests = [
   ['follow and unfollow', () => { open(); calls.length = 0; click('Follow'); click('Unfollow'); assert.deepEqual(calls, [['follow', resident.name], ['follow', null]]); }],
   ['re-pinning from inside the card keeps the first opener', () => { open(); cardEl.querySelector('.resident-card button').focus(); run("showCard({type:'resident',id:'Synthetic Ada'},true)"); run('closeCard()'); assert.equal(document.activeElement, opener); }],
   ['missing resident closes card', () => { open(); ctx.state = { residents: [] }; run(snapshotCode); assert(cardEl.hidden); assert.equal(document.activeElement, opener); }],
-  ['orderTo selects only eligible option and focuses headline', () => {
+  ['orderTo checks only the eligible recipient and focuses headline', () => {
     const root = h('div', { id: 'orders' }); document.body.append(root);
     const headline = h('input', { 'aria-label': 'Headline' }); root.append(headline);
-    const options = ['all', resident.name, 'Synthetic Other'].map(value => ({ value, selected: true }));
+    const options = ['all', resident.name, 'Synthetic Other'].map(value => ({ value, checked: true }));
     const tabs = [];
-    const pctx = vm.createContext({ document: { getElementById: () => root }, selectTab: name => tabs.push(name), renderOrders: () => { root._to = { options }; root._form = root; } });
+    const pctx = vm.createContext({ document: { getElementById: () => root }, selectTab: name => tabs.push(name), renderOrders: () => { root._to = { _checks: options }; root._form = root; } });
     const start = panelSource.indexOf('  function orderTo(');
     assert(start >= 0, 'orderTo must be exposed');
     vm.runInContext(panelSource.slice(start, panelSource.indexOf('  return { openOrder', start)), pctx);
-    vm.runInContext("orderTo('Synthetic Ada')", pctx); assert.deepEqual(options.map(o => o.selected), [false, true, false]); assert.equal(document.activeElement, headline);
-    vm.runInContext("orderTo('Missing')", pctx); assert(options.every(o => !o.selected)); assert.deepEqual(tabs, ['orders', 'orders']);
+    vm.runInContext("orderTo('Synthetic Ada')", pctx); assert.deepEqual(options.map(o => o.checked), [false, true, false]); assert.equal(document.activeElement, headline);
+    vm.runInContext("orderTo('Missing')", pctx); assert(options.every(o => !o.checked)); assert.deepEqual(tabs, ['orders', 'orders']);
     assert.match(panelSource, /return \{ openOrder, orderTo,/);
   }],
 ];

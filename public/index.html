@@ -48,9 +48,10 @@
     </div>
   </header>
   <div class="gear-pop" id="gear-pop" hidden>
+      <h3 class="pace-label">Village</h3>
       <label class="pace">
-        <span class="pace-label">pace</span>
-        <select id="pace" aria-label="Shortest gap between automatic turns" title="Shortest gap between automatic turns; the day's budget is also spread evenly over the active hours">
+        <span class="pace-label">Minimum gap</span>
+        <select id="pace" aria-label="Minimum gap between automatic turns" title="At least this long between automatic turns; the daily budget is spread across active hours">
           <option value="180">3m</option>
           <option value="600">10m</option>
           <option value="1200">20m</option>
@@ -59,12 +60,22 @@
         </select>
       </label>
       <label class="pace" title="Automatic turns run only between these hours (human wakes and Temple duties run any time)">
-        <span class="pace-label">hours</span>
+        <span class="pace-label">Hours</span>
         <select id="hours-start" aria-label="Automatic turns start at"></select>
         <select id="hours-end" aria-label="Automatic turns end at"></select>
+        <span id="hours-zone"></span>
       </label>
+      <p class="pace-note">The daily budget is spread evenly across active hours.</p>
+      <div class="budget" id="budget" title="Automatic resident turns today (human wakes don't count)">
+        <span class="pace-label">Turns today</span>
+        <span class="budget-meter" aria-hidden="true"><span class="budget-fill" id="budget-fill"></span></span>
+        <span id="budget-text">—/—</span>
+        <button class="btn btn-icon btn-xs" id="budget-dec" type="button" aria-label="Lower daily turn budget">−</button>
+        <button class="btn btn-icon btn-xs" id="budget-inc" type="button" aria-label="Raise daily turn budget">+</button>
+      </div>
+      <h3 class="pace-label">This browser</h3>
       <label class="pace" id="gfx-row" hidden>
-        <span class="pace-label">graphics</span>
+        <span class="pace-label">Graphics</span>
         <select id="gfx" aria-label="Graphics quality" title="Lower settings use less GPU and battery">
           <option value="auto">Auto</option>
           <option value="high">High</option>
@@ -72,13 +83,7 @@
           <option value="low">Low</option>
         </select>
       </label>
-      <div class="budget" id="budget" title="Automatic resident turns today (human wakes don't count)">
-        <span class="pace-label">turns today</span>
-        <span class="budget-meter" aria-hidden="true"><span class="budget-fill" id="budget-fill"></span></span>
-        <span id="budget-text">—/—</span>
-        <button class="btn btn-icon btn-xs" id="budget-dec" type="button" aria-label="Lower daily turn budget">−</button>
-        <button class="btn btn-icon btn-xs" id="budget-inc" type="button" aria-label="Raise daily turn budget">+</button>
-      </div>
+      <div id="bell-settings"></div>
       <button id="replay-intro" class="btn" type="button">Replay intro</button>
   </div>
 
@@ -107,7 +112,7 @@
       </div>
 
       <div id="happening" class="happening" aria-live="polite">
-        <button class="happening-title" type="button">Happening now</button>
+        <button class="happening-title" type="button" aria-expanded="true" aria-controls="happening-list">Happening now</button>
         <ol id="happening-list"></ol>
       </div>
 
@@ -118,7 +123,7 @@
     <nav class="rail" id="rail" aria-label="Open a panel">
       <button class="rail-tab" data-tab="board" type="button" title="Board (1)"><span class="rail-glyph">✎</span><span class="rail-text">Board</span></button>
       <button class="rail-tab" data-tab="exhibits" type="button" title="Exhibits (2)"><span class="rail-glyph">❦</span><span class="rail-text">Exhibits</span></button>
-      <button class="rail-tab" data-tab="residents" type="button" title="Residents (3)"><span class="rail-glyph">☺</span><span class="rail-text">Residents / Visitors</span><span class="count" id="badge-petitions" aria-label="Pending petitions" hidden>0</span></button>
+      <button class="rail-tab" data-tab="residents" type="button" title="Residents (3)" aria-label="Residents and visitors"><span class="rail-glyph">☺</span><span class="rail-text">Residents</span><span class="count" id="badge-petitions" aria-label="Pending petitions" hidden>0</span></button>
       <button class="rail-tab" data-tab="workshop" type="button" title="Temple (4)"><span class="rail-glyph">⛩</span><span class="rail-text">Temple</span><span class="rail-dot" id="rail-dot-temple" hidden></span></button>
       <button class="rail-tab" data-tab="orders" type="button"><span class="rail-glyph">✉</span><span class="rail-text">Orders</span></button>
       <button class="rail-tab" data-tab="lamps" type="button" title="Lamps (5)"><span class="rail-glyph">🕯</span><span class="rail-text">Lamps</span></button>
@@ -126,16 +131,16 @@
     <aside class="panel drawer" id="drawer" aria-hidden="true" inert>
       <div class="drawer-handle" id="drawer-handle" title="Drag to resize"></div>
       <nav class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="board" aria-selected="true" type="button">Board <span class="count" id="count-board">0</span></button>
-        <button class="tab" role="tab" data-tab="exhibits" type="button">Exhibits <span class="count" id="count-exhibits">0</span></button>
-        <button class="tab" role="tab" data-tab="residents" type="button">Residents <span class="count" id="count-residents">0</span></button>
-        <button class="tab" role="tab" data-tab="workshop" type="button">Temple <span class="count" id="count-workshop">0</span><span class="badge-wait" id="badge-wait" hidden>!</span><span class="badge-omen" id="badge-omen" hidden>0</span><span class="badge-counsel" id="badge-counsel" hidden>0</span></button>
-        <button class="tab" role="tab" data-tab="orders" type="button">Orders</button>
-        <button class="tab" role="tab" data-tab="lamps" type="button" title="The Lamplighter's House: usage">Lamps <span class="count" id="count-lamps">—</span></button>
+        <button class="tab" role="tab" id="tabbtn-board" aria-controls="tab-board" data-tab="board" aria-selected="true" tabindex="0" type="button">Board <span class="count" id="count-board">0</span></button>
+        <button class="tab" role="tab" id="tabbtn-exhibits" aria-controls="tab-exhibits" data-tab="exhibits" tabindex="-1" type="button">Exhibits <span class="count" id="count-exhibits">0</span></button>
+        <button class="tab" role="tab" id="tabbtn-residents" aria-controls="tab-residents" data-tab="residents" tabindex="-1" type="button">Residents <span class="count" id="count-residents">0</span></button>
+        <button class="tab" role="tab" id="tabbtn-workshop" aria-controls="tab-workshop" data-tab="workshop" tabindex="-1" type="button">Temple <span class="count" id="count-workshop">0</span><span class="badge-wait" id="badge-wait" hidden>!</span><span class="badge-omen" id="badge-omen" hidden>0</span><span class="badge-counsel" id="badge-counsel" hidden>0</span></button>
+        <button class="tab" role="tab" id="tabbtn-orders" aria-controls="tab-orders" data-tab="orders" tabindex="-1" type="button">Orders</button>
+        <button class="tab" role="tab" id="tabbtn-lamps" aria-controls="tab-lamps" data-tab="lamps" tabindex="-1" type="button" title="The Lamplighter's House: usage">Lamps <span class="count" id="count-lamps">—</span></button>
         <button class="btn btn-ghost btn-xs drawer-close" id="drawer-close" type="button" title="Close (Esc)" aria-label="Close panel">✕</button>
       </nav>
 
-      <section class="tab-body" id="tab-board" data-tab="board">
+      <section class="tab-body" id="tab-board" role="tabpanel" aria-labelledby="tabbtn-board" data-tab="board">
         <div class="zone-switch" data-for="board" hidden>
           <button class="zone-opt" data-zone="village" aria-selected="true" type="button">Village <span class="n"></span></button>
           <button class="zone-opt" data-zone="isle" type="button"><span class="lock" hidden>🔒 </span>Isle <span class="n"></span></button>
@@ -165,7 +170,7 @@
         </div>
       </section>
 
-      <section class="tab-body" id="tab-exhibits" data-tab="exhibits" hidden>
+      <section class="tab-body" id="tab-exhibits" role="tabpanel" aria-labelledby="tabbtn-exhibits" data-tab="exhibits" hidden>
         <div class="zone-switch" data-for="exhibits" hidden>
           <button class="zone-opt" data-zone="village" aria-selected="true" type="button">Village <span class="n"></span></button>
           <button class="zone-opt" data-zone="isle" type="button"><span class="lock" hidden>🔒 </span>Isle <span class="n"></span></button>
@@ -178,11 +183,11 @@
         </div>
       </section>
 
-      <section class="tab-body" id="tab-residents" data-tab="residents" hidden>
-        <div class="scroll"><section id="gate" class="gate"></section><div id="residents"></div></div>
+      <section class="tab-body" id="tab-residents" role="tabpanel" aria-labelledby="tabbtn-residents" data-tab="residents" hidden>
+        <div class="scroll"><section id="petitions" class="gate"></section><div id="residents"></div><section id="gate" class="gate"></section></div>
       </section>
 
-      <section class="tab-body" id="tab-workshop" data-tab="workshop" hidden>
+      <section class="tab-body" id="tab-workshop" role="tabpanel" aria-labelledby="tabbtn-workshop" data-tab="workshop" hidden>
         <div class="zone-switch" data-for="temple" hidden>
           <button class="zone-opt" data-zone="village" aria-selected="true" type="button">Village <span class="n"></span></button>
           <button class="zone-opt" data-zone="isle" type="button"><span class="lock" hidden>🔒 </span>Isle <span class="n"></span></button>
@@ -190,19 +195,19 @@
         <div class="scroll" id="workshop"></div>
       </section>
 
-      <section class="tab-body" data-tab="orders" hidden><div id="orders"></div></section>
+      <section class="tab-body" id="tab-orders" role="tabpanel" aria-labelledby="tabbtn-orders" data-tab="orders" hidden><div id="orders"></div></section>
       <section class="tab-body" id="tab-terminal" data-tab="terminal" hidden></section>
       <section class="tab-body" id="tab-place" data-tab="place" hidden>
         <div class="scroll place-pane" id="place-pane"></div>
       </section>
-      <section class="tab-body" id="tab-lamps" data-tab="lamps" hidden>
+      <section class="tab-body" id="tab-lamps" role="tabpanel" aria-labelledby="tabbtn-lamps" data-tab="lamps" hidden>
         <div class="zone-switch" data-for="lamps" hidden>
           <button class="zone-opt" data-zone="village" aria-selected="true" type="button">Village <span class="n"></span></button>
           <button class="zone-opt" data-zone="isle" type="button"><span class="lock" hidden>🔒 </span>Isle <span class="n"></span></button>
         </div>
         <div class="scroll" id="lamps"></div>
       </section>
-      <footer class="drawer-foot"><button class="btn btn-ghost btn-xs" id="credits-btn" type="button">Credits &amp; licences</button><span class="drawer-foot-hint">Esc closes · 1–5 switch panels</span></footer>
+      <footer class="drawer-foot"><button class="btn btn-ghost btn-xs" id="credits-btn" type="button">Credits &amp; licences</button><span class="drawer-foot-hint">Esc closes · 1–6 switch panels</span></footer>
     </aside>
   </main>
 
