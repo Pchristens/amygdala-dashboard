@@ -239,6 +239,8 @@ export function createPanel(opts) {
     els.exhibits.hidden = exhibitView !== 'art'; $('tales').hidden = exhibitView !== 'tales'; renderTales();
   });
   let taleControls = null;
+  let taleFold = null;
+  let taleSettingsOpen = false;
   let talesDirty = false;
   let talesFocusout = false;
   function renderTales() {
@@ -246,13 +248,14 @@ export function createPanel(opts) {
     if (!talesFocusout) { root.addEventListener('focusout', (e) => { if (root.contains(e.relatedTarget)) return; queueMicrotask(() => { if (!root.contains(document.activeElement) && talesDirty) renderTales(); }); }); talesFocusout = true; }
     const active = document.activeElement;
     // A sealed isle always applies at once; otherwise wait until the human stops typing in a tale.
-    if (!isleLocked() && root.contains(active) && !taleControls?.contains(active)) { talesDirty = true; return; }
+    if (!isleLocked() && root.contains(active) && !taleControls?.contains(active) && (active?.matches?.('input,textarea,select,[contenteditable="true"]') || active?.isContentEditable)) { talesDirty = true; return; }
     talesDirty = false;
-    if (isleLocked() || !state.taleSettings) taleControls = null;
-    clearExcept(root, taleControls);
+    if (isleLocked() || !state.taleSettings) { taleControls = null; taleFold = null; }
+    clearExcept(root, taleFold);
     if (isleLocked()) { renderSealedTablet(root); return; }
     if (state.taleSettings) {
-      if (!taleControls) { taleControls = h('div', { class: 'panel-settings' }, h('b', { text: 'Epic labours - any threshold earns a tale' })); root.append(taleControls); }
+      if (!taleControls) taleControls = h('div', { class: 'panel-settings' }, h('b', { text: 'Epic labours - any threshold earns a tale' }));
+      if (!taleFold) { taleFold = h('details', { class: 'temple-fold' }, h('summary', { text: 'Tale settings' }), taleControls); taleFold.open = taleSettingsOpen; taleFold.addEventListener('toggle', () => { taleSettingsOpen = taleFold.open; }); }
       const controls = taleControls, error = controls._error ||= h('span', { role: 'status' });
       for (const [key, label, max] of [['minHours', 'Hours worked', 48], ['minFixed', 'Findings fixed', 1000], ['minCommits', 'Commits', 1000]]) {
         settingField(controls, key, label, 'input', { type: 'number', min: '0', max: String(max), step: key === 'minHours' ? '0.1' : '1', value: state.taleSettings[key], 'aria-label': label },
@@ -260,9 +263,11 @@ export function createPanel(opts) {
       }
       if (!error.parentNode) controls.append(error);
     }
+    // Tales go above the settings fold; the fold itself never moves, so a focused threshold keeps its focus.
+    const add = n => taleFold?.parentNode === root ? root.insertBefore(n, taleFold) : root.append(n);
     const list = (state.tales || []).filter((t) => zoneOf(t) === zone).slice().reverse();
-    if (!list.length) root.append(h('div', { class: 'empty', text: 'No labours recorded yet.' }));
-    for (const t of list) root.append(h('article', { class: 'tale-scroll' },
+    if (!list.length) add(h('div', { class: 'empty', text: 'No labours recorded yet.' }));
+    for (const t of list) add(h('article', { class: 'tale-scroll' },
       h('h2', { text: t.tale?.title || (t.owed === false ? 'Labour recorded' : 'The tale is yet to be told') }),
       h('div', { class: 'dim-note', text: `Bard: ${t.bard || (t.owed === false ? 'no tale owed' : 'awaiting a bard')} · ${t.hero || 'Hero'} · ${t.project || '—'} · ${t.site || '—'}` }),
       h('div', { text: `${Math.round((+t.workedMs || 0) / 60000)} minutes worked` }),
@@ -272,6 +277,7 @@ export function createPanel(opts) {
       t.uncommitted ? h('div', { class: 'dim-note', text: 'Uncommitted changes remain.' }) : null,
       t.words ? h('blockquote', { text: String(t.words) }) : null,
       h('div', { class: 'tale-text', text: t.tale?.text || (t.owed === false ? 'The labour stands as facts.' : 'The tale is yet to be told.') })));
+    if (taleFold && taleFold.parentNode !== root) root.append(taleFold);
   }
 
   let ordersKey = '';
@@ -296,16 +302,23 @@ export function createPanel(opts) {
       addRecipient('all', 'Whole village'); for (const r of residents) addRecipient(r.name, r.name);
       root._key = key;
     }
-    const next = JSON.stringify(state.orders); if (ordersKey === next) return; ordersKey = next; root._list.textContent = '';
+    const next = JSON.stringify(state.orders); if (ordersKey === next) return; ordersKey = next;
+    const openOrderIds = new Set([...root._list.querySelectorAll('.order-card')].filter(card => card.querySelector('details')?.open).map(card => JSON.parse(card.dataset.orderIds || '[]')[0])); root._list.textContent = '';
     const groups = new Map(); for (const o of state.orders) { const key = o.group || o.id; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(o); }
-    for (const members of [...groups.values()].reverse()) {
+    const ordered = [...groups.values()].reverse(), finished = [], open = [];
+    for (const members of ordered) (members.every(m => ['answered', 'cancelled', 'failed'].includes(m.status)) ? finished : open).push(members);
+    const finishedFold = finished.length ? h('details', { class: 'temple-fold' }) : null;
+    if (finishedFold) finishedFold.append(h('summary', { text: `Finished orders (${finished.length})` }));
+    for (const members of [...open, ...finished]) {
       const o = members[0];
-      const card = h('article', { class: 'order-card' }, h('div', { class: 'dim-note', text: members.map(m => `${m.to} · ${m.status}`).join(' | ') }), h('h3', { text: o.headline }), h('p', { text: o.chat || o.error || '' }));
-      if (o.group) { const chips = h('div', { class: 'card-row' }); for (const m of members) chips.append(h('span', { class: 'badge', text: `${m.to}: ${m.status}` })); card.append(chips); }
+      const counts = new Map(); for (const m of members) counts.set(m.status, (counts.get(m.status) || 0) + 1);
+      const summary = members.length > 1 ? `${members.length} residents · ${[...counts].map(([status, count]) => `${count} ${status}`).join(', ')}` : `${o.to} · ${o.status}`;
+      const card = h('article', { class: 'order-card' }, h('div', { class: 'dim-note', text: summary }), h('h3', { text: o.headline }), h('p', { text: o.chat || o.error || '' }));
       const details = h('details', {}, h('summary', { text: 'Brief and report' })), content = h('div'); details.append(content);
       details.addEventListener('toggle', async () => { if (!details.open) return; const full = await opts.api(o.group ? `/api/orders/group/${encodeURIComponent(o.group)}` : `/api/orders/${encodeURIComponent(o.id)}`, null, 'GET'); content.textContent = ''; if (!full?.id) { content.textContent = full?.error || 'Could not load order.'; return; } for (const member of full.members || [full]) { if (full.members) content.append(h('h3', { text: member.to })); for (const [label, value] of [['Brief', member.brief], ['Chat', member.chat], ['Report', member.report], ['Data', member.data ? JSON.stringify(member.data, null, 2) : '']]) if (value) content.append(h('h4', { text: label }), h('pre', { text: value })); } });
-      card.dataset.orderIds = JSON.stringify(members.map(m => m.id));
-      card.append(details); for (const m of members) if (['queued', 'working'].includes(m.status)) card.append(h('button', { class: 'btn btn-xs', text: `Cancel ${m.to}`, onClick: () => opts.api(`/api/orders/${encodeURIComponent(m.id)}/cancel`, {}) })); root._list.append(card);
+      card.dataset.orderIds = JSON.stringify(members.map(m => m.id)); details.open = openOrderIds.has(members[0].id);
+      card.append(details); for (const m of members) if (['queued', 'working'].includes(m.status)) card.append(h('button', { class: 'btn btn-xs', text: `Cancel ${m.to}`, onClick: () => opts.api(`/api/orders/${encodeURIComponent(m.id)}/cancel`, {}) }));
+      if (finishedFold && finished.includes(members)) { if (!finishedFold.parentNode) root._list.append(finishedFold); finishedFold.append(card); } else root._list.append(card);
     }
   }
 
@@ -1610,7 +1623,7 @@ export function createPanel(opts) {
     for (const t of els.posts.querySelectorAll('.post-time')) t.textContent = relTime(+t.dataset.ts);
   }
 
-  function openOrder(id) { selectTab('orders'); const card = [...document.querySelectorAll('.order-card')].find(c => JSON.parse(c.dataset.orderIds || '[]').includes(id)); if (card) { card.querySelector('details').open = true; card.scrollIntoView({ block: 'nearest' }); } }
+  function openOrder(id) { selectTab('orders'); const card = [...document.querySelectorAll('.order-card')].find(c => JSON.parse(c.dataset.orderIds || '[]').includes(id)); if (card) { for (let parent = card.parentElement; parent && parent !== document.body; parent = parent.parentElement) if (parent.tagName === 'DETAILS') parent.open = true; card.querySelector('details').open = true; card.scrollIntoView({ block: 'nearest' }); } }
   function orderTo(name) {
     selectTab('orders'); renderOrders();
     const root = document.getElementById('orders'); if (!root?._to) return;

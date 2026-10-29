@@ -9,6 +9,9 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Group orders show one summary line ("4 residents · 2 answered, 1 working"); finished orders fold away, and an open report stays open across updates.
+- Tales lead with the stories: their settings sit in a closed "Tale settings" fold, and only typing in a field (not a focused button) holds back an update.
+- The "Residents" rail label no longer spills past its highlight.
 - Tales no longer wipe what you are typing: a live update waits until you click away (sealing the isle still applies at once).
 - The rail tooltips number Orders (5) and Lamps (6) to match the keys.
 - The Happening now feed tells screen readers and the keyboard whether it is open.

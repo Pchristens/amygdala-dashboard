@@ -1128,11 +1128,11 @@ select {
 .map-toolbar { top: calc(var(--header-h) + 12px); }
 .rail {
   position: fixed; right: 0; top: calc(var(--header-h) + 14px); z-index: 15; width: var(--rail-w);
-  display: flex; flex-direction: column; gap: 6px; padding: 8px 6px;
+  display: flex; flex-direction: column; gap: 6px; padding: 8px 3px;
   background: color-mix(in srgb, var(--panel) 70%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-right: none; border-radius: 12px 0 0 12px;
 }
-.rail-tab { position: relative; background: none; border: none; color: var(--ink-2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 8px; font-size: 9px; font-family: var(--font-sc); letter-spacing: .04em; }
+.rail-tab { position: relative; background: none; border: none; color: var(--ink-2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 1px; border-radius: 8px; font-size: 9px; font-family: var(--font-sc); letter-spacing: .01em; }
 .rail-tab:hover { background: color-mix(in srgb, var(--panel-3) 70%, transparent); color: var(--ink); }
 .rail-tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
 .rail-glyph { font-size: 16px; line-height: 1; }
