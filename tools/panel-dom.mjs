@@ -44,6 +44,7 @@ export function panelDocument() {
   doc.body = new Node('body'); doc.activeElement = doc.body;
   const ids = ['channels', 'board-scroll', 'posts', 'board-empty', 'board-sealed', 'projects-strip', 'composer', 'send', 'composer-channel', 'composer-zone', 'reply-strip', 'reply-strip-text', 'reply-cancel', 'exhibits', 'exhibits-list', 'exhibits-sealed', 'residents', 'workshop', 'badge-wait', 'lamps', 'exhibit-tabs', 'tales', 'gate', 'orders', 'badge-petitions', 'count-board', 'count-exhibits', 'count-residents', 'count-workshop', 'badge-omen', 'badge-counsel', 'count-lamps'];
   for (const id of ids) { const n = doc.createElement(id === 'composer' ? 'textarea' : 'div'); n.setAttribute('id', id); doc.body.append(n); }
+  for (const tab of ['board', 'exhibits', 'residents', 'workshop']) { const t = doc.createElement('button'); t.className = 'tab'; t.dataset.tab = tab; doc.body.append(t); const b = doc.createElement('div'); b.className = 'tab-body'; b.dataset.tab = tab; doc.body.append(b); }
   const composer = doc.createElement('div'); composer.className = 'composer'; doc.body.append(composer); composer.append(doc.getElementById('composer'));
   return doc;
 }

@@ -205,7 +205,7 @@ function zoneChip(item) {
 function wakeResident(name) { return api(`/api/residents/${encodeURIComponent(name)}/wake`, {}).then((ok) => { if (okResult(ok)) toast(`Waking ${name}…`); }); }
 const residentActions = {
   onClose: closeCard, onWake: wakeResident,
-  onDetails: () => setDrawer(true, 'residents'),
+  onDetails: name => { setDrawer(true, 'residents'); panel.showResident(name); },
   onOrder: name => { setDrawer(true, 'orders'); panel.orderTo(name); },
   onFollow: (name, on) => map.follow(on ? name : null),
   isFollowing: name => map.following(name),

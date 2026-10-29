@@ -25,7 +25,7 @@ export function residentCard(resident, snapshot, actions = {}, { embedded = fals
     return button;
   };
   const navigate = callback => { const name = r.name; root.close({ restoreFocus: false }); callback?.(name); };
-  const details = action('Details', () => navigate(currentActions.onDetails));
+  const details = action('Details', () => navigate(name => currentActions.onDetails?.(name)));
   const wake = action('Wake now', () => currentActions.onWake?.(r.name));
   const order = action('Order…', () => navigate(currentActions.onOrder));
   const follow = action('Follow', () => { currentActions.onFollow?.(r.name, !currentActions.isFollowing?.(r.name)); updateFollow(); });

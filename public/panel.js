@@ -732,8 +732,11 @@ export function createPanel(opts) {
     row._meta = h('div', { class: 'resident-meta' });
     row._persona = h('div', { class: 'resident-persona' });
     row._commits = h('div', { class: 'resident-commits' });
+    row._aboutTitle = h('h4', { class: 'resident-section-title', text: 'About' });
+    row._commitTitle = h('h4', { class: 'resident-section-title', text: 'Commitments' });
+    row._participationTitle = h('h4', { class: 'resident-section-title', text: 'Participation' });
     row._toggle = h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', 'aria-controls': `resident-more-${r.name}`, dataset: { key: `resident:${r.name}` } });
-    row._more = h('div', { class: 'resident-more', id: `resident-more-${r.name}` }, row._persona, row._commits);
+    row._more = h('div', { class: 'resident-more', id: `resident-more-${r.name}` }, row._aboutTitle, row._persona, row._commitTitle, row._commits);
     row._switch = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'true', title: 'Include in turns' });
     row._switch.addEventListener('click', () => {
       const on = row._switch.getAttribute('aria-checked') === 'true';
@@ -746,11 +749,14 @@ export function createPanel(opts) {
     row._hibernate.addEventListener('click', () => opts.onHibernate?.(r.name, row._hibernate.dataset.on !== 'true'));
     row._identity = h('div');
     const mid = h('div', {}, row._name, row._identity, row._chips, row._meta);
-    row._ctl = h('div', { class: 'resident-ctl' }, row._switch, row._wake, row._hibernate);
-    row._toggle.addEventListener('click', (e) => { e.stopPropagation(); if (residentOpen.has(row.dataset.name)) residentOpen.delete(row.dataset.name); else residentOpen.add(row.dataset.name); const open = residentOpen.has(row.dataset.name); row._more.hidden = !open; row._ctl.hidden = !open; row._toggle.setAttribute('aria-expanded', String(open)); row._toggle.textContent = open ? 'Less ▴' : 'More ▾'; });
-    row.append(row._avatar, mid, row._toggle, row._more, row._ctl);
+    row._switchLabel = h('label', { class: 'resident-switch-label' }, row._switch, h('span', { text: 'In turns' }));
+    row._participation = h('div', { class: 'resident-ctl' }, row._participationTitle, row._switchLabel, row._hibernate);
+    row._wakeSection = h('div', { class: 'resident-wake' }, row._wake);
+    row._toggle.addEventListener('click', (e) => { e.stopPropagation(); if (residentOpen.has(row.dataset.name)) residentOpen.delete(row.dataset.name); else residentOpen.add(row.dataset.name); applyResidentOpen(row); });
+    row.append(row._avatar, mid, row._toggle, row._more, row._participation, row._wakeSection);
     return row;
   }
+  function applyResidentOpen(row) { const open = residentOpen.has(row.dataset.name); row._more.hidden = row._participation.hidden = row._wakeSection.hidden = !open; row._toggle.setAttribute('aria-expanded', String(open)); row._toggle.textContent = open ? 'Less ▴' : 'More ▾'; }
   function updateResidentRow(row, r, active) {
     row.classList.toggle('off', r.enabled === false);
     row.classList.toggle('sealed', r.mood === 'sealed');
@@ -780,6 +786,7 @@ export function createPanel(opts) {
       h('span', { class: 'dim', text: ` · ${+r.turns || 0} turn${(+r.turns || 0) === 1 ? '' : 's'}` }),
     );
     row._persona.textContent = r.mood === 'sealed' ? '' : String(r.persona || '');
+    row._aboutTitle.hidden = r.mood === 'sealed' || !r.persona;
     const mine = r.mood === 'sealed' ? [] : commitmentsFor(r.name).filter((c) => c.status === 'active' || c.status === 'done');
     const ckey = mine.map((c) => `${c.id}:${c.status}:${c.updatedAt}:${c.nextAction}:${c.blockedOn}`).join('|');
     if (row._ckey !== ckey) {
@@ -787,12 +794,11 @@ export function createPanel(opts) {
       row._commits.textContent = '';
       for (const c of mine) row._commits.appendChild(commitmentEl(c, { compact: true }));
     }
+    row._commitTitle.hidden = r.mood === 'sealed' || !mine.length;
     row._switch.setAttribute('aria-checked', r.enabled === false ? 'false' : 'true');
     row._wake.disabled = isActive || r.mood === 'sealed';
     row._identity.replaceChildren(residentIdentity(r, state));
-    const open = residentOpen.has(r.name);
-    row._more.hidden = !open; row._ctl.hidden = !open;
-    row._toggle.setAttribute('aria-expanded', String(open)); row._toggle.textContent = open ? 'Less ▴' : 'More ▾';
+    applyResidentOpen(row);
   }
 
   // ---- temple: gods (sessions), offerings, findings, the Tablet of Omens ----
@@ -1540,7 +1546,8 @@ export function createPanel(opts) {
     for (const option of options) option.selected = eligible && option.value === name;
     if (eligible) root._form.querySelector('[aria-label="Headline"]')?.focus();
   }
-  return { openOrder, orderTo, update, selectTab, setChannel, setZone, refreshTimes, get activeTab() { return activeTab; }, get channel() { return channel; }, get zone() { return zone; } };
+  function showResident(name) { selectTab('residents'); residentOpen.add(name); const row = residentRows.get(name); if (!row) return; applyResidentOpen(row); row.scrollIntoView?.({ block: 'nearest' }); row._toggle.focus(); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1200); }
+  return { openOrder, orderTo, showResident, update, selectTab, setChannel, setZone, refreshTimes, get activeTab() { return activeTab; }, get channel() { return channel; }, get zone() { return zone; } };
 }
 
 // ---------- WebAudio melody ----------

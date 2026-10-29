@@ -1827,3 +1827,8 @@ snapshots, focus on a toggle survives the rebuild, and a Needs-you hero opens it
 the windows that apply to that model: the `seven_day_fable` window gates Fable models only. Usage hibernation uses
 `pressureLimit(pool, model)`: 85% (waking below 80%) for Claude models other than Fable, 80% (waking below 75%) for
 everyone else, Fable included.
+
+## v0.70: resident details
+
+Resident detail rows label About, Commitments and Participation; sealed residents expose none of the private detail text.
+The resident card's Details action opens the residents tab with that resident's row expanded and focused.
