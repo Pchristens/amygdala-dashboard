@@ -1012,7 +1012,7 @@ function renderHeader() {
   btn.classList.toggle('btn-primary', !!w.paused);
   const villageState = typeof map.getVillageState === 'function' ? map.getVillageState() : typeof map3d.getVillageState === 'function' ? map3d.getVillageState() : null;
   const idle = villageState === 'idle' || villageState?.idle || villageState?.state === 'idle' || villageState?.status === 'idle';
-  $('village-state').hidden = !w.paused && !idle;
+  $('village-state').hidden = w.paused ? st === 'paused' : !idle;
   $('village-state').textContent = w.paused ? 'Paused' : "Idle — everyone's resting";
   $('village-state').classList.toggle('paused-chip', !!w.paused);
   const pace = $('pace');
@@ -1048,8 +1048,22 @@ $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: 
 const updateBells = createBells($('gear-pop'));
 const bellPageId = crypto.randomUUID();
 const bellPresence = () => { if (!SHOT && !MOCK) void api('/api/bells/presence', { id: bellPageId, visible: !document.hidden }); };
-$('gear-btn').addEventListener('click', () => { const g = $('gear-pop'); g.hidden = !g.hidden; });
-document.addEventListener('pointerdown', (e) => { const g = $('gear-pop'); if (!g.hidden && !g.contains(e.target) && e.target !== $('gear-btn')) g.hidden = true; });
+function positionGear() {
+  const pop = $('gear-pop'); if (pop.hidden) return;
+  const anchor = $('gear-btn').getBoundingClientRect();
+  pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, anchor.right - pop.offsetWidth))}px`;
+  const top = Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - 48));
+  pop.style.top = `${top}px`; pop.style.maxHeight = `${Math.max(40, window.innerHeight - top - 8)}px`;
+}
+function setGear(open) {
+  $('gear-pop').hidden = !open; $('gear-btn').setAttribute('aria-expanded', String(open));
+  if (open) positionGear();
+}
+$('gear-btn').addEventListener('click', () => setGear($('gear-pop').hidden));
+document.addEventListener('pointerdown', (e) => { const g = $('gear-pop'); if (!g.hidden && !g.contains(e.target) && !$('gear-btn').contains(e.target)) setGear(false); });
+// Escape belongs to the open popover before the drawer/card handlers see it.
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('gear-pop').hidden) { e.preventDefault(); e.stopImmediatePropagation(); setGear(false); $('gear-btn').focus(); } }, true);
+window.addEventListener('resize', positionGear);
 $('pace').addEventListener('change', (e) => api('/api/control', { tickSeconds: +e.target.value }));
 const hourName = (n) => n === 0 || n === 24 ? '12am' : n === 12 ? '12pm' : n < 12 ? `${n}am` : `${n - 12}pm`;
 for (let n = 0; n < 24; n++) $('hours-start').appendChild(h('option', { value: n, text: hourName(n) }));
@@ -1146,7 +1160,7 @@ function playIntro() {
   introCleanup = finish;
   try { localStorage.setItem('amygdala.intro.v2', `seen:${w.createdAt ?? 0}`); } catch (_) { /* storage may be unavailable */ }
 }
-$('replay-intro').addEventListener('click', () => { $('gear-pop').hidden = true; playIntro(); });
+$('replay-intro').addEventListener('click', () => { setGear(false); playIntro(); });
 function maybeIntro() {
   if (SHOT && params.get('intro') !== '1') return;
   let seen = false;

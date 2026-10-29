@@ -1155,7 +1155,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .topbar .status { font-size: 12px; }
 .chip-cluster { display: inline-flex; align-items: center; gap: 4px; }
 .gear-btn { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; }
-.gear-pop { position: fixed; top: calc(var(--header-h) + 6px); right: 70px; z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
+.gear-pop { position: fixed; top: calc(var(--header-h) + 6px); left: 8px; width: min(320px, calc(100vw - 16px)); overflow-y: auto; z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .gear-pop[hidden] { display: none; }
 .gear-pop .pace, .gear-pop .budget { border: none; padding: 0; }
 
@@ -1331,7 +1331,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .petition-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .shot-public #lamp-glyph { display: none !important; }   /* a showcase capture shows no live allowance state */
 
-#orders { padding: 16px; }
+#orders { padding: 16px; overflow-y: auto; flex: 1; min-height: 0; }
 .order-form { display: grid; gap: 10px; }
 .order-form textarea { min-height: 150px; }
 .order-card { padding: 14px 0; border-bottom: 1px solid var(--ink-dim); }
