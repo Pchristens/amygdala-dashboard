@@ -275,8 +275,14 @@ select {
 .card-row { font-size: 13px; color: var(--ink-2); margin-top: 3px; }
 
 .resident-card-status { color: var(--ink-dim); font-size: 12px; }
-.resident-card-work { display: flex; flex-wrap: wrap; gap: 4px 8px; }
-.resident-card-post { display: block; max-height: 2.8em; overflow: hidden; }
+.resident-card-work { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+/* Long objectives and next steps fold to two lines each, so a busy resident's card still fits beside its figure. */
+.resident-card-work > b, .resident-card-work > div { flex-basis: 100%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+/* Never taller than the visible map: the card scrolls inside rather than running off screen. */
+#card .resident-card { max-height: calc(100vh - var(--header-h) - 48px); overflow-y: auto; }
+/* A little wider than other cards, so the four actions fit on one row. */
+.card:has(> .resident-card) { width: 288px; }
+.resident-card-post { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 /* Top-align the portrait beside the name stack; actions wrap only when a longer label (Unfollow) needs it (fi4324). */
 .resident-card .card-head { align-items: flex-start; }
 .resident-card .card-actions { gap: 6px; }

@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { panelDocument } from './panel-dom.mjs';
 import { h } from '../public/util.js';
@@ -87,6 +88,12 @@ const tests = [
     assert(root.hidden, 'recursive page close callback must terminate');
   }],
 ];
+// A busy resident's card stays short and never taller than the visible map (Wren in the middle of a Mac window).
+const css = fs.readFileSync(new URL('../public/style.css', import.meta.url), 'utf8');
+tests.push(['card height is bounded', () => {
+  for (const sel of ['.resident-card-work > b, .resident-card-work > div', '.resident-card-post']) assert.match(css, new RegExp(sel.replace(/[.*+?^${}()|[\]\\>]/g, '\\$&') + ' \\{[^}]*-webkit-line-clamp: 2'), sel);
+  assert.match(css, /#card \.resident-card \{ max-height: calc\(100vh - var\(--header-h\) - 48px\); overflow-y: auto; \}/);
+}]);
 let failures = 0;
 for (const [name, test] of tests) { try { test(); console.log(`PASS ${name}`); } catch (e) { failures++; console.error(`FAIL ${name}: ${e.message.split('\n')[0]}`); } }
 assert.equal(failures, 0, `resident card: ${failures} regression failures`);
