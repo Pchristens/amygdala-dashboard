@@ -383,6 +383,7 @@ const panel = createPanel({
   onWake: wakeResident,
   onQuarantine: (project, host, on) => api('/api/quarantine', { project, host, on }).then((ok) => { if (okResult(ok)) toast(on ? `${project} is quarantined on the isle.` : `${project} is back in The Works.`); }),
   onMilestone: (project, host) => openMilestone(project, host),
+  onDecide: openDecide,
   onFocusWorker: (id) => { const w = (state?.workers || []).find((x) => x.id === id); if (w) pinCard({ type: 'worker', id }); },
   onBreakSeal: () => openSeal('unlock'),
   onSetupSeal: () => openSeal('setup'),
@@ -433,6 +434,20 @@ function openEndLabour(w) {
     if (card.info?.type === 'worker') showCard(card.info, card.pinned);
   };
   dialog.showModal();
+}
+// The human's final decision on an offering (the same override route the ledger records as by the human).
+function openDecide(r) {
+  const dialog = $('decide-dialog'), reason = $('decide-reason'), err = $('decide-error');
+  $('decide-title').textContent = `Decide — ${r.title || r.project || r.offeringId}`;
+  $('decide-sub').textContent = `${r.project || ''} ${String(r.sha || '').slice(0, 12)} · ${r.offeringId}`;
+  reason.value = ''; err.hidden = true;
+  for (const b of dialog.querySelectorAll('[data-verdict]')) b.onclick = async () => {
+    if (reason.value.trim().length < 10) { err.textContent = 'Give a reason of at least 10 characters.'; err.hidden = false; reason.focus(); return; }
+    const result = await api('/api/governance/override', { offeringId: r.offeringId, verdict: b.dataset.verdict, reason: reason.value.trim() });
+    if (!okResult(result)) { err.textContent = result?.error || 'The Temple refused that decision.'; err.hidden = false; return; }
+    dialog.close(); toast(b.dataset.verdict === 'accept' ? 'Accepted: the Steward will deploy it.' : 'Not accepted: it stays unshipped.');
+  };
+  dialog.showModal(); reason.focus();
 }
 function updateEndLabour() {
   if (!endingLabour || !state) return;
@@ -537,7 +552,7 @@ $('command-form').addEventListener('submit', (e) => {
   sendCommand(picked);
 });
 $('command-all').addEventListener('click', () => sendCommand('all'));
-for (const d of [$('end-labour-dialog'), milestoneDialog, commandDialog, $('commission-dialog'), $('dig-dialog'), $('credits-dialog'), $('seal-dialog')]) {
+for (const d of [$('end-labour-dialog'), $('decide-dialog'), milestoneDialog, commandDialog, $('commission-dialog'), $('dig-dialog'), $('credits-dialog'), $('seal-dialog')]) {
   d.querySelector('[data-close]').addEventListener('click', () => d.close());
   d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 }

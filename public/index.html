@@ -215,6 +215,21 @@
     </div>
   </dialog>
 
+  <dialog id="decide-dialog" class="dialog">
+    <form method="dialog" id="decide-form">
+      <h2 id="decide-title">Your decision</h2>
+      <div class="dialog-sub" id="decide-sub"></div>
+      <p class="dialog-text">Your decision is final: no ruling or appeal can change it. The Steward deploys accepted work.</p>
+      <textarea id="decide-reason" class="input" rows="3" maxlength="800" placeholder="why (at least 10 characters)"></textarea>
+      <div class="dialog-error" id="decide-error" role="alert" hidden></div>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" type="button" data-close>Cancel</button>
+        <button class="btn" type="button" data-verdict="reject">Reject</button>
+        <button class="btn btn-primary" type="button" data-verdict="accept">Accept</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="milestone-dialog" class="dialog">
     <form method="dialog" id="milestone-form">
       <h2 id="milestone-title">Share a milestone 🌸</h2>

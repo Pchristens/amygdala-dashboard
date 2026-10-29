@@ -104,7 +104,9 @@ Temple with the hero's report and test results. Then, without a routine step fro
 
 The Steward can never override a ruling on **its own code**, on a security or data-loss concern, during an appeal, or
 after you decided. Those, and appeals that upheld a rejection, are the escalations that appear under **Needs you**.
-Each just stays unshipped until you act; nothing ships by timing out.
+Each just stays unshipped until you act; nothing ships by timing out. To act, use **Decide…** beside the offering in
+the Temple's **Governance** fold (also beside anything awaiting a ruling): give a reason, then Accept or Reject. Your
+decision is final and recorded in the ledger as yours.
 
 The High Priest wakes for rulings whenever an offering waits for her, with no daily cap: one wake covers every offering
 waiting at that moment, an offering that arrives before she starts joins that wake, and with nothing waiting she isn't
