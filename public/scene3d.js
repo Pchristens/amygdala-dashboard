@@ -646,17 +646,19 @@ export const BUILDERS = {
   // Deliberately humble (no columns, no podium, no tower) and smaller than the Kettle: the Steward keeps accounts here, it
   // does not rule. Its forecourt of travertine flags runs to the stone's sand ring, so the two read as one precinct.
   stewardhouse(b, e, pool, ao, x, y, z) {
-    const W = 34, D = 22, H = 14, R = 7, F = y + 1.2, front = z + D / 2;
+    const W = 36, D = 24, H = 26, R = 9, F = y + 1.2, front = z + D / 2;
     b.box(x, y, z, W + 3, 1.2, D + 3, P.ancientDark);                                                     // a low rubble footing
     b.box(x, F, z, W, H, D, P.ivory);
     b.box(x, F + H - 1.2, z, W + 0.6, 1.2, D + 0.6, P.plaster);                                           // the wall head under the eaves
     b.prism(x, F + H, z, D + 6, R, W + 5, P.terracotta, Math.PI / 2);                                           // the roof: a low gable of terracotta tile
     b.box(x, F + H + R - 0.7, z, W + 5.6, 1.1, 1.8, P.tile);                                          // ridge tiles
     for (const sx of [-1, 1]) b.box(x + sx * (W / 2 + 2.6), F + H - 0.4, z, 0.6, 1.4, D + 6, P.tile); // eave ends
-    b.box(x + W * 0.28, F + H + 1, z - 3.5, 3.4, 8.5, 3.4, P.plaster); b.box(x + W * 0.28, F + H + 9.5, z - 3.5, 4.4, 1, 4.4, P.tile);   // chimney
-    door(b, x - 6, F, front + 0.4, 6.5, 10, P.blue); b.box(x - 6, F + 10, front + 0.5, 9, 1, 1.4, P.stone); b.box(x - 6, y, front + 2.4, 9.5, 1.2, 4, P.stone);   // door, lintel, step
-    e.box(x + 7, F + 5.5, front + 0.4, 5.5, 5.5, 0.6, P.shallows); for (const sx of [-1, 1]) b.box(x + 7 + sx * 4.1, F + 5.5, front + 0.7, 2, 5.5, 0.7, P.blue);   // the lamp-lit window, shutters open
-    e.box(x + W / 2 + 0.4, F + 5.5, z + 2, 0.6, 5, 5, P.shallows);
+    b.box(x + W * 0.28, F + H + 1, z - 3.5, 3.6, 10, 3.6, P.plaster); b.box(x + W * 0.28, F + H + 11, z - 3.5, 4.6, 1, 4.6, P.tile);   // chimney
+    door(b, x - 6, F, front + 0.4, 7.5, 13, P.blue); b.box(x - 6, F + 13, front + 0.5, 10, 1, 1.4, P.stone); b.box(x - 6, y, front + 2.4, 9.5, 1.2, 4, P.stone);   // door, lintel, step
+    e.box(x + 7, F + 6, front + 0.4, 6, 6.5, 0.6, P.shallows); for (const sx of [-1, 1]) b.box(x + 7 + sx * 4.4, F + 6, front + 0.7, 2.2, 6.5, 0.7, P.blue);   // the lamp-lit window, shutters open
+    for (const wx of [-6, 7]) { e.box(x + wx, F + 17, front + 0.4, 5, 5.5, 0.6, P.shallows); for (const sx of [-1, 1]) b.box(x + wx + sx * 3.7, F + 17, front + 0.7, 1.8, 5.5, 0.7, P.blue); }   // the upper storey
+    b.box(x, F + 14.5, front + 0.6, W + 0.4, 0.9, 1, P.plaster);   // a string course between the storeys
+    e.box(x + W / 2 + 0.4, F + 6, z + 2, 0.6, 6, 5, P.shallows); e.box(x + W / 2 + 0.4, F + 17, z + 2, 0.6, 5, 4.5, P.shallows);
     b.box(x + 7, y, front + 3.4, 11, 1.8, 3, P.stoneDark); b.box(x + 7, y + 1.8, front + 3.4, 12, 0.7, 3.6, P.wood);   // a bench under the window
     amphora(b, x - W / 2 - 2.6, y, front - 2.5, 0.85); bougainvillea(b, x - W / 2 - 1.5, y + 3, front - 7);
     b.box(x + 2, y, front + 4.5, W + 10, 0.45, 8, P.travertine);                                          // a paved forecourt
@@ -756,7 +758,7 @@ export const BUILDERS = {
     return { h: 78, hit: [44, 80, 44], beam: { x, y: y + 65, z } };
   },
 };
-const SCALE_OF = { stewardhouse:0.8, hall:1, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
+const SCALE_OF = { stewardhouse:0.95, hall:1, temple:0.85, greatlibrary:1.05, forge:0.85, quarry:0.8, market:0.9, library:0.85, cafe:0.85, house:0.8, studio:0.9, workshop:0.85, garden:1, tower:1, observatory:1, shrine:0.8, pier:1, works:1, plaza:1, lighthouse:1.2 };
 function scaleParts(builder, from, x, y, z, s) { // scale new parts of `builder` about (x,y,z)
   const m = new THREE.Matrix4().makeTranslation(x, y, z).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-x, -y, -z));
   for (let i = from; i < builder.parts.length; i++) builder.parts[i].applyMatrix4(m);
