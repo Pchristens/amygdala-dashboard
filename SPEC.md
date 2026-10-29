@@ -1850,3 +1850,11 @@ propose their own work.
 `GET /api/term/<node-id>/local` checks a node hero's village visibility and online status and returns its session and node identifiers.
 A keeper serves terminals for heroes on its own machine using the existing stream, input, resize and close protocol.
 The keeper checks authorization when opening and every two seconds while the terminal is open, and binds input to the opening page token.
+
+## v0.74: node terminals without polling
+
+`POST /node/term` with `{ "output": [], "wait": true }` is held until that node has input, a terminal to open or close, or
+4 s pass, then answers as before; a hold superseded by a newer one, or whose request went away, answers `terms: null` and
+takes no input. `{ "output": [...], "input": false }` delivers output only and answers `{ "wait": true }`. Every answer
+carries `wait: true`; a node helper that sees it keeps one held request for opens and input and sends output separately,
+and falls back to polling when an answer lacks it or a request fails.

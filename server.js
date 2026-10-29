@@ -371,7 +371,8 @@ function openGate() {
         const pass = world.nodes.auth(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
         if (!pass) return json(res, 401, { ok: false, error: 'Invalid node pass.' });
         if (req.method !== 'POST' || !(req.headers['content-type'] || '').includes('application/json')) return json(res, 405, { ok: false });
-        return json(res, 200, world.nodes.termPoll(pass, JSON.parse(await readBody(req, 256 << 10))));
+        const body = JSON.parse(await readBody(req, 256 << 10)), gone = new AbortController(); res.on('close', () => gone.abort());
+        return json(res, 200, await world.nodes.termWait(pass, body, { signal: gone.signal }));
       }
       if (p === '/node/report') return await nodeReport(req, res);
       if (p === '/hero/report') return await heroReport(req, res, p);

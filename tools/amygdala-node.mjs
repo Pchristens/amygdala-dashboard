@@ -152,32 +152,48 @@ export async function main(args = process.argv.slice(2)) {
   let village = [], results = [], lastUsage = 0, lastGrok = 0, lastCodex = 0, codexSent = 0, latestSessions = [], steward = null, live = false, lastLive = 0, inflight = 0, updating = false, lastUpdate = 0;
   // Up five minutes after an update: the new code holds, so forget the commit to roll back to.
   setTimeout(() => fs.rm(path.join(REPO, '.git', PREV), { force: true }, () => {}), 300000).unref();
-  const terminals = new Map(), endedHere = new Set(); let output = [], pendingGrok = null, pendingCodex = null;
+  const terminals = new Map(), endedHere = new Set(); let output = [], pendingGrok = null, pendingCodex = null, held = false;
+  const recheck = () => { for (const [id, t] of terminals) { try { termSession(t.term, latestSessions, village); } catch { terminals.delete(id); t.child.kill(); } } };
+  const termFetch = async (body, ms) => {
+    const res = await fetch(new URL('/node/term', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(ms) });
+    if (!res.ok) throw new Error('Terminal refused.'); return res.json();
+  };
+  const reset = () => { held = false; village = []; for (const t of terminals.values()) t.child.kill(); terminals.clear(); output = []; };
+  const apply = terms => {
+    for (const [id, t] of terminals) if (!terms.some(x => x.id === id)) { terminals.delete(id); t.child.kill(); }
+    for (const term of terms) {
+      let t = terminals.get(term.id);
+      if (!t) {
+        if (!term.open && endedHere.has(term.id)) continue;
+        try {
+          const child = openNodeTerm(term, terms, latestSessions, village); t = { term, child }; terminals.set(term.id, t);
+          t.lines = terminalOutput(term, child, terminals, output, () => poller.wake());
+          const ended = () => { if (!terminals.delete(term.id)) return; endedHere.add(term.id); output.push({ id: term.id, exit: true }); poller.wake(); };
+          child.on('error', ended); child.on('close', ended);
+        } catch { output.push({ id: term.id, exit: true }); continue; }
+      }
+      termSession(term, latestSessions, village);
+      for (const line of term.input) { if (line.length > 140000) throw new Error('Invalid terminal input.'); t.child.stdin.write(line); }
+    }
+  };
+  // A server that holds polls (v0.74) gets one held request at a time for opens and input, so keystrokes arrive at once and in order; output goes on its own.
+  const listen = async () => {
+    if (held) return; held = true;
+    while (held) {
+      try { recheck(); const r = await termFetch({ output: [], wait: true }, 15000); if (!held) break; if (!r.wait) { held = false; break; } if (r.terms) apply(r.terms); }
+      catch { if (held) reset(); }
+    }
+  };
   const poller = terminalPoller(async () => {
     try {
-      for (const [id, t] of terminals) { try { termSession(t.term, latestSessions, village); } catch { terminals.delete(id); t.child.kill(); } }
+      recheck();
       const batch = output.splice(0, 8);
       if (output.length < 16) for (const t of terminals.values()) t.lines?.resume();
-      const res = await fetch(new URL('/node/term', server), { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ output: batch }), signal: AbortSignal.timeout(10000) });
-      if (!res.ok) throw new Error('Terminal refused.');
-      const { terms } = await res.json();
-      for (const [id, t] of terminals) if (!terms.some(x => x.id === id)) { terminals.delete(id); t.child.kill(); }
-      for (const term of terms) {
-        let t = terminals.get(term.id);
-        if (!t) {
-          if (!term.open && endedHere.has(term.id)) continue;
-          try {
-            const child = openNodeTerm(term, terms, latestSessions, village); t = { term, child }; terminals.set(term.id, t);
-            t.lines = terminalOutput(term, child, terminals, output, () => poller.wake());
-            const ended = () => { if (!terminals.delete(term.id)) return; endedHere.add(term.id); output.push({ id: term.id, exit: true }); poller.wake(); };
-            child.on('error', ended); child.on('close', ended);
-          } catch { output.push({ id: term.id, exit: true }); continue; }
-        }
-        termSession(term, latestSessions, village);
-        for (const line of term.input) { if (line.length > 140000) throw new Error('Invalid terminal input.'); t.child.stdin.write(line); }
-      }
-    } catch { village = []; for (const t of terminals.values()) t.child.kill(); terminals.clear(); output = []; }
-  }, () => terminals.size || output.length);
+      if (held && !batch.length) return;
+      const r = await termFetch({ output: batch, ...(held && { input: false }) }, 10000);
+      if (!held) { apply(r.terms); if (r.wait) listen(); }
+    } catch { reset(); }
+  }, () => output.length || (!held && terminals.size));
   for (;;) {
     try {
       const available = deckAvailable(), sessions = [];

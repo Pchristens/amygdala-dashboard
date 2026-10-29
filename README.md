@@ -337,6 +337,8 @@ Then, on that machine, run `node tools/amygdala-keeper.mjs --server http://<serv
 and open `http://127.0.0.1:8790`. The relay forwards every request through the gate with the pass, and accepts only
 requests addressed to its own loopback. A keeper pass reaches the whole human dashboard, so keep it to machines you
 trust as much as the server. Terminals for heroes on the keeper's own machine open locally, without a network round trip.
+Terminals for heroes on other nodes no longer poll: the node helper keeps one request open that the server answers as soon as
+there is input (it updates itself, nothing to restart).
 Restart the keeper after updating Amygdala to enable local terminals.
 
 ## In-page terminals

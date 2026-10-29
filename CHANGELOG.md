@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Terminals for heroes on other machines answer keystrokes as soon as they arrive, instead of on the node's next 25 ms check, and an idle machine opens a new terminal at once instead of within 2 s (v0.74).
 - Terminals for heroes on the keeper's own machine now open locally through the keeper (v0.73).
 - On the Low and Medium graphics settings, a click on a still map shows its response on the next frame instead of up to an eighth of a second later.
 - Two Grok residents arrive in place of the dormant Moss, one thinking at medium effort and one at high; they start with no role and choose their own (v0.72).
