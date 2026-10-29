@@ -216,9 +216,11 @@ try {
   c.pendingDuties.length = 0; c.queue.length = 0; G.pump(); assert.equal(c.pendingDuties.length, 0, 'nothing waiting, no wake');
   const b0 = G.wakesUsed(), ob1 = await offer(hero, commit('batch1', { 'public/a.js': 'export const f = x => x * 41;\n' })), ob2 = await offer(hero, commit('batch2', { 'public/a.js': 'export const f = x => x * 42;\n' }));
   const mine = () => G.rulableBy('Themis').map(o => o.id).sort();
-  assert.equal(c.pendingDuties.length, 1); assert.equal(G.wakesUsed(), b0 + 1, 'one wake for both'); assert(c.pendingDuties[0].offeringIds.includes(ob2.id));
-  if (mine().length > 1) { c.pendingDuties.length = 0; for (const o of G.offerings()) o.gov.wokeAt = 0; G.pump(); assert.equal(c.pendingDuties.length, 1); assert.deepEqual([...c.pendingDuties[0].offeringIds].sort(), mine()); assert.match(c.pendingDuties[0].reason, /offerings await your ruling/); }
-  for (const o of [ob1, ob2]) if (!o.gov.final && o.gov.state === 'pending') G.rule('Themis', { id: o.id, commit: o.gov.sha, verdict: 'accept', reason: 'synthetic batch release' });
+  assert.equal(c.pendingDuties.length, 1); assert.equal(G.wakesUsed(), b0 + 1, 'one wake for both'); assert(c.pendingDuties[0].offeringIds.includes(ob2.id)); assert.match(c.pendingDuties[0].reason, new RegExp(ob2.id + '\\b'), 'the newcomer is named (fi4162)');
+  c.dispatchDuties(); const ob3 = await offer(hero, commit('batch3', { 'public/a.js': 'export const f = x => x * 43;\n' })), qj = c.queue.find(j => j.duty?.offeringIds?.includes(ob3.id));
+  assert(qj, 'joins the queued wake'); assert.match(qj.reasons[0], new RegExp(ob3.id + '\\b')); assert.equal(qj.reasons[0], qj.duty.reason); assert.equal(G.wakesUsed(), b0 + 1);
+  if (mine().length > 1) { c.pendingDuties.length = 0; c.queue.length = 0; for (const o of G.offerings()) o.gov.wokeAt = 0; G.pump(); assert.equal(c.pendingDuties.length, 1); assert.deepEqual([...c.pendingDuties[0].offeringIds].sort(), mine()); assert.match(c.pendingDuties[0].reason, /offerings await your ruling/); }
+  for (const o of [ob1, ob2, ob3]) if (!o.gov.final && o.gov.state === 'pending') G.rule('Themis', { id: o.id, commit: o.gov.sha, verdict: 'accept', reason: 'synthetic batch release' });
   c.dispatchDuties(); assert.deepEqual(mine(), [first.id]); assert.equal(c.pendingDuties.length + c.queue.filter(j => j.duty?.offeringIds).length, 1, 'kept while the first release still waits');
   G.rule('Themis', { id: first.id, commit: first.gov.sha, verdict: 'accept', reason: 'synthetic first release' });
   const queued = [...c.pendingDuties, ...c.queue.map(j => j.duty)].filter(d => d?.offeringIds); assert.equal(queued.length, 1); assert(!queued[0].offeringIds.some(id => G.stillWanted(id, 'Themis')), 'all ruled: the conductor drops the wake');
