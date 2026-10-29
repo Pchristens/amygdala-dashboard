@@ -965,7 +965,8 @@ export async function createMap3D(container, opts = {}) {
     if (full ? !Q.fps || t - lastRenderT >= 1000 / Q.fps - 3 : idleAcc >= Q.ambientMs) { render(frameMotion || needsRender); needsRender = false; idleAcc = 0; lastRenderT = t; if (frameMotion) govern(t); }
     // End the cinematic RAF chain when the camera settles. Existing petals, breathing,
     // mist and water retain a paced ambient clock, and interaction wakes us immediately.
-    if (frameMotion || introFlight || viewAnim || follow) requestAnimationFrame(tick);
+    // A redraw the fps cap just skipped keeps the chain for the next frame, not the ambient timer.
+    if (frameMotion || needsRender || introFlight || viewAnim || follow) requestAnimationFrame(tick);
     else { running = false; ambientTimer = setTimeout(startLoop, Q.ambientMs); }
   }
   let viewAnim = null, idleAcc = 0, introFlight = null, lastRenderT = -1e9;
