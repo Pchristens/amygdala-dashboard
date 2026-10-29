@@ -1778,3 +1778,8 @@ Amends the Temple offering snapshot (shared with the node helper) and v0.46 gove
 
 `public/card-place.js` exports pure `placeCard`, which chooses above or below placement, clamps to visible bounds, avoids edge obstacles and docks off-screen anchors.
 It returns wrap-relative pixels with `left` as the card centre and `top` as the anchor y, preserving the above/below CSS gap convention; it is not yet wired into the page.
+
+## v0.63: cards follow their figure
+
+Map cards follow their figure on every 3D render, using cached card sizes and visible bounds below the header and clear of the open drawer.
+Cards use the placement helper to choose above or below placement; docked cards hide their arrow.

@@ -266,6 +266,7 @@ select {
 }
 .card.below { transform: translate(-50%, 14px); }
 .card.below::after { bottom: auto; top: -7px; transform: translateX(-50%) rotate(-135deg); }
+.card.docked::after { display: none; }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, calc(-100% - 8px)); } }
 .card.below { animation: none; }
 .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; padding-right: 22px; }

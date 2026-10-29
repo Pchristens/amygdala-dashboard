@@ -990,6 +990,7 @@ export async function createMap3D(container, opts = {}) {
     if (full || now - lastDeclutterT >= 500) { declutter(); lastDeclutterT = now; }
     if (post) composer.render(); else renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
+    opts.onFrame?.();
     STATS.renders++; STATS.renderMs += performance.now() - now;
   }
   // ---------- graphics quality ----------

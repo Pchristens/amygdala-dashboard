@@ -20,7 +20,7 @@ ids.rail.querySelectorAll = () => nav;
 const feedButton = new Element(ids.happening); ids.happening.querySelector = () => feedButton;
 const document = { body: new Element(), activeElement: null, querySelector: s => s === '.tabs' ? tabs : null };
 const timers = [], prefs = new Map(), panel = { activeTab: 'board', selectTab(tab) { this.activeTab = tab; } };
-const context = vm.createContext({ document, panel, $: id => ids[id], localStorage: { getItem: k => prefs.get(k), setItem: (k,v) => prefs.set(k,v) }, setTimeout: f => timers.push(f), disposeTerminal() {}, repositionCard() {}, currentTabBeforePlace: 'board' });
+const context = vm.createContext({ document, panel, $: id => ids[id], localStorage: { getItem: k => prefs.get(k), setItem: (k,v) => prefs.set(k,v) }, setTimeout: f => timers.push(f), disposeTerminal() {}, repositionCard() {}, refreshCardBounds() {}, currentTabBeforePlace: 'board' });
 vm.runInContext(app.slice(app.indexOf('const drawer ='), app.indexOf('// resize by dragging the handle')), context);
 for (const line of app.split('\n').filter(l => /^\$\('(lamp-glyph|counsel-chip)'\)\.addEventListener|^omenChip\.addEventListener/.test(l))) vm.runInContext(line.replace('omenChip.', "$('omen-chip')."), context);
 vm.runInContext(app.slice(app.indexOf("$('happening').querySelector('.happening-title').addEventListener"), app.indexOf('const happeningList =')), context);

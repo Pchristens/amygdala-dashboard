@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Map cards follow walking figures and keep clear of the header and open drawer, hiding their arrow when docked (v0.63).
 - Map cards now have a pure placement helper that keeps them within the visible map and clear of the open drawer (v0.62; not yet wired).
 - Map cards open only on click, always have a close button, and dismiss before the drawer or a ground action; hovering reveals names (v0.61).
 - Codex usage is read every minute instead of every five minutes, so Lamps and the hot-provider pause keep up with a hero that spends its window fast.

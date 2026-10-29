@@ -1,4 +1,5 @@
 import { createBells } from './bell.js';
+import { placeCard } from './card-place.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Amygdala front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
 // the Far Isle navigation, shared-tree cards, milestones, and the rune seal.
@@ -75,6 +76,7 @@ const wrap = $('map-wrap');
 const zoneNav = $('zone-nav');
 const FLAT = params.get('flat') === '1';
 const mapOpts = {
+  onFrame() { repositionCard(); },
   onGroundClick(x, y) {
     if (card.info) return closeCard();
     if (gift.active) return placeGift(x, y);
@@ -150,6 +152,7 @@ function showCard(info, pinned) {
   cardEl.classList.toggle('wide', info.type === 'tree' || info.type === 'ghost');
   cardEl.appendChild(h('button', { class: 'btn btn-ghost btn-xs card-close', type: 'button', text: '✕', 'aria-label': 'Close' }));
   cardEl.hidden = false;
+  card.size = { w: cardEl.offsetWidth, h: cardEl.offsetHeight };
   repositionCard();
 }
 // The map's place label, carried into the card as its top tag (the floating one would sit under the card).
@@ -166,23 +169,29 @@ function cardPlaceName(info) {
   const place = placeId && (state.places || []).find((p) => p.id === placeId);
   return place && zoneOf(place) !== 'isle' ? place.name : null;
 }
+let cardBounds = null, cardObstacles = [];
+function refreshCardBounds() {
+  const r = wrap.getBoundingClientRect(), header = document.querySelector('header.topbar').getBoundingClientRect();
+  cardBounds = { left: 0, top: header.bottom - r.top, right: r.width, bottom: r.height };
+  cardObstacles = [];
+  if (drawerOpen) {
+    const d = $('drawer').getBoundingClientRect();
+    // Reserve the drawer's final position even while its opening transform is animating.
+    cardObstacles.push({ left: window.innerWidth - d.width - r.left, top: d.top - r.top, right: window.innerWidth - r.left, bottom: d.bottom - r.top });
+  }
+}
+window.addEventListener('resize', () => { refreshCardBounds(); repositionCard(); });
+const cardLayoutObserver = new ResizeObserver(() => { refreshCardBounds(); repositionCard(); });
+for (const el of [wrap, document.querySelector('header.topbar'), $('drawer')]) cardLayoutObserver.observe(el);
 function repositionCard() {
   if (cardEl.hidden || !card.info) return;
   const pos = card.info.type === 'you' ? (state.human || null) : map.entityPos(card.info.type, card.info.id);
   if (!pos) return closeCard();
-  const r = wrap.getBoundingClientRect();
-  const top = map.project(pos.x, pos.y - 16);
-  const ch = cardEl.offsetHeight || 200;
-  const roomAbove = top.top - 8, roomBelow = r.height - (top.top + 40) - 8;
-  const below = ch + 14 > roomAbove && roomBelow > roomAbove;
-  const p = below ? map.project(pos.x, pos.y + 20) : top;
-  cardEl.classList.toggle('below', below);
-  const halfW = cardEl.offsetWidth / 2 || 130;
-  const left = Math.max(halfW + 6, Math.min(r.width - halfW - 6, p.left));
-  cardEl.style.left = `${left}px`;
-  // keep the whole card on the map: above-cards hang from their top edge, below-cards from their bottom edge
-  const topPx = below ? Math.min(p.top, r.height - ch - 20) : Math.max(ch + 20, p.top);
-  cardEl.style.top = `${Math.max(6, topPx)}px`;
+  if (!cardBounds) refreshCardBounds();
+  const above = map.project(pos.x, pos.y - 16), below = map.project(pos.x, pos.y + 20);
+  const p = placeCard({ above: { x: above.left, y: above.top }, below: { x: below.left, y: below.top }, size: card.size, bounds: cardBounds, obstacles: cardObstacles });
+  cardEl.style.left = `${p.left}px`; cardEl.style.top = `${p.top}px`;
+  cardEl.classList.toggle('below', p.below); cardEl.classList.toggle('docked', p.docked);
 }
 function zoneChip(item) {
   return zoneOf(item) === 'isle' ? h('span', { class: 'chip chip-isle', text: 'isle' }) : null;
@@ -951,6 +960,7 @@ function setDrawer(open, tab) {
   if (tab) panel.selectTab(tab);
   for (const b of rail.querySelectorAll('.rail-tab')) b.setAttribute('aria-selected', drawerOpen && b.dataset.tab === currentTab() ? 'true' : 'false');
   savePref({ open: drawerOpen, tab: currentTab() });
+  refreshCardBounds();
   repositionCard();
 }
 function currentTab() { return panel.activeTab; }
