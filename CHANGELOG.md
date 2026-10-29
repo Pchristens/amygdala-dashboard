@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A test record with an impossible time is refused when it is offered, and one already stored no longer stops the High Priest from reading the Temple.
 - Terminals for heroes on other machines answer keystrokes as soon as they arrive, instead of on the node's next 25 ms check, and an idle machine opens a new terminal at once instead of within 2 s (v0.74).
 - Terminals for heroes on the keeper's own machine now open locally through the keeper (v0.73).
 - On the Low and Medium graphics settings, a click on a still map shows its response on the next frame instead of up to an eighth of a second later.

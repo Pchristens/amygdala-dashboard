@@ -126,6 +126,9 @@ try {
   assert.equal(G.digest().find(d => d.offeringId === oc.id)?.escalation, false, 'routine: not for Needs you');
   assert.throws(() => G.rule('Themis', { id: oc.id, commit: code, verdict: 'accept', reason: 'no longer pending' }), /not awaiting your ruling/);
   api('evidence', { offeringId: oc.id, tests: [{ command: 'node --test', result: '12 passed', commit: code, by: 'Hero' }] });
+  // A time Date cannot render is refused, and one already stored does not break the reviewer's look.
+  assert.throws(() => api('evidence', { offeringId: oc.id, tests: [{ command: 'node --test', result: 'ok', commit: code, by: 'Hero', at: 1793306953842953446 }] }), /milliseconds/);
+  oc.gov.tests.push({ command: 'node --test', result: 'ok', commit: code, by: 'Hero', at: 1793306953842953446 }); assert.match(w.temple.examine('Themis', oc.id), /time INVALID/); oc.gov.tests.pop();
   assert.equal(oc.gov.state, 'pending');
   assert.match((await rpc('rule_offering', { id: oc.id, commit: code, verdict: 'reject', reason: 'f loses the regex check', concern: 'none' })).result.content[0].text, /rejected/);
   w.endTurn?.('Themis', [...w.turns.values()].find(t => t.token === token)?.id);
