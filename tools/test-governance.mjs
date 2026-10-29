@@ -162,6 +162,13 @@ try {
   assert.match(G.digest().map(d => d.text).join(), /Steward's own change/);
   assert.equal(G.digest().find(d => d.offeringId === oo.id).escalation, true, "the Steward's own code needs the human");
   assert.equal(oo.status, 'closed');
+  // The Watchtower lets the Steward's deploy push through only while its own commit stands and is fresh.
+  const kept = G.g.deployed[oo.gov.key]; delete G.g.deployed[oo.gov.key];
+  assert(!G.stewardPushCovered(steward.id), 'a rejected commit covers no push'); oo.gov.state = 'accepted';
+  assert(G.stewardPushCovered(steward.id)); assert(!G.stewardPushCovered(hero.id), 'only the Steward');
+  G.g.deployed[oo.gov.key] = { sha: own, at: Date.now() - 2 * 3600000 }; assert(!G.stewardPushCovered(steward.id), 'deployed long ago');
+  G.g.deployed[oo.gov.key].at = Date.now(); assert(G.stewardPushCovered(steward.id)); assert(!G.stewardPushCovered(steward.id, Date.now() + 13 * 3600000), 'stale offering');
+  if (kept) G.g.deployed[oo.gov.key] = kept; else delete G.g.deployed[oo.gov.key]; oo.gov.state = 'rejected';
 
   // One appeal per ruling, with new evidence, to an independent reviewer of another provider; then only the human.
   assert.throws(() => api('appeal', { offeringId: oo.id, reason: 'please look again at this' }), /new evidence/);

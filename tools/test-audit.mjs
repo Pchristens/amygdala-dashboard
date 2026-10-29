@@ -90,6 +90,13 @@ try {
   verdict = 'benign'; add(); c.turn = { name: 'fixture' }; await tower.tick(5200010); assert.equal(calls.length, count + 2); c.turn = null;
   const runs = w.s.auditRuns.count; tower.runner = async () => ({ answer: '{invalid' }); await tower.tick(5200011); assert.equal(w.s.auditRuns.count, runs + 1); assert.equal(c.isolatedRuns, 0); assert.equal(w.s.audits.at(-1).status, 'pending');
   tower.forget([hero.id]); assert.equal(w.s.audits.length, 0); assert(!w.s.offerings.some(o => o.kind === 'audit'));
+  // The Steward's deploy push to main is covered while its own commit stands at the Temple: logged, no bell, no review run.
+  const push = { ...hit, rule: 'push-protected', severity: 'critical', excerpt: 'git push -q origin HEAD:main' }, bells = () => w.s.bells.length, gov = w.governance;
+  w.s.stewardHero = { workerId: hero.id }; let stands = false; gov.stewardPushCovered = (id) => stands && id === w.s.stewardHero.workerId;
+  let b0 = bells(); tower.accept(hero, [push]); assert.equal(bells(), b0 + 1, 'no standing commit: still urgent'); assert.equal(w.s.audits.at(-1).status, 'pending');
+  stands = true; tower.ring = function (...a) { b0 = -1; }; tower.accept(hero, [{ ...push, excerpt: 'git push -q origin HEAD:main again' }]); assert.notEqual(b0, -1, 'covered push rang'); assert.equal(w.s.audits.at(-1).status, 'covered');
+  tower.accept(hero, [{ ...push, excerpt: 'git push --force origin main' }]); assert.equal(b0, -1, 'a force push always rings'); assert.equal(w.s.audits.at(-1).status, 'pending');
+  delete tower.ring; delete gov.stewardPushCovered; tower.forget([hero.id]);
   w.workers = [{ ...hero, zone: 'isle' }]; tower.accept(w.workers[0], [hit]); assert.equal(w.s.audits.length, 0);
 } finally { if (w) { clearTimeout(w.saveTimer); clearInterval(w.seal.timer); } fs.rmSync(dir, { recursive: true, force: true }); }
 console.log('audit ok');

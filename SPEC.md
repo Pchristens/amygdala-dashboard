@@ -1801,3 +1801,11 @@ The conductor drops a governance duty once none of its `offeringIds` still needs
 
 Resident map cards offer Wake, Details, Order and Follow/Unfollow; Order selects only the named eligible recipient.
 Pinned resident cards update in place on snapshots, preserve focus, and return focus to their opener when closed.
+
+## v0.67: the Steward's covered deploy push
+
+A `push-protected` audit hit from the Steward's hero (`stewardHero.workerId`) is recorded with `status: 'covered'`
+instead of `'pending'` when `governance.stewardPushCovered(workerId)` holds: one of the Steward's own offerings from the
+last 12 hours stands (`trivial` or `accepted`) and is either not yet deployed or was receipted within the last hour.
+A covered hit rings no bell and gets no reviewer run. Hits whose excerpt shows a force push (`--force`, `-f`, a `+`
+refspec) are never covered.
