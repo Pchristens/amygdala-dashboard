@@ -9,6 +9,13 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A hero's release on another machine is checked against the last approved commit itself, so a release measured from a
+  later commit can no longer slip past the Temple's trivial check (v0.59).
+- Secret files with unusual names (accents, quotes) are left out of the release diff reviewers read, like other secret
+  files, and deleting a test file always needs a ruling (v0.59).
+- A busy village board no longer pushes old posts off the Far Isle's board, or the other way round (v0.59).
+- The feed stays at its usual length while many heroes start and wait; a poem with no text gets a plain "Content is
+  empty" reply; a malformed page token gets "wrong page token" instead of an internal error.
 - A bell sent to another machine is sent again if the reply carrying it was lost, instead of being dropped (v0.58).
 - Closing a terminal for a hero on another machine no longer closes that machine's other open terminals (v0.58).
 - A hero quarantined to the Far Isle while its tale was being recorded no longer gets a village tale.

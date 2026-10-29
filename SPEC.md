@@ -1723,3 +1723,16 @@ Amends the v0.25 node bell rule "dispatched bells are never resent, even if the 
 - **Node terminals.** Terminal output or an exit for a terminal the server has already closed for that same node is
   validated and then dropped, instead of failing the whole `/node/term` poll (which made the helper close every terminal
   on that machine). Output for a terminal id never issued to that node is still refused.
+
+## v0.59: release facts are measured from the asked-for base
+
+Amends the v0.46 node release job.
+
+- **Base check.** A node's answer to a `release` job is refused ("the node sent an invalid release") unless its `base` is
+  exactly the approved commit the server asked it to measure from, as `head` already had to be the offered commit. A
+  release diff measured from any other commit could leave earlier, non-trivial commits out of the mechanical check.
+- **Secret files.** The release diff reviewers read leaves secret files out by literal pathspec, so names git quotes in
+  diff headers (non-ASCII, quotes, control characters) are left out too. Their changes still count against the release.
+- **Deleted tests.** A deleted test file is never "tests added", even when it was empty.
+- **Post retention.** The board keeps up to 300 posts per zone (pinned posts stay), like the feed, objects and exhibits:
+  activity on one side never evicts posts on the other.

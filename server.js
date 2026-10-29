@@ -40,8 +40,9 @@ const API_TOKEN = (() => {
   return t;
 })();
 const tokenOk = (req, url) => {
-  const got = String(req.headers['x-amygdala-token'] || req.headers['x-hearthfield-token'] || url.searchParams.get('token') || '');
-  return got.length === API_TOKEN.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(API_TOKEN));
+  // Bytes, not characters: a non-ASCII token of the right length would otherwise throw a RangeError (a 400, not a 401).
+  const got = Buffer.from(String(req.headers['x-amygdala-token'] || req.headers['x-hearthfield-token'] || url.searchParams.get('token') || '')), want = Buffer.from(API_TOKEN);
+  return got.length === want.length && crypto.timingSafeEqual(got, want);
 };
 
 const residents = JSON.parse(fs.readFileSync(path.join(ROOT, 'residents.json'), 'utf8'));
