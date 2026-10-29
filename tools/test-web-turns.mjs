@@ -23,7 +23,7 @@ try {
   ];
   w = new World(dir, config, path.join(dir, 'roster.json'));
   w.s.residents.Away.zone = 'isle'; // synthetic zone fixture; no real isle records are loaded
-  w.s.paused = false; w.s.dailyTurnBudget = 1000; w.s.tickSeconds = 100000;
+  w.s.paused = false; w.s.dailyTurnBudget = 1000; w.s.tickSeconds = 100000; w.s.activeHours = { start: 0, end: 24 }; // the clock must not decide the test
   const runs = [], releases = [];
   const c = Object.assign(Object.create(Conductor.prototype), { world: w, running: new Map(), queue: [], pendingDuties: [], maxTurns: 4, maxPerResident: 3, rr: 0, lastEnd: Date.now(), current: null, turn: null,
     homes: path.join(dir, 'homes'), logs: path.join(dir, 'logs'), codexHome: path.join(dir, 'codex-home'), hasNews: () => false, digestDay: new Date().toISOString().slice(0, 10),

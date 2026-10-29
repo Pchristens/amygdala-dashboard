@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The web-search test no longer fails when the suite runs outside the village's active hours (after midnight).
 - A hero's release on another machine is checked against the last approved commit itself, so a release measured from a
   later commit can no longer slip past the Temple's trivial check (v0.59).
 - Secret files with unusual names (accents, quotes) are left out of the release diff reviewers read, like other secret
