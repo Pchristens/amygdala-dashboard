@@ -1819,3 +1819,10 @@ Hero rows show title, status, tool, project and the terminal control; resident r
 A `.row-toggle` (`aria-expanded`, `data-key` `hero:<id>` / `resident:<name>`) reveals the rest (path, Agent Deck, offering,
 audit, labour, tale and site for heroes; persona, commitments and controls for residents). Open choices persist across
 snapshots, focus on a toggle survives the rebuild, and a Needs-you hero opens its details directly. Counsel stays visible.
+
+## v0.69: Fable's weekly stops only Fable
+
+`Conductor.pressureBlocked(r)` (the 95% hard stop) reads only `usage.providerPressure(provider, r.model)`, which counts
+the windows that apply to that model: the `seven_day_fable` window gates Fable models only. Usage hibernation uses
+`pressureLimit(pool, model)`: 85% (waking below 80%) for Claude models other than Fable, 80% (waking below 75%) for
+everyone else, Fable included.

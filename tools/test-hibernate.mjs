@@ -35,6 +35,11 @@ try {
   pressure.anthropic = 74; assert(!w.isHibernating('Quill')); assert.equal(transitions().length, 4);
   pressure.anthropic = 80; w.isHibernating('Quill'); w.setHibernate('Quill', true); pressure.anthropic = 77; w.setHibernate('Quill', false); assert(w.isHibernating('Quill'));
   pressure.anthropic = 74; assert(!w.isHibernating('Quill'));
+  // Fable keeps its stop at 80%; the other Claude models act until 85% and wake again below 80%.
+  w.usage.providerPressure = (provider, model) => /fable/.test(model) ? 0 : pressure[provider] ?? 0;
+  pressure.anthropic = 84; assert(!w.isHibernating('Bram'), 'non-Fable Claude acts up to 85%'); pressure.anthropic = 85; assert(w.isHibernating('Bram'));
+  pressure.anthropic = 80; assert(w.isHibernating('Bram')); pressure.anthropic = 79; assert(!w.isHibernating('Bram')); pressure.anthropic = 0;
+  w.usage.providerPressure = provider => pressure[provider] ?? 0;
   assert.equal(w.snapshot().residents.find(r => r.name === 'Quill').hibernating, false);
 
   // Prototype harness: no conductor constructor, timers, homes, or provider processes.
