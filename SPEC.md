@@ -75,6 +75,11 @@ separating the village (west) from The Works (east, x 790–990). Places and obj
 
 All user/agent text must be rendered as text (textContent), never as HTML.
 
+## v0.62: card placement helper
+
+`public/card-place.js` exports pure `placeCard`, which chooses above or below placement, clamps to visible bounds, avoids edge obstacles and docks off-screen anchors.
+It returns wrap-relative pixels with `left` as the card centre and `top` as the anchor y, preserving the above/below CSS gap convention; it is not yet wired into the page.
+
 ### Additions (v0.2)
 
 ```jsonc
