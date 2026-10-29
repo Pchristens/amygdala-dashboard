@@ -732,6 +732,8 @@ export function createPanel(opts) {
     row._meta = h('div', { class: 'resident-meta' });
     row._persona = h('div', { class: 'resident-persona' });
     row._commits = h('div', { class: 'resident-commits' });
+    row._toggle = h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `resident:${r.name}` } });
+    row._more = h('div', { class: 'resident-more' }, row._persona, row._commits);
     row._switch = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'true', title: 'Include in turns' });
     row._switch.addEventListener('click', () => {
       const on = row._switch.getAttribute('aria-checked') === 'true';
@@ -743,9 +745,10 @@ export function createPanel(opts) {
     row._hibernate = h('button', { class: 'btn btn-xs', type: 'button', text: 'Hibernate' });
     row._hibernate.addEventListener('click', () => opts.onHibernate?.(r.name, row._hibernate.dataset.on !== 'true'));
     row._identity = h('div');
-    const mid = h('div', {}, row._name, row._identity, row._chips, row._meta, row._persona, row._commits);
-    const ctl = h('div', { class: 'resident-ctl' }, row._switch, row._wake, row._hibernate);
-    row.append(row._avatar, mid, ctl);
+    const mid = h('div', {}, row._name, row._identity, row._chips, row._meta);
+    row._ctl = h('div', { class: 'resident-ctl' }, row._switch, row._wake, row._hibernate);
+    row._toggle.addEventListener('click', (e) => { e.stopPropagation(); if (residentOpen.has(row.dataset.name)) residentOpen.delete(row.dataset.name); else residentOpen.add(row.dataset.name); const open = residentOpen.has(row.dataset.name); row._more.hidden = !open; row._ctl.hidden = !open; row._toggle.setAttribute('aria-expanded', String(open)); row._toggle.textContent = open ? 'Less ▴' : 'More ▾'; });
+    row.append(row._avatar, mid, row._toggle, row._more, row._ctl);
     return row;
   }
   function updateResidentRow(row, r, active) {
@@ -776,8 +779,8 @@ export function createPanel(opts) {
       h('span', { text: r.mood === 'sealed' ? 'beyond the seal' : String(r.doing || 'idle') }),
       h('span', { class: 'dim', text: ` · ${+r.turns || 0} turn${(+r.turns || 0) === 1 ? '' : 's'}` }),
     );
-    row._persona.textContent = String(r.persona || '');
-    const mine = commitmentsFor(r.name).filter((c) => c.status === 'active' || c.status === 'done');
+    row._persona.textContent = r.mood === 'sealed' ? '' : String(r.persona || '');
+    const mine = r.mood === 'sealed' ? [] : commitmentsFor(r.name).filter((c) => c.status === 'active' || c.status === 'done');
     const ckey = mine.map((c) => `${c.id}:${c.status}:${c.updatedAt}:${c.nextAction}:${c.blockedOn}`).join('|');
     if (row._ckey !== ckey) {
       row._ckey = ckey;
@@ -787,6 +790,9 @@ export function createPanel(opts) {
     row._switch.setAttribute('aria-checked', r.enabled === false ? 'false' : 'true');
     row._wake.disabled = isActive || r.mood === 'sealed';
     row._identity.replaceChildren(residentIdentity(r, state));
+    const open = residentOpen.has(r.name);
+    row._more.hidden = !open; row._ctl.hidden = !open;
+    row._toggle.setAttribute('aria-expanded', String(open)); row._toggle.textContent = open ? 'Less ▴' : 'More ▾';
   }
 
   // ---- temple: gods (sessions), offerings, findings, the Tablet of Omens ----
@@ -824,12 +830,14 @@ export function createPanel(opts) {
   let settingsFold = null;
   function renderWorkshop() {
     if (zone !== 'village' || !(state.steward || state.auditSettings)) settingsFold = null;
+    const focusKey = els.workshop.contains(document.activeElement) ? document.activeElement?.dataset?.key : null;
     clearExcept(els.workshop, settingsFold);
     if (isleLocked()) {
       const t = h('div');
       renderSealedTablet(t);
       els.workshop.appendChild(t.firstChild);
       renderGods();
+      if (focusKey) [...els.workshop.querySelectorAll('button')].find((el) => el.dataset.key === focusKey)?.focus();
       return;
     }
     renderNeedsYou();
@@ -841,9 +849,10 @@ export function createPanel(opts) {
     renderSettings();
     // Move the refreshed content ahead of Settings, never Settings itself while an input may have focus.
     while (settingsFold?.nextSibling) els.workshop.insertBefore(settingsFold.nextSibling, settingsFold);
+    if (focusKey) [...els.workshop.querySelectorAll('button')].find((el) => el.dataset.key === focusKey)?.focus();
   }
   const foldOpen = { offerings: false, governance: false, tablet: false, hall: false, settings: false };
-  const needOpen = new Set(), expanded = new Set();
+  const needOpen = new Set(), expanded = new Set(), heroOpen = new Set(), residentOpen = new Set();
   let offeringsAll = false;
   function foldSection(key, label, count, ...extra) {
     const d = h('details', { class: 'temple-fold', id: key === 'hall' ? 'hall-heroes' : `fold-${key}` }); d.open = !!foldOpen[key];
@@ -882,7 +891,7 @@ export function createPanel(opts) {
       const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id && c.status === 'new').length;
       strip.appendChild(needItem(`w:${w.id}`, 'hero', [h('span', { class: 'pill pill-waiting', text: 'needs you' }), h('span', { class: 'need-name', text: String(w.title || w.id) }),
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }), counsel ? h('span', { class: 'chip chip-other', text: `${counsel} counsel` }) : null,
-        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w)));
+        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w, { open: true })));
     }
     for (const d of escs) {
       const o = offeringsInZone().find((x) => x.id === d.offeringId);
@@ -1048,7 +1057,7 @@ export function createPanel(opts) {
     for (const w of list) pg.appendChild(workerRow(w));
     return pg;
   }
-  function workerRow(w) {
+  function workerRow(w, { open = heroOpen.has(w.id) } = {}) {
     const st = String(w.status || 'idle');
     const stale = !!w.stale;
     const offer = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Lay an offering…', title: "Snapshot this session's git change as an offering for review" });
@@ -1062,9 +1071,12 @@ export function createPanel(opts) {
       h('div', { class: 'worker-sub' },
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }),
         h('span', { class: w.sealed ? 'runic' : '', text: `${w.project || ''} @ ${w.host || 'local'}${w.os ? ` · ${osLabel(w.os)}` : ''}` }),
+        opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
+      ),
+      h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `hero:${w.id}` }, 'aria-expanded': String(open), 'aria-controls': `hero-more-${w.id}`, text: open ? 'Less ▴' : 'More ▾' }),
+      h('div', { class: 'worker-more', id: `hero-more-${w.id}`, hidden: !open },
         w.sealed ? null : h('span', { class: 'worker-path', text: String(w.path || '') }),
         h('a', { href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
-        opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
         offer,
         state.auditSettings && zoneOf(w) === 'village' && !w.private && !w.sealed ? h('button', { class: 'btn btn-ghost btn-xs', text: state.auditSettings.optOut.includes(w.id) ? 'Audit off' : 'Audit on', onClick: () => opts.api('/api/audit/settings', { heroId: w.id, optOut: !state.auditSettings.optOut.includes(w.id) }) }) : null,
         opts.endLabourButton?.(w),
@@ -1073,6 +1085,8 @@ export function createPanel(opts) {
         zoneOf(w) !== 'isle' && !w.sealed ? sitePicker(w) : null,
       ),
     );
+    const toggle = row.querySelector('.row-toggle');
+    toggle.addEventListener('click', (e) => { e.stopPropagation(); const more = row.querySelector('.worker-more'), next = more.hidden; more.hidden = !next; toggle.setAttribute('aria-expanded', String(next)); toggle.textContent = next ? 'Less ▴' : 'More ▾'; if (next) heroOpen.add(w.id); else heroOpen.delete(w.id); });
     const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id);
     if (counsel.length) row.appendChild(counselList(counsel));
     row.addEventListener('click', (e) => { if (!e.target.closest('a, button, select, .counsel')) opts.onFocusWorker?.(w.id); });

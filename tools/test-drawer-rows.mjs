@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { panelDocument } from './panel-dom.mjs';
+import { createPanel } from '../public/panel.js';
+
+globalThis.document = panelDocument();
+const state = { workers: [], residents: [], counsel: [], sites: [{ id: 'forge', label: 'Forge' }], world: {}, auditSettings: null };
+const calls = [];
+const panel = createPanel({ onFocusWorker: () => calls.push('focus'), canOpenTerminal: () => true, endLabourButton: () => null });
+const worker = (id) => ({ id, title: id, status: 'running', tool: 'codex', project: 'project', host: 'host', path: '/secret/path', site: 'forge', zone: 'village' });
+const snapshot = (workers = [worker('hero-one'), worker('hero-two')], residents = [], commitments = []) => ({ ...state, workers, residents, commitments, counsel: [{ workerId: 'hero-one', status: 'new', text: 'Question' }] });
+const visible = root => { const text = n => n.hidden ? '' : n.nodeType === 3 ? n.textContent : n.childNodes.map(text).join(' '); return text(root); };
+panel.update(snapshot());
+const workshop = document.getElementById('workshop');
+const button = (row, text) => row.querySelectorAll('button').find(b => b.textContent === text);
+const one = workshop.querySelectorAll('.worker-row').find(r => r.textContent.includes('hero-one'));
+assert(one && !visible(one).includes('/secret/path'), 'hero path starts collapsed');
+assert(!visible(one).includes('Lay an offering…'), 'hero actions start collapsed');
+assert(button(one, 'Terminal ▸'), 'terminal remains visible');
+assert(visible(one).includes('Question'), 'counsel remains visible');
+const toggle = button(one, 'More ▾');
+toggle?.dispatchEvent({ type: 'click', stopPropagation() {} });
+assert.equal(toggle?.getAttribute('aria-expanded'), 'true');
+assert(visible(one).includes('/secret/path'));
+toggle?.focus();
+panel.update(snapshot());
+const rerendered = workshop.querySelectorAll('.worker-row').find(r => r.textContent.includes('hero-one'));
+assert(visible(rerendered).includes('/secret/path'), 'hero open state survives snapshots');
+assert.equal(document.activeElement?.dataset.key, 'hero:hero-one', 'toggle focus survives snapshots');
+const second = workshop.querySelectorAll('.worker-row').find(r => r.textContent.includes('hero-two'));
+assert(!visible(second).includes('/secret/path'), 'other hero stays closed');
+assert.equal(calls.length, 0, 'toggle does not focus hero');
+
+const resident = { name: 'Ada', title: 'Smith', role: 'smith', agent: 'codex', model: 'test', mood: 'calm', doing: 'reading', turns: 3, persona: 'RESIDENT PERSONA', enabled: true };
+panel.update(snapshot([], [resident]));
+let residentRow = document.getElementById('residents').querySelector('.resident-row');
+let residentToggle = button(residentRow, 'More ▾');
+assert(!visible(residentRow).includes('RESIDENT PERSONA'));
+assert(residentRow.querySelector('.resident-ctl').hidden, 'Wake controls are collapsed');
+residentToggle.dispatchEvent({ type: 'click', stopPropagation() {} });
+panel.update(snapshot([], [resident]));
+residentRow = document.getElementById('residents').querySelector('.resident-row');
+assert(visible(residentRow).includes('RESIDENT PERSONA'), 'resident open state survives renderResidents');
+panel.update(snapshot([], [{ ...resident, mood: 'sealed' }], [{ id: 'sealed-plan', ownerId: 'Ada', status: 'active', objective: 'SEALED COMMITMENT', nextAction: 'SEALED NEXT' }]));
+residentRow = document.getElementById('residents').querySelector('.resident-row');
+assert(!residentRow.textContent.includes('RESIDENT PERSONA') && !residentRow.textContent.includes('SEALED COMMITMENT') && !residentRow.textContent.includes('SEALED NEXT'), 'sealed persona and commitments stay hidden');
+assert(button(residentRow, 'Wake now').disabled, 'sealed Wake stays disabled');
+
+const waiting = worker('waiting'); waiting.status = 'waiting';
+panel.update(snapshot([waiting], []));
+const need = workshop.querySelector('.need-hero');
+assert(visible(need).includes('/secret/path'), 'Needs-you item renders the hero open');
+// The fake DOM returns arrays; a browser NodeList has no find/map/filter, so the source must spread it first.
+for (const f of fs.readdirSync('public').filter(f => f.endsWith('.js'))) assert(!/querySelectorAll\([^)]*\)\.(?:find|map|filter|some|every|reduce)\b/.test(fs.readFileSync(`public/${f}`, 'utf8')), `${f} treats a NodeList as an array`);

@@ -1812,3 +1812,10 @@ in lib/audit.js splits on `; & | ( )`, quotes, backticks and newlines; `git -C .
 Steward's own offerings from the last 12 hours stands (`trivial` or `accepted`) and is either not yet deployed or was
 receipted within the last hour. A covered hit rings no bell and gets no reviewer run. Excerpts are redacted, which turns
 `X:Y` refspecs and commit hashes into `[redacted]`, so the push cannot be bound to the offering's hash.
+
+## v0.68: compact drawer rows
+
+Hero rows show title, status, tool, project and the terminal control; resident rows show identity and turn metadata.
+A `.row-toggle` (`aria-expanded`, `data-key` `hero:<id>` / `resident:<name>`) reveals the rest (path, Agent Deck, offering,
+audit, labour, tale and site for heroes; persona, commitments and controls for residents). Open choices persist across
+snapshots, focus on a toggle survives the rebuild, and a Needs-you hero opens its details directly. Counsel stays visible.
