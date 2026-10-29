@@ -209,6 +209,11 @@ const server = http.createServer(async (req, res) => {
       clients.add(res); req.on('close', () => clients.delete(res));
       return;
     }
+    const localTerm = p.match(/^\/api\/term\/(node:[^/]+:[^/]+)\/local$/);
+    if (localTerm && req.method === 'GET') {
+      try { const worker = termHub.allowed(localTerm[1]); return json(res, 200, { ok: true, sessionId: worker.sessionId, node: worker.node }); }
+      catch (e) { return json(res, 403, { ok: false, error: e.message }); }
+    }
     const terminal = p.match(/^\/api\/term\/([^/]+)\/(stream|input|resize|close)$/);
     if (terminal && terminal[2] === 'stream') {
       if (req.method !== 'GET') return json(res, 405, { ok: false, error: 'GET only' });

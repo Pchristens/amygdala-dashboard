@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Terminals for heroes on the keeper's own machine now open locally through the keeper (v0.73).
 - On the Low and Medium graphics settings, a click on a still map shows its response on the next frame instead of up to an eighth of a second later.
 - Two Grok residents arrive in place of the dormant Moss, one thinking at medium effort and one at high; they start with no role and choose their own (v0.72).
 - Resident details now show model, rhythm, weekly allowance, recent work and posts, and exhibit counts from the village snapshot (v0.71).

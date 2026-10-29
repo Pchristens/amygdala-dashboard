@@ -1844,3 +1844,9 @@ A roster entry may carry `effort` (`low` / `medium` / `high`); Grok turns pass i
 snapshot carries `effort` (null when unset) so the page shows it beside the model. Moss, the dormant ferryman, is retired
 from the roster; two Grok residents arrive in its place with no role and a neutral persona, to choose their own name and
 propose their own work.
+
+## v0.73: local terminals through a keeper
+
+`GET /api/term/<node-id>/local` checks a node hero's village visibility and online status and returns its session and node identifiers.
+A keeper serves terminals for heroes on its own machine using the existing stream, input, resize and close protocol.
+The keeper checks authorization when opening and every two seconds while the terminal is open, and binds input to the opening page token.

@@ -336,7 +336,8 @@ curl -H "X-Amygdala-Token: $T" -H 'Content-Type: application/json' -d '{"id":"<n
 Then, on that machine, run `node tools/amygdala-keeper.mjs --server http://<server-tailscale-address>:8795 --pass-file <file> [--port 8790]`
 and open `http://127.0.0.1:8790`. The relay forwards every request through the gate with the pass, and accepts only
 requests addressed to its own loopback. A keeper pass reaches the whole human dashboard, so keep it to machines you
-trust as much as the server.
+trust as much as the server. Terminals for heroes on the keeper's own machine open locally, without a network round trip.
+Restart the keeper after updating Amygdala to enable local terminals.
 
 ## In-page terminals
 
