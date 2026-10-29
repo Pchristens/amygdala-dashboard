@@ -483,8 +483,9 @@ the default 20-model-run daily cap, disable it globally, or use **Audit on/off**
 count toward that cap. Reviews wait while the village is paused or provider usage is hot; critical keyword hits still
 ring an urgent bell immediately. Each hero is reviewed at most once per ten minutes. Verdicts appear as private audit
 offerings in the Temple.
-The Steward's own push to main is logged as *covered*, with no bell and no review, while one of its commits from the
-last 12 hours stands accepted at the Temple and is undeployed or was deployed within the hour. Force pushes always ring.
+The Steward's own deploy push, exactly `git push -q origin main`, is logged as *covered*, with no bell and no review,
+while one of its commits from the last 12 hours stands accepted at the Temple and is undeployed or was deployed within
+the hour. Any other push form (force, delete, mirror, refspecs) still rings.
 
 Only server-confirmed village heroes qualify. Isle/private/quarantined/sealed heroes are excluded, and node helpers
 wait for server confirmation before opening a transcript. No existing history is scanned on startup or re-enabling.

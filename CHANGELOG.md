@@ -9,7 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
-- The Watchtower no longer rings an urgent bell when the Steward pushes a release the Temple has accepted; the push is still logged, and force pushes still ring (v0.67).
+- The Watchtower no longer rings an urgent bell, or spends a review, when the Steward makes its plain deploy push of a release the Temple has accepted; the push is still logged, and any force, delete or other push form still rings (v0.67).
 - A resident with long plans no longer pushes their card off the screen: long notes fold to two lines and the card never grows taller than the map.
 - Resident card buttons wrap instead of overflowing when a label grows, and focus returns to the right place after reopening a card from inside itself.
 - Resident map cards offer wake, details, orders and follow controls, and keep keyboard focus as the village updates (v0.66).

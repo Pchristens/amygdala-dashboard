@@ -1804,8 +1804,10 @@ Pinned resident cards update in place on snapshots, preserve focus, and return f
 
 ## v0.67: the Steward's covered deploy push
 
-A `push-protected` audit hit from the Steward's hero (`stewardHero.workerId`) is recorded with `status: 'covered'`
-instead of `'pending'` when `governance.stewardPushCovered(workerId)` holds: one of the Steward's own offerings from the
-last 12 hours stands (`trivial` or `accepted`) and is either not yet deployed or was receipted within the last hour.
-A covered hit rings no bell and gets no reviewer run. Hits whose excerpt shows a force push (`--force`, `-f`, a `+`
-refspec) are never covered.
+A `push-protected` or `push` audit hit from the Steward's hero (`stewardHero.workerId`) is recorded with
+`status: 'covered'` instead of `'pending'` when both hold: every `git push` segment in its untruncated excerpt (under 300
+characters) is exactly `git push -q origin main` (`deployPush` in lib/audit.js, an allowlist: `-f`, `+main`, `:main`,
+`--delete`, `--mirror` and refspecs all fail it), and `governance.stewardPushCovered(workerId)` holds: one of the
+Steward's own offerings from the last 12 hours stands (`trivial` or `accepted`) and is either not yet deployed or was
+receipted within the last hour. A covered hit rings no bell and gets no reviewer run. Excerpts are redacted, which turns
+`X:Y` refspecs and commit hashes into `[redacted]`, so the push cannot be bound to the offering's hash.
