@@ -9,7 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
-- The Temple tab lists sites with heroes first and the empty ones on one line; a waiting hero in Needs you jumps to its card instead of opening a second copy.
+- The Temple tab lists sites with heroes first and the empty ones on one line; a waiting hero in Needs you jumps to its card and highlights it instead of opening a second copy.
 - A quiet Lamps tab stays short: the allowance and today's numbers, then one line until the first village turn.
 - The Finished orders fold stays open across updates once you open it.
 - Group orders show one summary line ("4 residents · 2 answered, 1 working"); finished orders fold away, and an open report stays open across updates.

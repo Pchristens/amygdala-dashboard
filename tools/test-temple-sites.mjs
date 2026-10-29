@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { panelDocument } from './panel-dom.mjs';
 import { createPanel } from '../public/panel.js';
+import { readFileSync } from 'node:fs';
 
 globalThis.document = panelDocument(); globalThis.window = {}; globalThis.requestAnimationFrame = fn => fn();
 const panel = createPanel({ api: async () => ({}) });
@@ -23,4 +24,5 @@ assert.equal(row.querySelector('.worker-row'), null, 'needs-you does not duplica
 const canonical = groups[0].querySelector('.worker-row');
 row.dispatchEvent({ type: 'click', bubbles: true });
 assert(canonical.classList.contains('flash'), 'attention entry flashes the canonical card');
+assert(/\.worker-row\.flash/.test(readFileSync(new URL('../public/style.css', import.meta.url), 'utf8')), 'the flash is styled on hero cards, not only resident rows');
 console.log('temple sites: active sites first, empty sites compact, waiting hero links to canonical card');
