@@ -34,6 +34,7 @@ assert.equal(calls.length, 0, 'toggle does not focus hero');
 const resident = { name: 'Ada', title: 'Smith', role: 'smith', agent: 'codex', model: 'test', mood: 'calm', doing: 'reading', turns: 3, persona: 'RESIDENT PERSONA', enabled: true };
 panel.update(snapshot([], [resident]));
 let residentRow = document.getElementById('residents').querySelector('.resident-row');
+assert.equal(residentRow.querySelector('.row-toggle').getAttribute('aria-controls'), (n => n.id ?? n.getAttribute('id'))(residentRow.querySelector('.resident-more')));
 let residentToggle = button(residentRow, 'More ▾');
 assert(!visible(residentRow).includes('RESIDENT PERSONA'));
 assert(residentRow.querySelector('.resident-ctl').hidden, 'Wake controls are collapsed');
@@ -50,5 +51,7 @@ const waiting = worker('waiting'); waiting.status = 'waiting';
 panel.update(snapshot([waiting], []));
 const need = workshop.querySelector('.need-hero');
 assert(visible(need).includes('/secret/path'), 'Needs-you item renders the hero open');
+const needToggle = need.querySelector('.row-toggle'); assert.equal(needToggle.dataset.key, 'need:waiting'); assert.equal(needToggle.getAttribute('aria-controls'), 'need-more-waiting');
+const ids = workshop.querySelectorAll('.worker-more').map(n => n.id ?? n.getAttribute('id')); assert.equal(new Set(ids).size, ids.length, 'the Needs-you copy and the site row never share an id');
 // The fake DOM returns arrays; a browser NodeList has no find/map/filter, so the source must spread it first.
 for (const f of fs.readdirSync('public').filter(f => f.endsWith('.js'))) assert(!/querySelectorAll\([^)]*\)\.(?:find|map|filter|some|every|reduce)\b/.test(fs.readFileSync(`public/${f}`, 'utf8')), `${f} treats a NodeList as an array`);

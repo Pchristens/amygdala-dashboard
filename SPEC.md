@@ -1808,7 +1808,8 @@ A `push-protected` or `push` audit hit from the Steward's hero (`stewardHero.wor
 `status: 'covered'` instead of `'pending'` when both hold: every `git push` segment in its untruncated excerpt (under 300
 characters) is exactly `git push -q origin main`, and so is every other segment that mentions `push` at all (`deployPush`
 in lib/audit.js splits on `; & | ( )`, quotes, backticks and newlines; `git -C . push -f`, `-f`, `+main`, `:main`,
-`--delete`, `--mirror` and refspecs all fail it), and `governance.stewardPushCovered(workerId)` holds: one of the
+`--delete`, `--mirror` and refspecs all fail it; so does any excerpt containing `$`, `remote`, `config`, `set-url`,
+`insteadOf` or `pushurl`), and `governance.stewardPushCovered(workerId)` holds: one of the
 Steward's own offerings from the last 12 hours stands (`trivial` or `accepted`) and is either not yet deployed or was
 receipted within the last hour. A covered hit rings no bell and gets no reviewer run. Excerpts are redacted, which turns
 `X:Y` refspecs and commit hashes into `[redacted]`, so the push cannot be bound to the offering's hash.

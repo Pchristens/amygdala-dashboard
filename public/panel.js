@@ -732,8 +732,8 @@ export function createPanel(opts) {
     row._meta = h('div', { class: 'resident-meta' });
     row._persona = h('div', { class: 'resident-persona' });
     row._commits = h('div', { class: 'resident-commits' });
-    row._toggle = h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `resident:${r.name}` } });
-    row._more = h('div', { class: 'resident-more' }, row._persona, row._commits);
+    row._toggle = h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', 'aria-controls': `resident-more-${r.name}`, dataset: { key: `resident:${r.name}` } });
+    row._more = h('div', { class: 'resident-more', id: `resident-more-${r.name}` }, row._persona, row._commits);
     row._switch = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'true', title: 'Include in turns' });
     row._switch.addEventListener('click', () => {
       const on = row._switch.getAttribute('aria-checked') === 'true';
@@ -891,7 +891,7 @@ export function createPanel(opts) {
       const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id && c.status === 'new').length;
       strip.appendChild(needItem(`w:${w.id}`, 'hero', [h('span', { class: 'pill pill-waiting', text: 'needs you' }), h('span', { class: 'need-name', text: String(w.title || w.id) }),
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }), counsel ? h('span', { class: 'chip chip-other', text: `${counsel} counsel` }) : null,
-        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w, { open: true })));
+        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w, { open: true, prefix: 'need' })));
     }
     for (const d of escs) {
       const o = offeringsInZone().find((x) => x.id === d.offeringId);
@@ -1057,7 +1057,8 @@ export function createPanel(opts) {
     for (const w of list) pg.appendChild(workerRow(w));
     return pg;
   }
-  function workerRow(w, { open = heroOpen.has(w.id) } = {}) {
+  // The Needs-you copy of a row gets its own ids and keys (prefix 'need') and leaves the site row's open state alone.
+  function workerRow(w, { open = heroOpen.has(w.id), prefix = 'hero' } = {}) {
     const st = String(w.status || 'idle');
     const stale = !!w.stale;
     const offer = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Lay an offering…', title: "Snapshot this session's git change as an offering for review" });
@@ -1073,8 +1074,8 @@ export function createPanel(opts) {
         h('span', { class: w.sealed ? 'runic' : '', text: `${w.project || ''} @ ${w.host || 'local'}${w.os ? ` · ${osLabel(w.os)}` : ''}` }),
         opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
       ),
-      h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `hero:${w.id}` }, 'aria-expanded': String(open), 'aria-controls': `hero-more-${w.id}`, text: open ? 'Less ▴' : 'More ▾' }),
-      h('div', { class: 'worker-more', id: `hero-more-${w.id}`, hidden: !open },
+      h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `${prefix}:${w.id}` }, 'aria-expanded': String(open), 'aria-controls': `${prefix}-more-${w.id}`, text: open ? 'Less ▴' : 'More ▾' }),
+      h('div', { class: 'worker-more', id: `${prefix}-more-${w.id}`, hidden: !open },
         w.sealed ? null : h('span', { class: 'worker-path', text: String(w.path || '') }),
         h('a', { href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
         offer,
@@ -1086,7 +1087,7 @@ export function createPanel(opts) {
       ),
     );
     const toggle = row.querySelector('.row-toggle');
-    toggle.addEventListener('click', (e) => { e.stopPropagation(); const more = row.querySelector('.worker-more'), next = more.hidden; more.hidden = !next; toggle.setAttribute('aria-expanded', String(next)); toggle.textContent = next ? 'Less ▴' : 'More ▾'; if (next) heroOpen.add(w.id); else heroOpen.delete(w.id); });
+    toggle.addEventListener('click', (e) => { e.stopPropagation(); const more = row.querySelector('.worker-more'), next = more.hidden; more.hidden = !next; toggle.setAttribute('aria-expanded', String(next)); toggle.textContent = next ? 'Less ▴' : 'More ▾'; if (prefix !== 'hero') return; if (next) heroOpen.add(w.id); else heroOpen.delete(w.id); });
     const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id);
     if (counsel.length) row.appendChild(counselList(counsel));
     row.addEventListener('click', (e) => { if (!e.target.closest('a, button, select, .counsel')) opts.onFocusWorker?.(w.id); });
