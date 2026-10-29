@@ -29,7 +29,7 @@ your change. When you add to the contract, append a new versioned section (`## v
 | `lib/term.js`, `lib/conpty.js`, `lib/pastes.js` | in-page hero terminals (tmux, Windows ConPTY, node relay) and image paste |
 | `lib/steward.js`, `lib/watch.js`, `lib/notify.js` | reset windows and the Steward's claim, event detectors and the Watch's bell, bell delivery to nodes |
 | `lib/audit.js`, `lib/audit-rules.js` | the Watchtower's keyword audit of unattended village heroes |
-| `lib/hero-apprentices.js`, `lib/isle-ghosts.js` | heroes' sub-agents as village apprentices; sealed isle ghosts |
+| `lib/hero-apprentices.js`, `lib/shell-apprentices.js`, `lib/isle-ghosts.js` | heroes' sub-agents and shell-launched agent CLIs as village apprentices; sealed isle ghosts |
 | `lib/seal.js` | Far Isle encryption (passphrase-derived key; isle records are sealed at rest) |
 | `lib/usage.js`, `lib/fleet.js`, `lib/starwatch.js` | the usage reading, provider usage probes, the Starwatcher's weekly reading |
 | `lib/bin.js`, `lib/sun.js`, `lib/tree.js`, `lib/appearance.js` | shell-free CLI resolution and `AMYGDALA_*` env lookup, the real sun, the shared trees, residents' looks |

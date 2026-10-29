@@ -1,6 +1,7 @@
 import { IsleScanner } from '../lib/isle-ghosts.js';
 import { AuditScanner } from '../lib/audit.js';
 import { HeroScanner, scanAllowed } from '../lib/hero-apprentices.js';
+import { ShellScanner, mergeAgents } from '../lib/shell-apprentices.js';
 import { notify } from '../lib/notify.js';
 // Only redacted audit excerpts cross the node boundary.
 import fs from 'node:fs';
@@ -143,7 +144,7 @@ export async function main(args = process.argv.slice(2)) {
   const options = {}; for (let i = 0; i < args.length; i += 2) { if (args[i] === '--no-notify') { options.noNotify = true; i--; continue; } if (!['--server', '--pass-file'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: --server URL --pass-file FILE'); options[args[i]] = args[i + 1]; }
   const server = new URL(options['--server'] || env('SERVER')), token = (env('NODE_PASS') || fs.readFileSync(options['--pass-file'], 'utf8')).trim();
   if (!['http:', 'https:'].includes(server.protocol) || server.username || server.password || !/^hfn_[\w-]+$/.test(token)) throw new Error('Invalid node configuration.');
-  const scanner = new HeroScanner(), auditScanner = new AuditScanner(), isleScanner = new IsleScanner();
+  const scanner = new HeroScanner(), shellScanner = new ShellScanner(), auditScanner = new AuditScanner(), isleScanner = new IsleScanner();
   const pendingGhosts = new Map();
   let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
@@ -206,14 +207,16 @@ export async function main(args = process.argv.slice(2)) {
       let ghostBytes = 0;
       for (const [slot, g] of pendingGhosts) { if (!islePublicKey || !isle.includes(g.heroId)) { pendingGhosts.delete(slot); continue; } const size = JSON.stringify(g.box).length; if (ghostBytes + size > 768000) continue; let group = isleGhosts.find(x => x.heroId === g.heroId); if (group?.boxes.length >= 12) continue; if (!group) { group = { heroId: g.heroId, boxes: [] }; isleGhosts.push(group); } group.boxes.push(g.box); ghostBytes += size; }
       while (pendingGhosts.size > 200) pendingGhosts.delete(pendingGhosts.keys().next().value);
+      const heroOf = s => ({ ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: s.zone || 'village' });
+      const shells = await shellScanner.scan(sessions.filter(s => village.includes(s.id) && !s.archived).map(s => ({ w: heroOf(s), tmux: s.tmux_session })), village);
       for (const s of sessions.filter(s => village.includes(s.id) && !s.archived)) {
-        const w = { ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: s.zone || 'village' };
+        const w = heroOf(s);
         auditHits.push(...auditScanner.scan({ ...w, auditOptOut: !audit.enabled || audit.optOut.includes(w.id) }, village));
         let children = sessions.map(c => toWorker(c, 'local'));
         if (w.host === 'local' && scanner.due(w, village)) {
           try { const out = JSON.parse((await exec('agent-deck', ['session', 'children', s.id, '--json'], { timeout: 15000, maxBuffer: 1 << 20 })).stdout); children = [...children, ...(Array.isArray(out) ? out : out.children || out.sessions || []).map(c => ({ ...toWorker(c, 'local'), parentId: s.id }))]; } catch {}
         }
-        apprentices.push({ heroId: s.id, subagents: scanner.scan(w, village, children) });
+        apprentices.push({ heroId: s.id, subagents: mergeAgents(scanner.scan(w, village, children), shells.get(w.id)) });
       }
       if (Date.now() - lastLive > 30000) { lastLive = Date.now(); live = await stewardLive(sessions, steward, exec); }
       // At most 40 results and ~1.5 MB a report (the server reads 2 MiB); a big snapshot waits for the next one.

@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Agent CLIs a hero starts from its terminal (claude -p, codex exec, agy, grok, gemini) now walk beside it as apprentices,
+  drawn as the villager whose model they run; only the tool and model are read, never the prompt (v0.57).
 - Orders give a resident up to 15 minutes to finish (other turns keep 6), so a resident asked to review code has time
   to read it and answer (v0.56).
 - Allowances whose reset time has passed now read "reset" in Lamps instead of an old figure, and an old 100% no longer

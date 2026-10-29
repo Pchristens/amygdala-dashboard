@@ -1683,3 +1683,28 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
 - An order turn (from the human or the Steward) may run for 15 minutes before the conductor stops it; every other turn
   keeps the 6-minute limit. Antigravity's own `--print-timeout` follows the turn's limit, one minute shorter. Orders are
   deliberate work such as reviews that read many files; budgets and gates are unchanged.
+
+## v0.57: shell-launched agent CLIs as hero apprentices
+
+- **What counts.** A confirmed village hero (the v0.28 `scanAllowed` gate: village, not private, isle-tagged, quarantined
+  or sealed) on the machine that scans it gains an apprentice for each running `claude`, `codex`, `agy`, `grok` or `gemini`
+  process below it, including node-launched forms (`node …/codex.js`, `node …/@anthropic-ai/claude-code/cli.js`) and the
+  Claude native installer's versioned binary. Linux and macOS only; Windows hosts report none.
+- **Finding the hero.** The hero's agent-deck `tmux_session` is listed exactly (`tmux list-panes -s -t =<name> -F
+  '#{pane_pid}'`; names containing `:` or `.` or starting with `-` are refused). The first agent CLI under a pane is the
+  hero itself; a same-tool direct child of a node-launched hero is its native binary, still the hero. An agent CLI below the
+  hero is an apprentice, and what that apprentice spawns in turn is not counted again. Helper subcommands (`mcp`,
+  `mcp-server`, `app-server`, `login`, `--version` and the like) are not runs.
+- **What is read.** Per scan (at most once per fifteen seconds): one `ps -A -o pid=,ppid=` (the process tree, no argv),
+  one tmux call per allowed hero, then one `ps -ww -o pid=,ppid=,lstart=,args= -p <pids>` for the descendants of allowed
+  heroes' panes only, so argv of other processes (isle heroes included) is never read. Rows whose parent changed between
+  the two calls are dropped. Missing ps or tmux yields nothing.
+- **What leaves.** Argv is reduced at once to the tool and the model flag (`--model X`, `--model=X`, `-m X`, `-c model=X`;
+  a value that does not look like a model name, or none, becomes the tool name). Apprentices are `{key, model,
+  agentType: 'shell:<tool>'}` with `key = sha256("<hostname>:<pid>:<start time>")`, appended after Claude transcript
+  sub-agents and agent-deck children in the same per-hero list, still capped at twelve. The node report schema is
+  unchanged; the server-side `deck.js` sync scans this machine's own heroes the same way.
+- **Owner.** `apprenticeResident` treats a bare tool name as that kind of agent (`agy` and `gemini` → Antigravity): the
+  hero model's villager if it is of that agent, else the first villager of that agent, else the hero model's villager,
+  else the hero's own echo. The model never appears in snapshots; only the resident name does. The Steward hero is not
+  special: its apprentices walk to and from its house like any hero's.
