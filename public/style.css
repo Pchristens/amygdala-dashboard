@@ -916,7 +916,7 @@ select {
 .lbl { transition: opacity .35s; }
 .map3d[data-zoom="far"] .lbl-place.minor, .map3d[data-zoom="far"] .lbl-place.ws { opacity: 0; }
 .map3d[data-zoom="far"] .lbl-name, .map3d[data-zoom="mid"] .lbl-name { opacity: 0; }
-.map3d .lbl-name.force { opacity: 1 !important; }
+.map3d .lbl-name.force, .map3d .lbl-name.hover { opacity: 1 !important; }
 .map3d .lbl-name.clash { opacity: 0 !important; }
 .map3d .lbl-place.edge { opacity: 0 !important; }
 .map3d[data-zoom="far"] .lbl-place.major { font-size: 11px; }

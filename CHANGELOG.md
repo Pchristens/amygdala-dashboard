@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Map cards open only on click, always have a close button, and dismiss before the drawer or a ground action; hovering reveals names (v0.61).
+
 - Codex usage is read every minute instead of every five minutes, so Lamps and the hot-provider pause keep up with a hero that spends its window fast.
 - A secret file committed by a hero (an .env, a key) is left out of the change residents review at the Temple, not just
   out of the release diff (v0.60).

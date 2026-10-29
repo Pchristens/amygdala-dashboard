@@ -1765,3 +1765,11 @@ Amends the Temple offering snapshot (shared with the node helper) and v0.46 gove
 - **Misclassified skips.** When the High Priest sends a trivial skip back for a ruling during her own turn, no reserved
   wake is spent or queued for it: she is already awake to rule.
 - **`fix_check`** counts against the turn's action limit like the other Temple verdicts.
+
+## v0.61: click-only map cards and ordered dismissal
+
+- Hovering no longer opens or dismisses a map card. In the 3D map it shows a pointer cursor and reveals the hovered
+  figure's name at mid and far zoom, or a minor place's label. Leaving the canvas clears the hover highlight.
+- Every card has a close button. Escape closes an open card first; a subsequent Escape closes the drawer, subject to
+  the existing typing guard. Open dialogs and the Settings popover retain priority; gift cancellation follows cards.
+- Clicking ground while a card is open only dismisses the card, without walking You, pulsing, or placing a gift.

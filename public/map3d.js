@@ -1038,7 +1038,7 @@ export async function createMap3D(container, opts = {}) {
     const band = view.w > 1150 ? 'far' : view.w > 420 ? 'mid' : 'near';
     if (band !== zoomBand) { zoomBand = band; container.dataset.zoom = band; if (plotMesh) plotMesh.visible = band === 'near'; opts.onViewChange?.(viewInfo()); }
     const r = container.getBoundingClientRect(), W = r.width || 1, H = r.height || 1, v = new THREE.Vector3(), taken = [];
-    const recs = [...figures.values()].map((rec) => { const force = !!(rec.F.root.userData.active || rec.F.bubbleEl || rec.kind === 'you'); rec.F.label.classList.toggle('force', force); return { rec, force }; }).sort((a, b) => +b.force - +a.force);
+    const recs = [...figures.values()].map((rec) => { const force = !!(rec.F.root.userData.active || rec.F.bubbleEl || rec.kind === 'you' || rec.F.label.classList.contains('hover')); rec.F.label.classList.toggle('force', force); return { rec, force }; }).sort((a, b) => +b.force - +a.force);
     for (const { rec, force } of recs) {
       const el = rec.F.label; rec.F.labelObj.getWorldPosition(v); v.project(camera);
       const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H, bw = Math.max(el.offsetWidth || 0, (el.textContent || '').length * 7 + 12) + 6, bh = (el.offsetHeight || 18) + 4;
@@ -1113,6 +1113,13 @@ export async function createMap3D(container, opts = {}) {
     animateView(p.x, p.y, 1000 / 320);
   });
   let hovered = null;
+  function setHover(info) {
+    renderer.domElement.style.cursor = info || hoverStele ? 'pointer' : '';
+    const key = info && figureKey(info.type === 'worker' ? 'god' : info.type, info.id);
+    for (const [id, rec] of figures) rec.F.label.classList.toggle('hover', id === key);
+    for (const [id, label] of placeLabels) label.element.classList.toggle('hover', (info?.type === 'place' || info?.type === 'workshop') && id === info.id);
+    declutter(); needsRender = true; startLoop();
+  }
   renderer.domElement.addEventListener('pointermove', (e) => {
     if (e.pointerType && e.pointerType !== 'mouse') return;
     if (down && down.moved) return;
@@ -1124,6 +1131,7 @@ export async function createMap3D(container, opts = {}) {
     setSteleHover(pick?.type === 'stele' ? pick.id : null);
     opts.onHover?.(pick && pick.type !== 'stele' ? { type: pick.type === 'apprentice' ? 'resident' : pick.type, id: pick.id } : null);
   });
+  renderer.domElement.addEventListener('pointerleave', () => { hovered = null; setSteleHover(null); setHover(null); opts.onHover?.(null); });
   controls.addEventListener('change', () => { needsRender = true; startLoop(); opts.onViewChange?.(viewInfo()); });
 
   // ---------- view API ----------
@@ -1171,5 +1179,5 @@ export async function createMap3D(container, opts = {}) {
   setQuality(URLQ.get('gfx') || opts.quality);
   setSunGoal({ phase: 'morning' }, null);
   panTo('village', false);
-  return { playIntro, getVillageState, sunInfo, update, project, toWorld, entityPos, pulseAt, recenter, panTo, setView, viewInfo, setGiftMode, get state() { return current; }, setQuality, quality, follow: (name) => { follow = name ? figureKey('resident', name) : null; } };
+  return { setHover, playIntro, getVillageState, sunInfo, update, project, toWorld, entityPos, pulseAt, recenter, panTo, setView, viewInfo, setGiftMode, get state() { return current; }, setQuality, quality, follow: (name) => { follow = name ? figureKey('resident', name) : null; } };
 }
