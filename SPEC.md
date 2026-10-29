@@ -1633,6 +1633,14 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
 - Logs and other panel content still refresh. No automation, allowance, budget, permission or API semantics change.
 - This change requires full review: it preserves inputs adjacent to cost controls, and is not a trivial release.
 
+## v0.52: resident empty state and terminal close failures
+
+- The Residents empty message disappears when residents arrive and reappears once when the list becomes empty.
+- End session keeps the terminal open when its existing close request fails (HTTP or network error), displays a
+  separate accessible error, and allows retry. Pending requests disable the button and ignore duplicate clicks.
+- Successful close and mock close still detach the terminal. The endpoint, request, authentication and terminal
+  access rules are unchanged. This is error handling only, not an access-path change.
+
 ## v0.54: weekly allowance per turn
 
 - **What it measures.** For each village resident, the average rise in the weekly allowance that gates its model across one

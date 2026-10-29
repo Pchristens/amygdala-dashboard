@@ -12,6 +12,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 - Tests no longer read this machine's real Codex usage (a v0.48 slip that made four tests fail whenever Codex ran hot).
 - Lamps now shows each village resident's average cost per turn as a share of its provider's weekly allowance, measured
   only from turns when no hero, other resident or answer run used that provider at the same time (v0.54).
+- (v0.52) Residents no longer show an obsolete empty message; a failed End session request leaves the terminal open with an error and retry available.
 - Allowance reset times in Lamps roll over to days past 24 hours: 26 hours reads "resets in 1d 2h 0m".
 - The Steward's House is a storey taller, so it no longer looks like a shed beside the Steward.
 - (v0.51) Incoming updates no longer interrupt edits in Temple and Tales settings; untouched fields still stay current.
