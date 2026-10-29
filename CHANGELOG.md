@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Codex usage is read every minute instead of every five minutes, so Lamps and the hot-provider pause keep up with a hero that spends its window fast.
 - A secret file committed by a hero (an .env, a key) is left out of the change residents review at the Temple, not just
   out of the release diff (v0.60).
 - An appeal whose reviewer is turned off or leaves the village goes to another reviewer instead of waiting forever (v0.60).

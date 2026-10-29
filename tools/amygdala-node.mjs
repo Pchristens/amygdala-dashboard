@@ -194,7 +194,7 @@ export async function main(args = process.argv.slice(2)) {
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
       // Codex keeps its allowance in its own session logs on this machine; the server can't see them, so pass the newest on.
-      if (Date.now() - lastCodex > 300000) { lastCodex = Date.now(); probeCodex().then(u => { if (u && u.observedAt > codexSent) pendingCodex = { id: 'codex', windows: u.windows, observedAt: u.observedAt }; }).catch(() => {}); }
+      if (Date.now() - lastCodex > 60000) { lastCodex = Date.now(); probeCodex().then(u => { if (u && u.observedAt > codexSent) pendingCodex = { id: 'codex', windows: u.windows, observedAt: u.observedAt }; }).catch(() => {}); }
       if (!usage && pendingCodex) { usage = pendingCodex; codexSent = pendingCodex.observedAt; pendingCodex = null; }
       for (const id of scanner.cache.keys()) if (!village.includes(id)) scanner.cache.delete(id);
       auditScanner.retain(audit.enabled ? sessions.filter(s => !s.archived && village.includes(s.id) && !audit.optOut.includes(s.id)).map(s => s.id) : []);
