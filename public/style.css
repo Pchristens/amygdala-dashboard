@@ -821,9 +821,11 @@ select {
 .needs-you { margin: 0 0 6px; }
 .need { margin: 0 0 6px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--panel-2); }
 .need-hero { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
+.need-hero { appearance: none; color: inherit; font: inherit; text-align: left; width: 100%; }
 .need-omen { border-color: color-mix(in srgb, #8a7ec8 55%, transparent); }
 .need-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 10px 7px 8px; cursor: pointer; font-size: 12.5px; list-style: none; }
 .need-head::-webkit-details-marker { display: none; }
+.need-hero .need-head::before { content: none; }
 .need-head::before { content: '▸'; font-size: 10px; color: var(--ink-dim); width: 10px; flex: none; }
 .need[open] > .need-head::before { content: '▾'; }
 .need-head .need-name { font-weight: 700; color: var(--ink); flex: 1 1 140px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

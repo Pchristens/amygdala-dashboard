@@ -9,6 +9,9 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Temple tab lists sites with heroes first and the empty ones on one line; a waiting hero in Needs you jumps to its card instead of opening a second copy.
+- A quiet Lamps tab stays short: the allowance and today's numbers, then one line until the first village turn.
+- The Finished orders fold stays open across updates once you open it.
 - Group orders show one summary line ("4 residents · 2 answered, 1 working"); finished orders fold away, and an open report stays open across updates.
 - Tales lead with the stories: their settings sit in a closed "Tale settings" fold, and only typing in a field (not a focused button) holds back an update.
 - The "Residents" rail label no longer spills past its highlight.

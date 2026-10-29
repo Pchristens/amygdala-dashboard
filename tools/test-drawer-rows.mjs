@@ -86,8 +86,8 @@ panel.showResident('nobody');
 const waiting = worker('waiting'); waiting.status = 'waiting';
 panel.update(snapshot([waiting], []));
 const need = workshop.querySelector('.need-hero');
-assert(visible(need).includes('/secret/path'), 'Needs-you item renders the hero open');
-const needToggle = need.querySelector('.row-toggle'); assert.equal(needToggle.dataset.key, 'need:waiting'); assert.equal(needToggle.getAttribute('aria-controls'), 'need-more-waiting');
-const ids = workshop.querySelectorAll('.worker-more').map(n => n.id ?? n.getAttribute('id')); assert.equal(new Set(ids).size, ids.length, 'the Needs-you copy and the site row never share an id');
+assert.equal(need.tagName, 'BUTTON'); assert(!visible(need).includes('/secret/path'), 'Needs-you item stays compact');
+const canonical = workshop.querySelectorAll('.worker-row').find(n => n.dataset.workerId === 'waiting');
+need.dispatchEvent({ type: 'click', bubbles: true }); assert(canonical.classList.contains('flash'), 'Needs-you item flashes the canonical site card');
 // The fake DOM returns arrays; a browser NodeList has no find/map/filter, so the source must spread it first.
 for (const f of fs.readdirSync('public').filter(f => f.endsWith('.js'))) assert(!/querySelectorAll\([^)]*\)\.(?:find|map|filter|some|every|reduce)\b/.test(fs.readFileSync(`public/${f}`, 'utf8')), `${f} treats a NodeList as an array`);

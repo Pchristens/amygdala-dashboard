@@ -30,3 +30,5 @@ assert.equal(rebuilt.querySelector('details').open, true, 'open state survives o
 console.log('order groups: compact outcomes, finished fold, and open details preserved');
 // A real NodeList has no array methods (panel-dom returns arrays, so check the source instead).
 const fs = await import('node:fs'); for (const f of ['panel.js', 'app.js']) assert.doesNotMatch(fs.readFileSync(new URL(`../public/${f}`, import.meta.url), 'utf8'), /querySelectorAll\([^)]*\)\.(filter|map|find|some|every|reduce)\(/, `${f} calls an array method on a NodeList`);
+// The Finished orders fold keeps its open state across rebuilds, as the Tale settings fold does (Themis residual on 4062fa0).
+{ const src = (await import('node:fs')).readFileSync(new URL('../public/panel.js', import.meta.url), 'utf8'); assert.match(src, /finishedFold\.open = finishedOpen; finishedFold\.addEventListener\('toggle', \(\) => \{ finishedOpen = finishedFold\.open; \}\)/); }

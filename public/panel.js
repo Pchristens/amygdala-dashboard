@@ -280,7 +280,7 @@ export function createPanel(opts) {
     if (taleFold && taleFold.parentNode !== root) root.append(taleFold);
   }
 
-  let ordersKey = '';
+  let ordersKey = '', finishedOpen = false;
   function orderRecipientSelection(residents, selected) {
     const keep = new Set(residents), prior = selected.includes('all') ? ['all'] : selected.filter(name => keep.has(name));
     return prior;
@@ -309,6 +309,7 @@ export function createPanel(opts) {
     for (const members of ordered) (members.every(m => ['answered', 'cancelled', 'failed'].includes(m.status)) ? finished : open).push(members);
     const finishedFold = finished.length ? h('details', { class: 'temple-fold' }) : null;
     if (finishedFold) finishedFold.append(h('summary', { text: `Finished orders (${finished.length})` }));
+    if (finishedFold) { finishedFold.open = finishedOpen; finishedFold.addEventListener('toggle', () => { finishedOpen = finishedFold.open; }); }
     for (const members of [...open, ...finished]) {
       const o = members[0];
       const counts = new Map(); for (const m of members) counts.set(m.status, (counts.get(m.status) || 0) + 1);
@@ -969,9 +970,11 @@ export function createPanel(opts) {
     const strip = h('div', { class: 'needs-you' });
     for (const w of heroes) {
       const counsel = (state.counsel || []).filter((c) => c && c.workerId === w.id && c.status === 'new').length;
-      strip.appendChild(needItem(`w:${w.id}`, 'hero', [h('span', { class: 'pill pill-waiting', text: 'needs you' }), h('span', { class: 'need-name', text: String(w.title || w.id) }),
+      const item = h('button', { class: 'need need-hero', type: 'button' }, h('span', { class: 'need-head' }, h('span', { class: 'pill pill-waiting', text: 'needs you' }), h('span', { class: 'need-name', text: String(w.title || w.id) }),
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }), counsel ? h('span', { class: 'chip chip-other', text: `${counsel} counsel` }) : null,
-        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })], () => workerRow(w, { open: true, prefix: 'need' })));
+        h('span', { class: 'need-sub', text: `${w.project || ''} · at ${siteList().find((s) => s.id === w.site)?.label || w.site || '?'}` })));
+      item.addEventListener('click', () => { const row = [...els.workshop.querySelectorAll('.worker-row')].find((el) => el.dataset.workerId === w.id); if (!row) return; for (let p = row.parentElement; p && p !== els.workshop; p = p.parentElement) if (p.tagName === 'DETAILS') p.open = true; row.scrollIntoView?.({ block: 'nearest' }); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1200); });
+      strip.appendChild(item);
     }
     for (const d of escs) {
       const o = offeringsInZone().find((x) => x.id === d.offeringId);
@@ -1030,14 +1033,15 @@ export function createPanel(opts) {
       const sites = siteList();
       const bySite = new Map(sites.map((s) => [s.id, []]));
       for (const w of rest) { const k = bySite.has(w.site) ? w.site : sites[0]?.id; if (!bySite.has(k)) bySite.set(k, []); bySite.get(k).push(w); }
-      for (const [siteId, list] of bySite) {
+      const activeSites = [...bySite].filter(([, list]) => list.length), emptySites = [...bySite].filter(([, list]) => !list.length);
+      for (const [siteId, list] of activeSites) {
         const s = sites.find((x) => x.id === siteId) || { label: siteId || 'Unplaced', purpose: '' };
         const group = h('div', { class: 'host-group site-group' },
           h('div', { class: 'host-title' }, h('span', { class: 'site-glyph', text: siteGlyph(siteId) }), h('span', { text: s.label }), h('span', { class: 'site-purpose', text: s.purpose || '' })));
-        if (!list.length) group.appendChild(h('div', { class: 'dim-note site-empty', text: 'nobody here' }));
         for (const [proj, plist] of groupByProject(sortW(list))) group.appendChild(projectGroup(proj, plist, false));
         els.workshop.appendChild(group);
       }
+      if (emptySites.length) els.workshop.appendChild(h('div', { class: 'dim-note site-empty', text: `Empty: ${emptySites.map(([id]) => sites.find((s) => s.id === id)?.label || id).join(' · ')}` }));
     } else {
       const hosts = new Map();
       for (const w of rest) { const host = String(w.host || 'local') + (w.os ? ` · ${osLabel(w.os)}` : ''); if (!hosts.has(host)) hosts.set(host, []); hosts.get(host).push(w); }
@@ -1156,7 +1160,7 @@ export function createPanel(opts) {
     const offer = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Lay an offering…', title: "Snapshot this session's git change as an offering for review" });
     offer.disabled = !!w.sealed;
     offer.addEventListener('click', (e) => { e.stopPropagation(); opts.onOffer?.(w); });
-    const row = h('div', { class: `worker-row ${st === 'waiting' && !stale ? 'waiting' : ''} ${stale ? 'stale' : ''} ${w.sealed ? 'sealed' : ''}` },
+    const row = h('div', { class: `worker-row ${st === 'waiting' && !stale ? 'waiting' : ''} ${stale ? 'stale' : ''} ${w.sealed ? 'sealed' : ''}`, dataset: { workerId: w.id } },
       h('div', { class: `worker-title ${w.sealed ? 'runic' : ''}` }, w.sealed ? h('span', { class: 'lock', text: '🔒 ' }) : null, String(w.title || w.id)),
       stale
         ? h('span', { class: 'pill pill-stale', text: `last seen ${relTime(w.updatedAt) || 'a while ago'}` })
@@ -1463,13 +1467,17 @@ export function createPanel(opts) {
 
     // totals + sparkline
     const today = zoneUsage?.today || {}, all = zoneUsage?.allTime || {};
+    const quiet = zone === 'village' && !(+today.turns || 0) && !(+all.turns || 0);
     root.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: zone === 'isle' ? 'Oil burned on the isle' : 'Oil burned' })));
     const stats = h('div', { class: 'lamp-stats' },
       statTile('today', fmtTok(today.tokens), `${+today.turns || 0} turn${(+today.turns || 0) === 1 ? '' : 's'}`),
       statTile('all time', fmtTok(all.tokens), `${+all.turns || 0} turns · ${+all.measuredTurns || 0} measured${fmtCost(all.cost) ? ` · ${fmtCost(all.cost)}` : ''}`),
-      statTile('per artifact', zoneUsage?.perArtifact == null ? 'too early' : fmtTok(zoneUsage.perArtifact), 'tokens per exhibit or building'),
-      statTile('per confirmed fix', zoneUsage?.perConfirmedFix == null ? 'too early' : fmtTok(zoneUsage.perConfirmedFix), 'tokens per decree confirmed fixed'));
+      ...(!quiet || zoneUsage?.perArtifact != null ? [statTile('per artifact', zoneUsage?.perArtifact == null ? 'too early' : fmtTok(zoneUsage.perArtifact), 'tokens per exhibit or building')] : []),
+      ...(!quiet || zoneUsage?.perConfirmedFix != null ? [statTile('per confirmed fix', zoneUsage?.perConfirmedFix == null ? 'too early' : fmtTok(zoneUsage.perConfirmedFix), 'tokens per decree confirmed fixed')] : []));
     root.appendChild(stats);
+    // A quiet village skips its empty breakdowns; the heroes' sessions below are not village turns, so they always show.
+    if (quiet) root.appendChild(h('div', { class: 'dim-note', text: 'No village turns yet; breakdowns appear after the first turn.' }));
+    else {
     root.appendChild(sparkline(Array.isArray(zoneUsage?.history) ? zoneUsage.history : []));
 
     // breakdowns
@@ -1510,6 +1518,7 @@ export function createPanel(opts) {
         h('span', { class: 'chip chip-other', text: `${r.provider || '?'}${r.model ? ` · ${r.model}` : ''}` }),
         h('span', { class: 'turn-total', text: measured ? fmtTok(r.total) : 'unavailable' }),
         h('span', { class: 'dim-note turn-meta', text: `${fmtDur(r.durationMs)}${r.outcome && r.outcome !== 'ok' ? ` · ${r.outcome}` : ''} · ${relTime(r.endedAt)}` })));
+    }
     }
 
     // sessions (the heroes' own usage is not measured here)
