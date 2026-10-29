@@ -143,7 +143,8 @@ cardEl.addEventListener('click', (e) => { if (e.target.closest('.card-close')) c
 
 function showCard(info, pinned) {
   if (!state) return;
-  const opener = document.activeElement;
+  // Re-pinning from inside the old card keeps the first opener; the old card's nodes are about to be detached.
+  const opener = cardEl.contains(document.activeElement) ? card.opener : document.activeElement; card.opener = opener;
   const content = buildCard(info);
   if (!content) return closeCard();
   card.root?.close({ restoreFocus: false });

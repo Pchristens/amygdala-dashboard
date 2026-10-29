@@ -25,6 +25,7 @@ const tests = [
   ['wake uses current name once', async () => { open(); cardEl.querySelector('.resident-card').update({ ...resident, name: 'Synthetic Renamed' }, ctx.state); calls.length = 0; click('Wake now'); await Promise.resolve(); assert.equal(calls.filter(c => c[0] === 'api').length, 1); assert.equal(calls[0][1], '/api/residents/Synthetic%20Renamed/wake'); }],
   ['details and order navigate after closing', () => { open(); calls.length = 0; click('Details'); assert.deepEqual(calls, [['drawer', true, 'residents']]); assert(cardEl.hidden); open(); calls.length = 0; click('Order…'); assert.deepEqual(calls, [['drawer', true, 'orders'], ['order', resident.name]]); assert(cardEl.hidden); }],
   ['follow and unfollow', () => { open(); calls.length = 0; click('Follow'); click('Unfollow'); assert.deepEqual(calls, [['follow', resident.name], ['follow', null]]); }],
+  ['re-pinning from inside the card keeps the first opener', () => { open(); cardEl.querySelector('.resident-card button').focus(); run("showCard({type:'resident',id:'Synthetic Ada'},true)"); run('closeCard()'); assert.equal(document.activeElement, opener); }],
   ['missing resident closes card', () => { open(); ctx.state = { residents: [] }; run(snapshotCode); assert(cardEl.hidden); assert.equal(document.activeElement, opener); }],
   ['orderTo selects only eligible option and focuses headline', () => {
     const root = h('div', { id: 'orders' }); document.body.append(root);
