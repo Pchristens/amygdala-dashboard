@@ -61,6 +61,31 @@ export function createPanel(opts) {
   const sealed = () => !!(state.seal && state.seal.enabled && state.seal.locked);
   const isleLocked = () => zone === 'isle' && sealed();
 
+  // Keep settings mounted: detaching even the same input loses native focus/caret (and number-input drafts).
+  function clearExcept(root, keep) { for (const child of [...root.childNodes]) if (child !== keep) child.remove(); }
+  function settingField(controls, key, label, tag, props, save, choices = null) {
+    controls._fields ||= new Map();
+    let input = controls._fields.get(key);
+    if (!input) {
+      input = h(tag, props); controls._fields.set(key, input);
+      input.addEventListener('input', () => { input._editing = true; });
+      input.addEventListener('blur', () => { input._editing = false; });
+      input.addEventListener('change', () => input._save(input));
+      controls.append(props.type === 'checkbox' ? h('label', {}, input, label) : h('label', {}, label, input));
+    }
+    input._save = save;
+    const editing = document.activeElement === input && input._editing;
+    if (!editing) {
+      if (choices) {
+        const next = JSON.stringify(choices);
+        if (input._choices !== next) { input.replaceChildren(...choices.map(([value, text]) => h('option', { value, text }))); input._choices = next; }
+      }
+      if ('value' in props && input.value !== String(props.value ?? '')) input.value = props.value ?? '';
+      if ('checked' in props) input.checked = !!props.checked;
+    }
+    return input;
+  }
+
   // Gate credentials live only in this dialog, which is destroyed on close.
   function issuePass(kind) {
     const hero = kind === 'heroes', node = kind === 'nodes';
@@ -207,17 +232,20 @@ export function createPanel(opts) {
     for (const b of $('exhibit-tabs').children) b.setAttribute('aria-selected', String(b === button));
     els.exhibits.hidden = exhibitView !== 'art'; $('tales').hidden = exhibitView !== 'tales'; renderTales();
   });
+  let taleControls = null;
   function renderTales() {
-    const root = $('tales'); root.textContent = '';
+    const root = $('tales');
+    if (isleLocked() || !state.taleSettings) taleControls = null;
+    clearExcept(root, taleControls);
     if (isleLocked()) { renderSealedTablet(root); return; }
     if (state.taleSettings) {
-      const controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Epic labours - any threshold earns a tale' })), error = h('span', { role: 'status' });
+      if (!taleControls) { taleControls = h('div', { class: 'panel-settings' }, h('b', { text: 'Epic labours - any threshold earns a tale' })); root.append(taleControls); }
+      const controls = taleControls, error = controls._error ||= h('span', { role: 'status' });
       for (const [key, label, max] of [['minHours', 'Hours worked', 48], ['minFixed', 'Findings fixed', 1000], ['minCommits', 'Commits', 1000]]) {
-        const input = h('input', { type: 'number', min: '0', max: String(max), step: key === 'minHours' ? '0.1' : '1', value: state.taleSettings[key], 'aria-label': label });
-        input.addEventListener('change', async () => { try { const result = await opts.api('/api/tales/settings', { [key]: input.value === '' ? null : +input.value }); error.textContent = result?.error || ''; } catch (e) { error.textContent = e.message; } });
-        controls.append(h('label', {}, label, input));
+        settingField(controls, key, label, 'input', { type: 'number', min: '0', max: String(max), step: key === 'minHours' ? '0.1' : '1', value: state.taleSettings[key], 'aria-label': label },
+          async input => { try { const result = await opts.api('/api/tales/settings', { [key]: input.value === '' ? null : +input.value }); error.textContent = result?.error || ''; } catch (e) { error.textContent = e.message; } });
       }
-      controls.append(error); root.append(controls);
+      if (!error.parentNode) controls.append(error);
     }
     const list = (state.tales || []).filter((t) => zoneOf(t) === zone).slice().reverse();
     if (!list.length) root.append(h('div', { class: 'empty', text: 'No labours recorded yet.' }));
@@ -792,8 +820,10 @@ export function createPanel(opts) {
 
   // The tab reads top-down by urgency: what needs the human, the heroes at work, then history and settings folded away.
   // It re-renders on every snapshot, so fold, strip and clamp state is remembered here for the session.
+  let settingsFold = null;
   function renderWorkshop() {
-    els.workshop.textContent = '';
+    if (zone !== 'village' || !(state.steward || state.auditSettings)) settingsFold = null;
+    clearExcept(els.workshop, settingsFold);
     if (isleLocked()) {
       const t = h('div');
       renderSealedTablet(t);
@@ -808,6 +838,8 @@ export function createPanel(opts) {
     renderTablet();
     renderHall();
     renderSettings();
+    // Move the refreshed content ahead of Settings, never Settings itself while an input may have focus.
+    while (settingsFold?.nextSibling) els.workshop.insertBefore(settingsFold.nextSibling, settingsFold);
   }
   const foldOpen = { offerings: false, governance: false, tablet: false, hall: false, settings: false };
   const needOpen = new Set(), expanded = new Set();
@@ -955,40 +987,42 @@ export function createPanel(opts) {
   // Steward and Watchtower controls, with the audit log: every control as before, folded under Settings & logs.
   function renderSettings() {
     if (zone !== 'village' || !(state.steward || state.auditSettings)) return;
-    const fold = foldSection('settings', 'Settings & logs');
+    if (!settingsFold) { settingsFold = foldSection('settings', 'Settings & logs'); els.workshop.append(settingsFold); }
+    const fold = settingsFold;
+    if (!state.steward) { fold._steward?.remove(); fold._steward = null; }
+    if (!state.auditSettings) { fold._audit?.remove(); fold._audit = null; }
     if (state.steward) {
       // Not 'card': that class is the absolutely positioned map popover and floats over the page.
-      const controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Steward · reset windows' }));
+      if (!fold._steward) { fold._steward = h('div', { class: 'panel-settings' }, h('b', { text: 'Steward · reset windows' })); fold.insertBefore(fold._steward, fold._audit || null); }
+      const controls = fold._steward;
       for (const [key, label] of [['enabled', 'Use spare allowance before reset'], ['festivalEnabled', 'Festival fallback']]) {
-        const input = h('input', { type: 'checkbox', checked: state.steward[key] }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: input.checked })); controls.append(h('label', {}, input, label));
+        settingField(controls, key, label, 'input', { type: 'checkbox', checked: state.steward[key] }, input => opts.api('/api/steward/settings', { [key]: input.checked }));
       }
       for (const [key, label] of [['idleHours', 'Human idle hours'], ['sevenDayHours', 'Weekly hours left'], ['sevenDaySpare', 'Weekly spare %'], ['fiveHourHours', 'Five-hour hours left'], ['fiveHourSpare', 'Five-hour spare %']]) {
-        const input = h('input', { type: 'number', min: '0', max: key.endsWith('Spare') ? '90' : '168', step: '0.5', value: state.steward[key], 'aria-label': label }); input.addEventListener('change', () => opts.api('/api/steward/settings', { [key]: +input.value })); controls.append(h('label', {}, label, input));
+        settingField(controls, key, label, 'input', { type: 'number', min: '0', max: key.endsWith('Spare') ? '90' : '168', step: '0.5', value: state.steward[key], 'aria-label': label }, input => opts.api('/api/steward/settings', { [key]: +input.value }));
       }
       // The Steward's own session, which the Watch may restart when it falls over; chosen by hand, never by title.
-      const current = state.stewardHero?.workerId, select = h('select', { 'aria-label': 'Steward session' }, h('option', { value: '', text: 'None (the Watch never restarts it)' }));
-      for (const w of (state.workers || []).filter((w) => w.zone === 'village' && w.node && w.tool === 'claude' && !w.private && !w.archived || w.id === current)) select.append(h('option', { value: w.id, text: `${w.title} · ${w.host}`, selected: w.id === current }));
-      if (current && ![...select.options].some((o) => o.value === current)) select.append(h('option', { value: current, text: 'Set, not reporting now', selected: true }));
-      select.addEventListener('change', () => opts.api('/api/steward/hero', { workerId: select.value || null }));
-      controls.append(h('label', {}, 'Steward session', select));
-      fold.append(controls);
+      const current = state.stewardHero?.workerId, choices = [['', 'None (the Watch never restarts it)']];
+      for (const w of (state.workers || []).filter((w) => w.zone === 'village' && w.node && w.tool === 'claude' && !w.private && !w.archived || w.id === current)) choices.push([w.id, `${w.title} · ${w.host}`]);
+      if (current && !choices.some(([value]) => value === current)) choices.push([current, 'Set, not reporting now']);
+      settingField(controls, 'hero', 'Steward session', 'select', { 'aria-label': 'Steward session', value: current || '' }, select => opts.api('/api/steward/hero', { workerId: select.value || null }), choices);
     }
     if (state.auditSettings) {
-      const s = state.auditSettings, controls = h('div', { class: 'panel-settings' }, h('b', { text: 'Watchtower' }));
-      const enabled = h('input', { type: 'checkbox', checked: s.enabled }); enabled.addEventListener('change', () => opts.api('/api/audit/settings', { enabled: enabled.checked }));
-      controls.append(h('label', {}, enabled, ' Audit autonomous heroes'));
+      if (!fold._audit) { fold._audit = h('div', { class: 'panel-settings' }, h('b', { text: 'Watchtower' })); fold.append(fold._audit); }
+      const s = state.auditSettings, controls = fold._audit;
+      settingField(controls, 'enabled', ' Audit autonomous heroes', 'input', { type: 'checkbox', checked: s.enabled }, input => opts.api('/api/audit/settings', { enabled: input.checked }));
       for (const [key, label] of [['tier1', 'First reviewer'], ['tier2', 'Escalation reviewer']]) {
         // Reviewers are picked by role (shown as title · model); a resident with a shared role is picked by name.
-        const select = h('select', { 'aria-label': label }), list = state.residents || [];
-        for (const r of list) { const value = r.role && list.filter(x => x.role === r.role).length === 1 ? r.role : r.name; select.append(h('option', { value, text: `${r.title || r.role || r.name} · ${r.model || r.agent}`, selected: value === s[key] || r.name === s[key] })); } select.addEventListener('change', () => opts.api('/api/audit/settings', { [key]: select.value })); controls.append(h('label', {}, label, select));
+        const list = state.residents || [], choices = []; let selected;
+        for (const r of list) { const value = r.role && list.filter(x => x.role === r.role).length === 1 ? r.role : r.name; choices.push([value, `${r.title || r.role || r.name} · ${r.model || r.agent}`]); if (value === s[key] || r.name === s[key]) selected = value; }
+        settingField(controls, key, label, 'select', { 'aria-label': label, value: selected ?? choices[0]?.[0] ?? '' }, select => opts.api('/api/audit/settings', { [key]: select.value }), choices);
       }
-      const cap = h('input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }); cap.addEventListener('change', () => opts.api('/api/audit/settings', { dailyCap: +cap.value })); controls.append(h('label', {}, 'Daily audit runs ', cap));
+      settingField(controls, 'dailyCap', 'Daily audit runs ', 'input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }, cap => opts.api('/api/audit/settings', { dailyCap: +cap.value }));
       // The last audit lines follow the settings so a glance explains why a hero was flagged.
+      controls._log?.remove(); controls._log = null;
       const log = (state.audits || []).slice(-20).reverse();
-      if (log.length) { const lines = h('div', { class: 'audit-log' }); for (const a of log) lines.append(h('p', { text: `${a.severity} · ${a.rule} · ${a.status}: ${a.excerpt}` })); controls.append(clamped('audit-log', lines, log.map((a) => a.excerpt).join('\n'), 5)); }
-      fold.append(controls);
+      if (log.length) { const lines = h('div', { class: 'audit-log' }); for (const a of log) lines.append(h('p', { text: `${a.severity} · ${a.rule} · ${a.status}: ${a.excerpt}` })); controls._log = clamped('audit-log', lines, log.map((a) => a.excerpt).join('\n'), 5); controls.append(controls._log); }
     }
-    els.workshop.append(fold);
   }
   function siteList() {
     const list = (state.sites || []).filter((s) => s && s.id);

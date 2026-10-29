@@ -14,6 +14,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
   only from turns when no hero, other resident or answer run used that provider at the same time (v0.54).
 - Allowance reset times in Lamps roll over to days past 24 hours: 26 hours reads "resets in 1d 2h 0m".
 - The Steward's House is a storey taller, so it no longer looks like a shed beside the Steward.
+- (v0.51) Incoming updates no longer interrupt edits in Temple and Tales settings; untouched fields still stay current.
+- (v0.50) Panel close and header shortcuts work consistently; closed panels stay out of keyboard focus, and Happening now can be toggled with the keyboard.
 
 ## v0.49 — 2026-10-28
 

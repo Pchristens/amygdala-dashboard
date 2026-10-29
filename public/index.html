@@ -107,7 +107,7 @@
       </div>
 
       <div id="happening" class="happening" aria-live="polite">
-        <div class="happening-title">Happening now</div>
+        <button class="happening-title" type="button">Happening now</button>
         <ol id="happening-list"></ol>
       </div>
 
@@ -123,7 +123,7 @@
       <button class="rail-tab" data-tab="orders" type="button"><span class="rail-glyph">✉</span><span class="rail-text">Orders</span></button>
       <button class="rail-tab" data-tab="lamps" type="button" title="Lamps (5)"><span class="rail-glyph">🕯</span><span class="rail-text">Lamps</span></button>
     </nav>
-    <aside class="panel drawer" id="drawer" aria-hidden="true">
+    <aside class="panel drawer" id="drawer" aria-hidden="true" inert>
       <div class="drawer-handle" id="drawer-handle" title="Drag to resize"></div>
       <nav class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="board" aria-selected="true" type="button">Board <span class="count" id="count-board">0</span></button>
