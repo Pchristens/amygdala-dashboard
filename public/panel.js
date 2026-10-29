@@ -1018,7 +1018,7 @@ export function createPanel(opts) {
       fold.append(box);
     }
     if (pending.length) {
-      const box = h('div', { class: 'panel-settings' }, h('b', { text: 'Awaiting a ruling' }));
+      const box = h('div', { class: 'panel-settings' }, h('b', { text: 'Awaiting a ruling' }), priestWake(state.governance, pending));
       for (const r of pending) box.append(h('p', { class: 'gov-row' }, h('span', { class: `pill gov-state gov-${r.state}`, text: r.state }), h('span', { class: 'need-name', text: ` ${r.title || r.project} ` }), h('span', { class: 'worker-path', text: `${r.project} ${shortHash(r.sha)}${r.stewardOwn ? ' · the Steward’s own' : ''} · report ${r.report ? 'given' : 'missing'} · tests ${r.tests || 'missing'}` }),
         h('span', { class: 'dim-note gov-why', text: (r.reasons || []).join('; ') }), decideButton(r)));
       fold.append(box);
@@ -1029,6 +1029,16 @@ export function createPanel(opts) {
       fold.append(h('div', { class: 'panel-settings' }, h('b', { text: 'Ledger' }), clamped('gov-ledger', lines, ledger.map((e) => e.reason || e.kind).join('\n'), 8)));
     }
     els.workshop.append(fold);
+  }
+  // The High Priest wakes by hand, once enough waits, or after the longest wait (v0.75); the line says which, and when she last woke.
+  function priestWake(gov, pending) {
+    const who = gov?.priest, waiting = pending.filter(r => r.state !== 'evidence').length;
+    if (!who || !waiting || !opts.api) return null;
+    const woke = Math.max(0, ...pending.map(r => +r.wokeAt || 0)), wakes = gov.wakes || {};
+    const note = h('span', { class: 'dim-note gov-wake-note', text: ` ${woke ? `woken ${relTime(woke)}` : 'not woken yet'} · she wakes on her own at ${wakes.autoAt || 5} waiting or after ${wakes.maxWaitHours || 12} h` });
+    const button = h('button', { class: 'btn btn-ghost btn-xs gov-wake', type: 'button', text: `Wake ${who} (${waiting})`, title: `Wake ${who} now to rule on everything waiting`,
+      onClick: async () => { button.disabled = true; const r = await opts.api('/api/governance/wake', {}); button.disabled = false; if (r?.ok !== false && r?.resident) note.textContent = ` waking ${r.resident} for ${r.offerings}…`; } });
+    return h('span', { class: 'gov-wake-row' }, button, note);
   }
   // The human's own decision, final: for anything awaiting a ruling, or an escalation that only the human can settle.
   function decideButton(r) { return opts.onDecide && r.offeringId ? h('button', { class: 'btn btn-ghost btn-xs gov-decide', type: 'button', text: 'Decide…', onClick: () => opts.onDecide(r) }) : null; }

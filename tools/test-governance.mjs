@@ -77,6 +77,7 @@ try {
   const steward = { ...hero, id: 'local:st', sessionId: 'st', title: 'Steward' };
   w.workers.push(hero, steward); w.s.stewardHero = { workerId: steward.id, node: null, sessionId: 'st' };
   const G = w.governance, api = (route, b, actor = 'steward') => G.api(route, b, actor);
+  G.autoWakeMin = 1; // the wake mechanics below; the v0.75 threshold has its own cases at the end
   const offer = async (by, sha, ev) => { const o = await w.temple.offer(by.id, 'note', sha, ev); await tick(); return o; };
 
   // No baseline yet: the first release waits for a ruling. Only the human sets a baseline.
@@ -234,6 +235,21 @@ try {
   c.dispatchDuties(); assert.deepEqual(mine(), [first.id]); assert.equal(c.pendingDuties.length + c.queue.filter(j => j.duty?.offeringIds).length, 1, 'kept while the first release still waits');
   G.rule('Themis', { id: first.id, commit: first.gov.sha, verdict: 'accept', reason: 'synthetic first release' });
   const queued = [...c.pendingDuties, ...c.queue.map(j => j.duty)].filter(d => d?.offeringIds); assert.equal(queued.length, 1); assert(!queued[0].offeringIds.some(id => G.stillWanted(id, 'Themis')), 'all ruled: the conductor drops the wake');
+  // v0.75: she wakes by hand, once five offerings wait, or when one has waited 12 h; never past the usage gates.
+  G.autoWakeMin = undefined; c.pendingDuties.length = 0; c.queue.length = 0;
+  const wakeDuties = () => c.pendingDuties.filter(d => d.resident === 'Themis' && d.offeringIds).length;
+  assert.throws(() => api('wake', {}, 'human'), /Nothing awaits/);
+  const few = []; for (let i = 0; i < 4; i++) few.push(await offer(hero, commit(`few${i}`, { 'public/a.js': `export const f = x => x * ${60 + i};\n` })));
+  assert.equal(wakeDuties(), 0, 'four waiting: no automatic wake');
+  w.setHibernate('Themis', true); assert.throws(() => api('wake', {}, 'human'), /cannot be woken/); w.setHibernate('Themis', false);
+  const byHand = api('wake', {}, 'human'); assert.equal(byHand.resident, 'Themis'); assert.equal(wakeDuties(), 1); assert.equal(G.g.ledger.at(-1).kind, 'wake');
+  c.pendingDuties.length = 0; for (const o of few) o.gov.wokeAt = 0;
+  few[0].gov.at = Date.now() - 13 * 3600000; G.pump(); assert.equal(wakeDuties(), 1, 'one waiting 12 h wakes her'); few[0].gov.at = Date.now();
+  c.pendingDuties.length = 0; for (const o of few) o.gov.wokeAt = 0;
+  few.push(await offer(hero, commit('few4', { 'public/a.js': 'export const f = x => x * 64;\n' }))); assert.equal(wakeDuties(), 1, 'the fifth wakes her');
+  assert.equal(G.snapshot().wakes.autoAt, 5); assert.equal(G.snapshot().priest, 'Themis');
+  for (const o of few) G.rule('Themis', { id: o.id, commit: o.gov.sha, verdict: 'accept', reason: 'synthetic threshold release' });
+  G.autoWakeMin = 1; c.pendingDuties.length = 0; c.queue.length = 0;
   G.pump(); assert.equal(c.pendingDuties.length, 0, 'nothing left waiting, no wake');
   // An appeal whose reviewer is disabled or leaves the village passes to another independent reviewer (v0.60).
   const code3 = commit('code3', { 'public/a.js': 'export const f = x => x * 6;\n' }), oa = await offer(hero, code3);

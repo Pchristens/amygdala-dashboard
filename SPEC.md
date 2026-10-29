@@ -1858,3 +1858,10 @@ The keeper checks authorization when opening and every two seconds while the ter
 takes no input. `{ "output": [...], "input": false }` delivers output only and answers `{ "wait": true }`. Every answer
 carries `wait: true`; a node helper that sees it keeps one held request for opens and input and sends output separately,
 and falls back to polling when an answer lacks it or a request fails.
+
+## v0.75: the High Priest wakes by hand or by threshold
+
+The High Priest is no longer woken for every offering. She wakes automatically once five offerings wait for her ruling,
+or when one has waited 12 h; appeals still wake their reviewer at once. `POST /api/governance/wake` wakes her now for
+everything waiting (the usage and hibernation gates still apply; it refuses when nothing waits) and records a `wake`
+ledger entry. The governance snapshot adds `priest`, `wakes.autoAt` and `wakes.maxWaitHours`, and each pending row adds `wokeAt`.

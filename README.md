@@ -108,7 +108,8 @@ Each just stays unshipped until you act; nothing ships by timing out. To act, us
 the Temple's **Governance** fold (also beside anything awaiting a ruling): give a reason, then Accept or Reject. Your
 decision is final and recorded in the ledger as yours.
 
-The High Priest wakes for rulings whenever an offering waits for her, with no daily cap: one wake covers every offering
+The High Priest wakes for rulings once five offerings wait for her or one has waited 12 hours, or when you press **Wake**
+in the Temple's Awaiting a ruling box (v0.75). One wake covers every offering
 waiting at that moment, an offering that arrives before she starts joins that wake, and with nothing waiting she isn't
 woken. Her wakes never override hibernation, provider usage limits or a disabled resident; then the work stays pending.
 An offering she was woken for and left unruled is retried after six hours. The **Governance** fold in the Temple tab holds the digest, what

@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Themis no longer wakes for every offering: she wakes on her own once five wait or one has waited 12 hours, and a Wake Themis button in the Temple's Awaiting a ruling box wakes her now (v0.75).
 - A test record with an impossible time is refused when it is offered, and one already stored no longer stops the High Priest from reading the Temple.
 - Terminals for heroes on other machines answer keystrokes as soon as they arrive, instead of on the node's next 25 ms check, and an idle machine opens a new terminal at once instead of within 2 s (v0.74).
 - Terminals for heroes on the keeper's own machine now open locally through the keeper (v0.73).
