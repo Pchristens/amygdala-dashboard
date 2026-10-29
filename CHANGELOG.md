@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The High Priest no longer has a daily wake limit: one wake rules on every offering waiting for her, and she is only woken when something waits (v0.64).
 - Map cards follow walking figures and keep clear of the header and open drawer, hiding their arrow when docked (v0.63).
 - Map cards now have a pure placement helper that keeps them within the visible map and clear of the open drawer (v0.62; not yet wired).
 - Map cards open only on click, always have a close button, and dismiss before the drawer or a ground action; hovering reveals names (v0.61).

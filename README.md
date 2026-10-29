@@ -105,9 +105,10 @@ The Steward can never override a ruling on **its own code**, on a security or da
 after you decided. Those, and appeals that upheld a rejection, are the escalations that appear under **Needs you**.
 Each just stays unshipped until you act; nothing ships by timing out.
 
-The High Priest gets a few reserved wakes a day for rulings (default 6, from 0 to 24). They never override hibernation,
-provider usage limits or a disabled resident: when they run out, the work stays pending. Change the number as the human
-with `POST /api/governance/settings {"wakeBudget": n}`. The **Governance** fold in the Temple tab holds the digest, what
+The High Priest wakes for rulings whenever an offering waits for her, with no daily cap: one wake covers every offering
+waiting at that moment, an offering that arrives before she starts joins that wake, and with nothing waiting she isn't
+woken. Her wakes never override hibernation, provider usage limits or a disabled resident; then the work stays pending.
+An offering she was woken for and left unruled is retried after six hours. The **Governance** fold in the Temple tab holds the digest, what
 awaits a ruling, and the ledger of every skip, ruling, override, appeal, receipt and fix confirmation.
 
 Before a project's first release there is no approved commit to measure from. Either let the High Priest accept one, or

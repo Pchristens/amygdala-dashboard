@@ -966,7 +966,7 @@ export function createPanel(opts) {
     if (zone !== 'village' || !g) return;
     const digest = g.digest || [], pending = g.pending || [], ledger = (g.ledger || []).slice().reverse();
     if (!digest.length && !pending.length && !ledger.length) return;
-    const fold = foldSection('governance', 'Governance', digest.length || null, h('span', { class: 'dim-note gov-meta', text: `wakes ${g.wakes?.used ?? 0}/${g.wakes?.budget ?? 0} · ledger ${g.verified ? 'intact' : 'BROKEN'}` }));
+    const fold = foldSection('governance', 'Governance', digest.length || null, h('span', { class: 'dim-note gov-meta', text: `wakes today ${g.wakes?.used ?? 0} · ledger ${g.verified ? 'intact' : 'BROKEN'}` }));
     if (digest.length) {
       const box = h('div', { class: 'panel-settings gov-digest' }, h('b', { text: 'For your reading' }));
       for (const d of digest) box.append(h('p', {}, h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)} ` }), document.createTextNode(String(d.text || ''))));

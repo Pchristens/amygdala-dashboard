@@ -107,8 +107,8 @@ try {
   assert.throws(() => api('receipt', { sha: code }), /no acceptance/);
   assert.throws(() => api('receipt', { sha: 'deadbeef' }), /no acceptance/);
   // The reserved wake: one duty, for Themis herself.
-  assert.equal(c.pendingDuties.filter(d => d.offeringId === oc.id).length, 1);
-  const duty = c.pendingDuties.find(d => d.offeringId === oc.id); assert.equal(duty.resident, 'Themis'); assert.equal(G.wakesUsed(), 2);
+  assert.equal(c.pendingDuties.filter(d => d.offeringIds?.includes(oc.id)).length, 1);
+  const duty = c.pendingDuties.find(d => d.offeringIds?.includes(oc.id)); assert.equal(duty.resident, 'Themis'); assert.equal(G.wakesUsed(), 1, 'it joined the wake still waiting for the first release (v0.64)'); assert(duty.offeringIds.includes(first.id));
   c.dispatchDuties(); assert.equal(c.queue.find(j => j.duty === duty)?.name, 'Themis'); assert(!c.queue.find(j => j.duty === duty).standIn);
   c.queue.length = 0; c.pendingDuties.length = 0;
   // Her context and tools: pending items, missing evidence, the skips to audit, the ledger.
@@ -168,7 +168,7 @@ try {
   const ap = api('appeal', { offeringId: oo.id, reason: 'a test now covers the factor', tests: [{ command: 'node tools/test-a.mjs', result: 'ok', commit: own, by: 'Steward' }] });
   assert.equal(ap.reviewer, 'Atlas'); assert.equal(oo.gov.state, 'appealed'); assert.notEqual(oo.status, 'closed', 'an appeal reopens it');
   assert.throws(() => api('appeal', { offeringId: oo.id, reason: 'again with more', report: 'more words' }), /standing rejection|already been appealed/);
-  assert.equal(c.pendingDuties.filter(d => d.offeringId === oo.id).at(-1)?.resident, 'Atlas');
+  assert.equal(c.pendingDuties.filter(d => d.offeringIds?.includes(oo.id)).at(-1)?.resident, 'Atlas');
   assert.throws(() => G.rule('Themis', { id: oo.id, commit: own, verdict: 'accept', reason: 'changed my mind' }), /not awaiting your ruling/);
   assert(createMcpHandler(w).lookFor('Atlas').includes('APPEAL assigned to you'));
   assert.throws(() => G.rule('Atlas', { id: oo.id, commit: own, verdict: 'evidence', reason: 'more please' }), /accept or reject/);
@@ -190,21 +190,18 @@ try {
 
   // ---------- reserved wakes respect every gate ----------
   c.pendingDuties.length = 0; c.queue.length = 0;
-  const wakeFor = () => { o2.gov.wokeAt = 0; G.pump(); return c.pendingDuties.some(d => d.offeringId === o2.id); };
-  api('settings', { wakeBudget: 0 }, 'human'); assert(!wakeFor(), 'no budget, no wake');
-  assert.throws(() => api('settings', { wakeBudget: 100 }, 'steward'), /Only the human/);
-  api('settings', { wakeBudget: 24 }, 'human');
+  const wakeFor = () => { o2.gov.wokeAt = 0; G.pump(); return c.pendingDuties.some(d => d.offeringIds?.includes(o2.id)); };
+  assert.throws(() => api('settings', { wakeBudget: 3 }, 'human'), /unknown|not/i, 'no daily cap to set (v0.64)');
   w.setHibernate('Themis', true); assert(!wakeFor(), 'hibernating'); w.setHibernate('Themis', false);
   w.usage.limits = { providers: [{ id: 'claude', windows: [{ used_percentage: 96 }] }] }; assert(!wakeFor(), 'provider pressure'); w.usage.limits = { providers: [] };
   w.isHibernating('Themis');
   const used = G.wakesUsed(); assert(wakeFor()); assert.equal(G.wakesUsed(), used + 1);
-  wakeFor(); assert.equal(G.wakesUsed(), used + 1, 'one wake at a time per offering'); assert.equal(c.pendingDuties.filter(d => d.offeringId === o2.id).length, 1);
-  api('settings', { wakeBudget: used + 1 }, 'human'); c.pendingDuties.length = 0; assert(!wakeFor(), 'budget exhausted: stays pending');
+  wakeFor(); assert.equal(G.wakesUsed(), used + 1, 'a wake not yet run is not doubled'); assert.equal(c.pendingDuties.filter(d => d.offeringIds?.includes(o2.id)).length, 1);
+  // No daily cap: many wakes in a day still wake her, each only while something waits.
+  for (let i = 0; i < 30; i++) { c.pendingDuties.length = 0; assert(wakeFor(), `wake ${i}`); } assert.equal(G.wakesUsed(), used + 31);
   assert.equal(o2.gov.state, 'pending');
-  // A queued wake is dropped when the offering no longer needs it.
-  api('settings', { wakeBudget: 24 }, 'human'); assert(wakeFor());
   G.rule('Themis', { id: o2.id, commit: tr2, verdict: 'accept', reason: 'fine after all, setup unchanged' });
-  c.dispatchDuties(); assert(!c.queue.some(j => j.duty?.offeringId === o2.id)); assert(!c.pendingDuties.some(d => d.offeringId === o2.id));
+  c.dispatchDuties(); assert(!c.queue.some(j => j.duty?.offeringIds?.includes(o2.id))); assert(!c.pendingDuties.some(d => d.offeringIds?.includes(o2.id)));
 
   assert.equal(o2.status, 'closed');
   // The High Priest's own "misclassified" spends no reserved wake: she is awake and rules in this turn (v0.60).
@@ -212,14 +209,26 @@ try {
   const tr3 = commit('docs3', { 'README.md': fs.readFileSync(path.join(repo, 'README.md'), 'utf8') + 'Yet another line.\n' });
   const o3 = await offer(hero, tr3); assert.equal(o3.gov.state, 'trivial'); assert(G.canWake('Themis'));
   const woke = G.wakesUsed(); G.rule('Themis', { id: o3.id, commit: tr3, verdict: 'misclassified', reason: 'it changes the setup steps' });
-  assert.equal(o3.gov.state, 'pending'); assert.equal(G.wakesUsed(), woke, 'no reserved wake spent'); assert(!c.pendingDuties.some(d => d.offeringId === o3.id), 'no second wake queued');
+  assert.equal(o3.gov.state, 'pending'); assert.equal(G.wakesUsed(), woke, 'no reserved wake spent'); assert(!c.pendingDuties.some(d => d.offeringIds?.includes(o3.id)), 'no second wake queued');
   G.rule('Themis', { id: o3.id, commit: tr3, verdict: 'accept', reason: 'setup steps unchanged after all' });
+  // One wake covers every offering waiting for her (v0.64): a later offering joins the wake not yet run, and a fresh wake
+  // lists them all; with nothing waiting, nothing wakes her.
+  c.pendingDuties.length = 0; c.queue.length = 0; G.pump(); assert.equal(c.pendingDuties.length, 0, 'nothing waiting, no wake');
+  const b0 = G.wakesUsed(), ob1 = await offer(hero, commit('batch1', { 'public/a.js': 'export const f = x => x * 41;\n' })), ob2 = await offer(hero, commit('batch2', { 'public/a.js': 'export const f = x => x * 42;\n' }));
+  const mine = () => G.rulableBy('Themis').map(o => o.id).sort();
+  assert.equal(c.pendingDuties.length, 1); assert.equal(G.wakesUsed(), b0 + 1, 'one wake for both'); assert(c.pendingDuties[0].offeringIds.includes(ob2.id));
+  if (mine().length > 1) { c.pendingDuties.length = 0; for (const o of G.offerings()) o.gov.wokeAt = 0; G.pump(); assert.equal(c.pendingDuties.length, 1); assert.deepEqual([...c.pendingDuties[0].offeringIds].sort(), mine()); assert.match(c.pendingDuties[0].reason, /offerings await your ruling/); }
+  for (const o of [ob1, ob2]) if (!o.gov.final && o.gov.state === 'pending') G.rule('Themis', { id: o.id, commit: o.gov.sha, verdict: 'accept', reason: 'synthetic batch release' });
+  c.dispatchDuties(); assert.deepEqual(mine(), [first.id]); assert.equal(c.pendingDuties.length + c.queue.filter(j => j.duty?.offeringIds).length, 1, 'kept while the first release still waits');
+  G.rule('Themis', { id: first.id, commit: first.gov.sha, verdict: 'accept', reason: 'synthetic first release' });
+  const queued = [...c.pendingDuties, ...c.queue.map(j => j.duty)].filter(d => d?.offeringIds); assert.equal(queued.length, 1); assert(!queued[0].offeringIds.some(id => G.stillWanted(id, 'Themis')), 'all ruled: the conductor drops the wake');
+  G.pump(); assert.equal(c.pendingDuties.length, 0, 'nothing left waiting, no wake');
   // An appeal whose reviewer is disabled or leaves the village passes to another independent reviewer (v0.60).
   const code3 = commit('code3', { 'public/a.js': 'export const f = x => x * 6;\n' }), oa = await offer(hero, code3);
   G.rule('Themis', { id: oa.id, commit: code3, verdict: 'reject', reason: 'needs a test for the factor' });
   assert.equal(api('appeal', { offeringId: oa.id, reason: 'a test now covers the factor', tests: [{ command: 'node t.mjs', result: 'ok', commit: code3, by: 'Hero' }] }).reviewer, 'Atlas');
   w.s.residents.Atlas.enabled = false; G.pump();
-  assert.equal(oa.gov.appeals.at(-1).reviewer, 'Lyra', 'handed on'); assert(c.pendingDuties.some(d => d.offeringId === oa.id && d.resident === 'Lyra'), 'the new reviewer is woken');
+  assert.equal(oa.gov.appeals.at(-1).reviewer, 'Lyra', 'handed on'); assert(c.pendingDuties.some(d => d.offeringIds?.includes(oa.id) && d.resident === 'Lyra'), 'the new reviewer is woken');
   assert.throws(() => G.rule('Atlas', { id: oa.id, commit: code3, verdict: 'accept', reason: 'I was assigned first' }), /not awaiting your ruling/);
   w.s.residents.Lyra.enabled = false; G.pump();
   assert.equal(oa.gov.appeals.at(-1).reviewer, null, 'nobody independent is left: it waits'); assert.match(G.digest().map(d => d.text).join(), /waits for a reviewer/);
@@ -228,7 +237,7 @@ try {
   G.rule('Atlas', { id: oa.id, commit: code3, verdict: 'reject', reason: 'the test does not exercise the factor' });
   c.pendingDuties.length = 0; c.queue.length = 0;
   // The human's close stays available on an open offering.
-  const oh = await offer(hero, commit('code2', { 'public/a.js': 'export const f = x => x * 5;\n' }));
+  const oh = await offer(hero, commit('code2', { 'public/a.js': 'export const f = x => x * 42;\n' }));
   assert.notEqual(oh.status, 'closed'); w.temple.close(oh.id); assert.equal(oh.status, 'closed');
 
   // ---------- fixes confirmed without the human ----------
@@ -289,6 +298,6 @@ try {
   assert(!JSON.stringify(G.g).includes('proj@local')); assert(!JSON.stringify(G.g.ledger).includes('the check moved'));
   assert.equal(G.offerings().length, 0); assert.throws(() => api('receipt', { sha: triv }), /no acceptance/);
   // Appending after a redaction still chains.
-  api('settings', { wakeBudget: 3 }, 'human'); G.append({ kind: 'note', actor: 'test' }); assert(G.verify());
+  G.append({ kind: 'note', actor: 'test' }); assert(G.verify());
   console.log('governance ok: classifier, release line limit, rulings, closing, receipts, overrides, appeals, wakes, fix confirmation, escalations, ledger');
 } finally { if (w) { clearTimeout(w.saveTimer); clearInterval(w.seal.timer); } fs.rmSync(dir, { recursive: true, force: true }); }

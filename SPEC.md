@@ -1783,3 +1783,12 @@ It returns wrap-relative pixels with `left` as the card centre and `top` as the 
 
 Map cards follow their figure on every 3D render, using cached card sizes and visible bounds below the header and clear of the open drawer.
 Cards use the placement helper to choose above or below placement; docked cards hide their arrow.
+
+## v0.64: one High Priest wake for every waiting offering
+
+Amends v0.46 reserved wakes. There is no daily wake budget: `POST /api/governance/settings` is gone and the governance
+snapshot's `wakes` is `{ used }` (wakes started today, for display). `pump()` groups the offerings due a wake by the resident who must rule
+(the High Priest for `pending`, the assigned reviewer for `appealed`) and queues one duty per resident with `offeringIds`; an
+offering due while that resident's duty is still queued joins it without a new wake. No offering due, no wake. The gates are
+unchanged: enabled, in the village, not hibernating, provider not hot, and an offering woken for is retried after six hours.
+The conductor drops a governance duty once none of its `offeringIds` still needs that resident.
