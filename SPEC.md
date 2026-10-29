@@ -75,11 +75,6 @@ separating the village (west) from The Works (east, x 790–990). Places and obj
 
 All user/agent text must be rendered as text (textContent), never as HTML.
 
-## v0.62: card placement helper
-
-`public/card-place.js` exports pure `placeCard`, which chooses above or below placement, clamps to visible bounds, avoids edge obstacles and docks off-screen anchors.
-It returns wrap-relative pixels with `left` as the card centre and `top` as the anchor y, preserving the above/below CSS gap convention; it is not yet wired into the page.
-
 ### Additions (v0.2)
 
 ```jsonc
@@ -1778,3 +1773,8 @@ Amends the Temple offering snapshot (shared with the node helper) and v0.46 gove
 - Every card has a close button. Escape closes an open card first; a subsequent Escape closes the drawer, subject to
   the existing typing guard. Open dialogs and the Settings popover retain priority; gift cancellation follows cards.
 - Clicking ground while a card is open only dismisses the card, without walking You, pulsing, or placing a gift.
+
+## v0.62: card placement helper
+
+`public/card-place.js` exports pure `placeCard`, which chooses above or below placement, clamps to visible bounds, avoids edge obstacles and docks off-screen anchors.
+It returns wrap-relative pixels with `left` as the card centre and `top` as the anchor y, preserving the above/below CSS gap convention; it is not yet wired into the page.
