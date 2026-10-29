@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Map cards open only on click, always have a close button, and dismiss before the drawer or a ground action; hovering reveals names (v0.61).
+
 - A bell sent to another machine is sent again if the reply carrying it was lost, instead of being dropped (v0.58).
 - Closing a terminal for a hero on another machine no longer closes that machine's other open terminals (v0.58).
 - A hero quarantined to the Far Isle while its tale was being recorded no longer gets a village tale.

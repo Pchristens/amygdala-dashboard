@@ -1736,3 +1736,11 @@ Amends the v0.25 node bell rule "dispatched bells are never resent, even if the 
 - **Node terminals.** Terminal output or an exit for a terminal the server has already closed for that same node is
   validated and then dropped, instead of failing the whole `/node/term` poll (which made the helper close every terminal
   on that machine). Output for a terminal id never issued to that node is still refused.
+
+## v0.61: click-only map cards and ordered dismissal
+
+- Hovering no longer opens or dismisses a map card. In the 3D map it shows a pointer cursor and reveals the hovered
+  figure's name at mid and far zoom, or a minor place's label. Leaving the canvas clears the hover highlight.
+- Every card has a close button. Escape closes an open card first; a subsequent Escape closes the drawer, subject to
+  the existing typing guard. Open dialogs and the Settings popover retain priority; gift cancellation follows cards.
+- Clicking ground while a card is open only dismisses the card, without walking You, pulsing, or placing a gift.

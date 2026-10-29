@@ -76,8 +76,8 @@ const zoneNav = $('zone-nav');
 const FLAT = params.get('flat') === '1';
 const mapOpts = {
   onGroundClick(x, y) {
+    if (card.info) return closeCard();
     if (gift.active) return placeGift(x, y);
-    closeCard();
     map.pulseAt(x, y);
     api('/api/human/move', { x, y });
   },
@@ -90,8 +90,7 @@ const mapOpts = {
   onTreeClick(zone) { pinCard({ type: 'tree', id: zone }); },
   onYouClick() { pinCard({ type: 'you', id: 'you' }); },
   onHover(info) {
-    if (card.pinned) return;
-    if (info && info.type !== 'tree' && info.type !== 'place' && info.type !== 'workshop') showCard(info, false); else if (!info) closeCard();
+    map.setHover?.(info);
   },
   onViewChange(info) {
     repositionCard();
@@ -138,7 +137,6 @@ function pinCard(info) {
 }
 function closeCard() { card.info = null; card.pinned = false; cardEl.hidden = true; cardEl.textContent = ''; }
 cardEl.addEventListener('click', (e) => { if (e.target.closest('.card-close')) closeCard(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeCard(); if (gift.active) setGiftMode(false); } });
 
 function showCard(info, pinned) {
   if (!state) return;
@@ -150,7 +148,7 @@ function showCard(info, pinned) {
   if (where) cardEl.append(h('div', { class: 'card-place', text: where }));
   cardEl.append(...content);
   cardEl.classList.toggle('wide', info.type === 'tree' || info.type === 'ghost');
-  if (pinned) cardEl.appendChild(h('button', { class: 'btn btn-ghost btn-xs card-close', type: 'button', text: '✕', 'aria-label': 'Close' }));
+  cardEl.appendChild(h('button', { class: 'btn btn-ghost btn-xs card-close', type: 'button', text: '✕', 'aria-label': 'Close' }));
   cardEl.hidden = false;
   repositionCard();
 }
@@ -972,7 +970,11 @@ document.querySelector('.tabs').addEventListener('click', (e) => { if (e.target.
 })();
 document.addEventListener('keydown', (e) => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable;
-  if (e.key === 'Escape' && !document.querySelector('dialog[open]') && !typing && drawerOpen) { setDrawer(false); return; }
+  if (e.key === 'Escape' && !document.querySelector('dialog[open]')) {
+    if (card.info) { closeCard(); e.preventDefault(); return; }
+    if (gift.active) { setGiftMode(false); return; }
+    if (!typing && drawerOpen) { setDrawer(false); return; }
+  }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   const tabs = { 1: 'board', 2: 'exhibits', 3: 'residents', 4: 'workshop', 5: 'lamps' };
   if (tabs[e.key]) { setDrawer(true, tabs[e.key]); e.preventDefault(); }
