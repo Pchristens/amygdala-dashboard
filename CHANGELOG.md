@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- (v0.52) Residents no longer show an obsolete empty message; a failed End session request leaves the terminal open with an error and retry available.
+
 - (v0.51) Incoming updates no longer interrupt edits in Temple and Tales settings; untouched fields still stay current.
 
 - Allowance reset times in Lamps roll over to days past 24 hours: 26 hours reads "resets in 1d 2h 0m".

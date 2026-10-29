@@ -720,7 +720,8 @@ export function createPanel(opts) {
     }
     if (!isleCount && isleDivider.isConnected) isleDivider.remove();
     for (const [n, row] of residentRows) if (!names.has(n)) { row.remove(); residentRows.delete(n); }
-    if (!list.length && !els.residents.querySelector('.empty')) els.residents.appendChild(h('div', { class: 'empty', text: 'No residents yet.' }));
+    if (list.length) els.residents.querySelector('.empty')?.remove();
+    else if (!els.residents.querySelector('.empty')) els.residents.appendChild(h('div', { class: 'empty', text: 'No residents yet.' }));
   }
   function makeResidentRow(r) {
     const row = h('div', { class: 'resident-row', dataset: { name: r.name } });
@@ -1577,12 +1578,26 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   const body = h('div', { class: 'terminal-body' });
   const hint = h('div', { class: 'terminal-hint dim-note', text: `Live terminal — what you type goes to the hero. To select text to copy, hold ${/Mac/.test(navigator.platform) ? 'Option' : 'Shift'} while dragging.` });
   const note = h('div', { class: 'terminal-status dim-note', hidden: true });
+  // A failed close must not look like a detached terminal, or be cleared by image-paste status timers.
+  const endError = h('div', { class: 'terminal-end-error terminal-status terminal-status-error', role: 'alert', hidden: true });
+  const endButton = h('button', { class: 'btn btn-xs', type: 'button', text: 'End session', onClick: async () => {
+    if (endButton.disabled) return;
+    endButton.disabled = true; endError.hidden = true;
+    try {
+      if (!mock) {
+        const response = await fetch(`/api/term/${encodeURIComponent(worker.id)}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token }, body: '{}' });
+        if (!response.ok) throw new Error(`Could not end session (HTTP ${response.status}). Try again.`);
+      }
+      onClose();
+    } catch (error) { endError.textContent = error?.message || 'Could not end session. Try again.'; endError.hidden = false; }
+    finally { endButton.disabled = false; }
+  } });
   root.append(h('div', { class: 'terminal-header' },
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status }),
     h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
-    h('button', { class: 'btn btn-xs', type: 'button', text: 'End session', onClick: async () => { if (!mock) await fetch(`/api/term/${encodeURIComponent(worker.id)}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amygdala-Token': token }, body: '{}' }); onClose(); } })), hint, note, body);
+    endButton), hint, note, endError, body);
   if (mock) {
     body.append(h('div', { class: 'terminal-placeholder', text: `Mock terminal for ${worker.title || worker.id} — the live session appears here.` }));
     return () => { root.textContent = ''; };
