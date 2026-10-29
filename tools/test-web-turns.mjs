@@ -119,6 +119,9 @@ try {
   assert(args('codex', true).includes('web_search="live"')); assert(!args('codex', true).includes('web_search="disabled"'));
   assert.deepEqual(args('grok', true).slice(2), args('grok', false).slice(2)); // run() never hands grok a web turn; the flags ignore it anyway assert(args('grok', true).includes('--disable-web-search'));
   assert.deepEqual(args('antigravity', true).slice(2), args('antigravity', false).slice(2));
+  // A Grok resident's effort reaches the CLI; none means the CLI's default (v0.72).
+  const grokArgs = AGENTS.grok({ ...base, agent: 'grok', model: 'grok-4.7', effort: 'high' }, url, '/cwd', [], ctx).args;
+  assert.deepEqual(grokArgs.slice(grokArgs.indexOf('--reasoning-effort'), grokArgs.indexOf('--reasoning-effort') + 2), ['--reasoning-effort', 'high']); assert(!args('grok', false).includes('--reasoning-effort'));
   // Normal turns keep today's wording exactly.
   for (const lean of [false, true]) assert(turnPrompt({ ...base, lean }).includes('Do not run shell commands, read or write files, search the web, or edit code — none of that exists in the village.'));
   console.log('web turns ok');

@@ -87,15 +87,22 @@
     "title": "Temple Examiner"
   },
   {
-    "name": "Moss",
+    "name": "Grok-Medium",
     "agent": "grok",
-    "model": "",
+    "model": "grok-4.7",
+    "effort": "medium",
     "color": "#8a9bb0",
-    "enabled": false,
-    "persona": "You are dormant and disabled. Amygdala is a single island: the Temple crowns the NW mountain, the Quarry sits on its flank, the Great Library is NE, the Forge E, and Willow Pier SE welcomes visitors’ boats. The Far Isle is for heroes only; no residents live there.",
-    "rank": "high",
-    "role": "ferryman",
-    "title": "Dormant Ferryman"
+    "persona": "You have just arrived in Amygdala and have no role yet. Look around, learn what the village does and what it lacks, and decide for yourself what you would like to do here. Amygdala is a single island: the Temple crowns the NW mountain, the Quarry sits on its flank, the Great Library is NE, the Forge E, and Willow Pier SE welcomes visitors’ boats. The Far Isle is for heroes only; no residents live there.",
+    "rank": "low"
+  },
+  {
+    "name": "Grok-High",
+    "agent": "grok",
+    "model": "grok-4.7",
+    "effort": "high",
+    "color": "#b39a7c",
+    "persona": "You have just arrived in Amygdala and have no role yet. Look around, learn what the village does and what it lacks, and decide for yourself what you would like to do here. Amygdala is a single island: the Temple crowns the NW mountain, the Quarry sits on its flank, the Great Library is NE, the Forge E, and Willow Pier SE welcomes visitors’ boats. The Far Isle is for heroes only; no residents live there.",
+    "rank": "low"
   },
   {
     "name": "Themis",

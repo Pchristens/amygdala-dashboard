@@ -774,13 +774,13 @@ export function createPanel(opts) {
     const isActive = active.has(r.name);
     if (isActive && !row._dot.isConnected) row._name.appendChild(row._dot);
     if (!isActive && row._dot.isConnected) row._dot.remove();
-    const chipKey = `${r.agent}|${r.model}|${zoneOf(r)}|${r.rank}`;
+    const chipKey = `${r.agent}|${r.model}|${r.effort}|${zoneOf(r)}|${r.rank}`;
     if (row._chipKey !== chipKey) {
       row._chipKey = chipKey;
       row._chips.textContent = '';
       row._chips.append(...[
         h('span', { class: `chip ${agentClass(r.agent)}`, text: String(r.agent || 'agent') }),
-        h('span', { class: `chip model ${agentClass(r.agent)}`, text: String(r.model || '') }),
+        h('span', { class: `chip model ${agentClass(r.agent)}`, text: `${r.model || ''}${r.effort ? ` · ${r.effort}` : ''}` }),
         zoneOf(r) === 'isle' ? h('span', { class: 'chip chip-isle', text: 'isle' }) : null,
         r.rank ? h('span', { class: `chip chip-rank rank-${r.rank}`, text: r.rank === 'priest' ? '☀ High Priest' : r.rank === 'high' ? '✦ high' : 'low' }) : null,
       ].filter(Boolean));
@@ -805,7 +805,7 @@ export function createPanel(opts) {
       row._persona.hidden = !r.persona;
     } else { row._facts.textContent = ''; row._persona.hidden = true; }
     const usage = state.usage?.village?.weeklyPerTurn?.[r.name];
-    row._model.textContent = privateRow ? '' : `${r.model || ''}${r.onBackup && r.primaryModel && r.primaryModel !== r.model ? ` · on backup for ${r.primaryModel}` : ''}${r.agent ? ` · ${r.agent}` : ''}`;
+    row._model.textContent = privateRow ? '' : `${r.model || ''}${r.effort ? ` (${r.effort} effort)` : ''}${r.onBackup && r.primaryModel && r.primaryModel !== r.model ? ` · on backup for ${r.primaryModel}` : ''}${r.agent ? ` · ${r.agent}` : ''}`;
     row._modelTitle.hidden = privateRow; row._model.hidden = privateRow;
     const rhythm = privateRow ? [] : [`${+r.turns || 0} turns`, r.lastTurnAt ? `last turn ${relTime(r.lastTurnAt)}` : '', r.hibernating ? `hibernating since ${relTime(r.hibernatingSince)}${r.hibernateReason ? `: ${r.hibernateReason}` : ''}` : '', (Array.isArray(r.parallel) ? r.parallel.length : +r.parallel) > 0 ? `${Array.isArray(r.parallel) ? r.parallel.length : +r.parallel} parallel orders` : ''].filter(Boolean);
     row._rhythm.textContent = rhythm.join(' · '); row._rhythmTitle.hidden = row._rhythm.hidden = privateRow;

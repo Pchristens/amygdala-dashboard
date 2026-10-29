@@ -59,7 +59,7 @@ export function residentCard(resident, snapshot, actions = {}, { embedded = fals
     const identityKey = JSON.stringify([r.title, r.role, r.role === 'starwatcher' ? state.starwatch : null]);
     if (identity._key !== identityKey) { identity._key = identityKey; identity.replaceChildren(residentIdentity({ title: r.title, role: r.role }, state)); }
     model.className = `chip model ${agentClass(r.agent)}`;
-    text(model, `${r.model || 'model unknown'}${r.onBackup ? ' · ⇄ backup' : ''}`);
+    text(model, `${r.model || 'model unknown'}${r.effort ? ` · ${r.effort}` : ''}${r.onBackup ? ' · ⇄ backup' : ''}`);
     model.title = r.onBackup ? `Backup for ${r.primaryModel || 'primary model'}` : '';
     const parallel = Array.isArray(r.parallel) ? r.parallel.length : 0;
     text(status, active ? `in a turn now${parallel ? ` · +${parallel} orders` : ''}`
