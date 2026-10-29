@@ -1677,3 +1677,9 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
   reports its allowance only when a request is made, which is why its reading can sit past a reset.
 - **Snapshot.** In `usage.limits.providers[].windows[]`, such a window reads `used_percentage: 0` with `rolledOver: true`;
   the stored reading is unchanged. Lamps shows it as "reset · waiting for a fresh reading".
+
+## v0.56: longer order turns
+
+- An order turn (from the human or the Steward) may run for 15 minutes before the conductor stops it; every other turn
+  keeps the 6-minute limit. Antigravity's own `--print-timeout` follows the turn's limit, one minute shorter. Orders are
+  deliberate work such as reviews that read many files; budgets and gates are unchanged.

@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Orders give a resident up to 15 minutes to finish (other turns keep 6), so a resident asked to review code has time
+  to read it and answer (v0.56).
 - Allowances whose reset time has passed now read "reset" in Lamps instead of an old figure, and an old 100% no longer
   keeps residents on that provider paused after the reset (v0.55).
 - Tests no longer read this machine's real Codex usage (a v0.48 slip that made four tests fail whenever Codex ran hot).
