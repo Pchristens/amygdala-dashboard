@@ -45,10 +45,28 @@ assert(visible(residentRow).includes('RESIDENT PERSONA'), 'resident open state s
 assert(visible(residentRow).includes('About') && visible(residentRow).includes('Participation'), 'resident detail sections are labeled');
 assert(visible(residentRow).indexOf('Wake now') > visible(residentRow).indexOf('Participation'), 'Wake follows Participation');
 assert(!visible(residentRow).includes('Commitments'), 'empty commitments omit their heading');
+const now = Date.now();
+const detailed = { ...resident, model: 'backup-model', primaryModel: 'primary-model', onBackup: true, lastTurnAt: now - 60000, hibernating: true, hibernateReason: 'weekly limit', parallel: 2, appearance: { motto: 'Keep learning' }, formerNames: ['A.'] };
+panel.update({ ...snapshot([], [detailed], [
+  { id: 'done-recent', ownerId: 'Ada', status: 'done', updatedAt: now - 1000, objective: 'RECENT DONE' },
+  { id: 'done-old', ownerId: 'Ada', status: 'done', updatedAt: now - 25 * 3600000, objective: 'OLD DONE' },
+]), usage: { village: { weeklyPerTurn: { Ada: { model: 'backup-model', window: 'week', perTurnPct: 2.5, samples: 4, discarded: 2, reasons: { 'heroes busy': 2 } } } } }, posts: [1, 2, 3, 4].map(i => ({ author: 'Ada', text: `POST ${i}`, ts: now - i * 1000, zone: 'village' })), exhibits: [{ id: 'ex-a', author: 'Ada', zone: 'village' }] });
+residentRow = document.getElementById('residents').querySelector('.resident-row');
+residentToggle = residentRow.querySelector('.row-toggle'); if (residentToggle.getAttribute('aria-expanded') !== 'true') residentToggle.dispatchEvent({ type: 'click', stopPropagation() {} });
+assert(visible(residentRow).includes('Model') && visible(residentRow).includes('on backup for primary-model'), 'model backup detail renders');
+assert(visible(residentRow).includes('Rhythm') && visible(residentRow).includes('weekly limit') && visible(residentRow).includes('last turn'), 'rhythm detail renders');
+assert(visible(residentRow).includes('Allowance') && visible(residentRow).includes('2.5%') && visible(residentRow).includes('4 samples') && visible(residentRow).includes('2 set aside: heroes busy ×2'), 'allowance detail renders, with the reasons samples were set aside');
+assert(visible(residentRow).includes('RECENT DONE') && !visible(residentRow).includes('OLD DONE'), 'only recently done commitments render');
+assert(visible(residentRow).includes('POST 1') && visible(residentRow).includes('POST 3') && !visible(residentRow).includes('POST 4'), 'only the newest three posts render');
+assert(visible(residentRow).includes('1 exhibits'), 'exhibit count renders');
+panel.update({ ...snapshot([], [detailed]), posts: [], exhibits: [] });
+residentRow = document.getElementById('residents').querySelector('.resident-row');
+assert(!visible(residentRow).includes('Allowance'), 'allowance omitted without entry');
 panel.update(snapshot([], [{ ...resident, mood: 'sealed' }], [{ id: 'sealed-plan', ownerId: 'Ada', status: 'active', objective: 'SEALED COMMITMENT', nextAction: 'SEALED NEXT' }]));
 residentRow = document.getElementById('residents').querySelector('.resident-row');
 assert(!residentRow.textContent.includes('RESIDENT PERSONA') && !residentRow.textContent.includes('SEALED COMMITMENT') && !residentRow.textContent.includes('SEALED NEXT'), 'sealed persona and commitments stay hidden');
 assert(!visible(residentRow).includes('About') && !visible(residentRow).includes('Commitments'), 'sealed detail headings stay hidden');
+assert(!visible(residentRow).includes('Model') && !visible(residentRow).includes('weekly limit') && !visible(residentRow).includes('Allowance'), 'sealed rows expose no added detail');
 assert(button(residentRow, 'Wake now').disabled, 'sealed Wake stays disabled');
 let scrolled = 0; residentRow.scrollIntoView = () => scrolled++;
 panel.showResident('Ada');
@@ -60,6 +78,9 @@ assert(residentRow.classList.contains('flash'));
 panel.update(snapshot([], [{ ...resident, mood: 'calm' }]));
 residentRow = document.getElementById('residents').querySelector('.resident-row');
 assert.equal(residentRow.querySelector('.row-toggle').getAttribute('aria-expanded'), 'true', 'showResident open state survives snapshots');
+panel.update({ ...snapshot([], [{ ...detailed, zone: 'isle' }]), usage: { village: { weeklyPerTurn: { Ada: { perTurnPct: 99, samples: 9 } } } }, posts: [{ author: 'Ada', text: 'ISLE POST' }], exhibits: [{ id: 'isle-ex', author: 'Ada' }] });
+residentRow = document.getElementById('residents').querySelector('.resident-row');
+assert(!visible(residentRow.querySelector('.resident-more')).includes('RESIDENT PERSONA') && !visible(residentRow.querySelector('.resident-more')).includes('backup-model') && !visible(residentRow.querySelector('.resident-more')).includes('weekly limit') && !visible(residentRow.querySelector('.resident-more')).includes('Allowance') && !visible(residentRow.querySelector('.resident-more')).includes('ISLE POST') && !visible(residentRow.querySelector('.resident-more')).includes('exhibits'), 'isle residents expose no expanded details');
 panel.showResident('nobody');
 
 const waiting = worker('waiting'); waiting.status = 'waiting';

@@ -1832,3 +1832,8 @@ everyone else, Fable included.
 
 Resident detail rows label About, Commitments and Participation; sealed residents expose none of the private detail text.
 The resident card's Details action opens the residents tab with that resident's row expanded and focused.
+
+## v0.71: resident detail facts
+
+The resident drawer detail uses snapshot fields for persona, role/title, appearance, former names, model, agent, turns,
+last turn, hibernation, parallel orders, weekly per-turn usage, commitments, posts and exhibits.

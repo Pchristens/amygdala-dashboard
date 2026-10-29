@@ -731,12 +731,22 @@ export function createPanel(opts) {
     row._chips = h('div', { class: 'resident-chips' });
     row._meta = h('div', { class: 'resident-meta' });
     row._persona = h('div', { class: 'resident-persona' });
+    row._personaText = h('div');
+    row._personaView = clamped(`resident:${r.name}`, row._personaText, String(r.persona || ''), 6);
+    row._facts = h('div', { class: 'resident-facts' });
+    row._modelTitle = h('h4', { class: 'resident-section-title', text: 'Model' }); row._model = h('div', { class: 'resident-facts' });
+    row._rhythmTitle = h('h4', { class: 'resident-section-title', text: 'Rhythm' }); row._rhythm = h('div', { class: 'resident-facts' });
+    row._allowanceTitle = h('h4', { class: 'resident-section-title', text: 'Allowance' }); row._allowance = h('div', { class: 'resident-facts' });
     row._commits = h('div', { class: 'resident-commits' });
+    row._postsTitle = h('h4', { class: 'resident-section-title', text: 'Recent posts' }); row._posts = h('div', { class: 'resident-posts' });
+    row._exhibits = h('button', { class: 'btn btn-ghost btn-xs resident-exhibits', type: 'button' });
+    row._exhibits.addEventListener('click', () => selectTab('exhibits'));
     row._aboutTitle = h('h4', { class: 'resident-section-title', text: 'About' });
     row._commitTitle = h('h4', { class: 'resident-section-title', text: 'Commitments' });
     row._participationTitle = h('h4', { class: 'resident-section-title', text: 'Participation' });
     row._toggle = h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', 'aria-controls': `resident-more-${r.name}`, dataset: { key: `resident:${r.name}` } });
-    row._more = h('div', { class: 'resident-more', id: `resident-more-${r.name}` }, row._aboutTitle, row._persona, row._commitTitle, row._commits);
+    row._more = h('div', { class: 'resident-more', id: `resident-more-${r.name}` }, row._aboutTitle, row._persona, row._facts, row._modelTitle, row._model, row._rhythmTitle, row._rhythm, row._allowanceTitle, row._allowance, row._commitTitle, row._commits, row._postsTitle, row._posts, row._exhibits);
+    row._persona.appendChild(row._personaView);
     row._switch = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'true', title: 'Include in turns' });
     row._switch.addEventListener('click', () => {
       const on = row._switch.getAttribute('aria-checked') === 'true';
@@ -785,16 +795,36 @@ export function createPanel(opts) {
       h('span', { text: r.mood === 'sealed' ? 'beyond the seal' : String(r.doing || 'idle') }),
       h('span', { class: 'dim', text: ` · ${+r.turns || 0} turn${(+r.turns || 0) === 1 ? '' : 's'}` }),
     );
-    row._persona.textContent = r.mood === 'sealed' ? '' : String(r.persona || '');
-    row._aboutTitle.hidden = r.mood === 'sealed' || !r.persona;
-    const mine = r.mood === 'sealed' ? [] : commitmentsFor(r.name).filter((c) => c.status === 'active' || c.status === 'done');
+    const privateRow = r.mood === 'sealed' || zoneOf(r) === 'isle';
+    row._personaText.textContent = privateRow ? '' : String(r.persona || '');
+    row._aboutTitle.hidden = privateRow || (!r.persona && !r.role && !r.title && !r.appearance && !r.formerNames?.length);
+    row._facts.textContent = '';
+    if (!privateRow) {
+      const facts = [r.role || '' /* the title already heads the row */, r.appearance ? (r.appearance.motto ? `“${r.appearance.motto}”` : '') : 'plain clay', r.formerNames?.length ? `once: ${r.formerNames.join(', ')}` : ''].filter(Boolean);
+      row._facts.textContent = facts.join(' · ');
+      row._persona.hidden = !r.persona;
+    } else { row._facts.textContent = ''; row._persona.hidden = true; }
+    const usage = state.usage?.village?.weeklyPerTurn?.[r.name];
+    row._model.textContent = privateRow ? '' : `${r.model || ''}${r.onBackup && r.primaryModel && r.primaryModel !== r.model ? ` · on backup for ${r.primaryModel}` : ''}${r.agent ? ` · ${r.agent}` : ''}`;
+    row._modelTitle.hidden = privateRow; row._model.hidden = privateRow;
+    const rhythm = privateRow ? [] : [`${+r.turns || 0} turns`, r.lastTurnAt ? `last turn ${relTime(r.lastTurnAt)}` : '', r.hibernating ? `hibernating since ${relTime(r.hibernatingSince)}${r.hibernateReason ? `: ${r.hibernateReason}` : ''}` : '', (Array.isArray(r.parallel) ? r.parallel.length : +r.parallel) > 0 ? `${Array.isArray(r.parallel) ? r.parallel.length : +r.parallel} parallel orders` : ''].filter(Boolean);
+    row._rhythm.textContent = rhythm.join(' · '); row._rhythmTitle.hidden = row._rhythm.hidden = privateRow;
+    const setAside = Object.entries(usage?.reasons || {}).map(([k, n]) => `${k} ×${n}`).join(', '); // reasons are { reason: count }
+    row._allowance.textContent = !privateRow && usage ? `${usage.perTurnPct == null ? 'no clean sample yet' : `≈${usage.perTurnPct}% of the ${usage.window} per turn`}, ${usage.samples} sample${usage.samples === 1 ? '' : 's'}${usage.discarded > 0 ? ` · ${usage.discarded} set aside${setAside ? `: ${setAside}` : ''}` : ''}` : '';
+    row._allowanceTitle.hidden = row._allowance.hidden = privateRow || !usage;
+    const mine = privateRow ? [] : commitmentsFor(r.name).filter((c) => c.status === 'active' || (c.status === 'done' && Date.now() - (+c.updatedAt || 0) < DAY));
     const ckey = mine.map((c) => `${c.id}:${c.status}:${c.updatedAt}:${c.nextAction}:${c.blockedOn}`).join('|');
     if (row._ckey !== ckey) {
       row._ckey = ckey;
       row._commits.textContent = '';
       for (const c of mine) row._commits.appendChild(commitmentEl(c, { compact: true }));
     }
-    row._commitTitle.hidden = r.mood === 'sealed' || !mine.length;
+    row._commitTitle.hidden = privateRow || !mine.length;
+    const posts = privateRow ? [] : (state.posts || []).filter(p => p && p.author === r.name && (!p.zone || p.zone === 'village')).sort((a, b) => (+b.ts || 0) - (+a.ts || 0)).slice(0, 3);
+    row._posts.replaceChildren(...posts.map(p => h('div', { class: 'resident-post', text: `${String(p.text || p.body || '').slice(0, 140)}${String(p.text || p.body || '').length > 140 ? '…' : ''}${p.ts ? ` · ${relTime(p.ts)}` : ''}` })));
+    row._postsTitle.hidden = row._posts.hidden = privateRow || !posts.length;
+    const exhibitCount = privateRow ? 0 : (state.exhibits || []).filter(e => e && e.author === r.name && (!e.zone || e.zone === 'village')).length;
+    row._exhibits.textContent = `${exhibitCount} exhibits`; row._exhibits.hidden = privateRow || !exhibitCount;
     row._switch.setAttribute('aria-checked', r.enabled === false ? 'false' : 'true');
     row._wake.disabled = isActive || r.mood === 'sealed';
     row._identity.replaceChildren(residentIdentity(r, state));

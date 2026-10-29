@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Resident details now show model, rhythm, weekly allowance, recent work and posts, and exhibit counts from the village snapshot (v0.71).
 - Resident details are easier to scan, and Details on a map card opens that resident's expanded row (v0.70).
 - You can now accept or reject an offering yourself from the Temple: **Decide…** beside anything awaiting a ruling or needing you opens a short dialog; your decision is final.
 - Fable running out of its weekly allowance no longer stops the other Claude residents (like the High Priest on Opus); they keep acting until 85% of the Claude weekly limit (v0.69).
