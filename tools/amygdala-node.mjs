@@ -18,7 +18,7 @@ const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
 import { probeGrok, probeCodex } from '../lib/fleet.js';
 import { decodeImage, savePaste, pasteDir } from '../lib/pastes.js';
-import { snapshotOf, digest, commitLines, run } from '../lib/snapshot.js';
+import { snapshotOf, digest, commitLines, fixView, run } from '../lib/snapshot.js';
 import { releaseFacts } from '../lib/governance.js';
 import { RESULT_MAX } from '../lib/nodes.js';
 export function reportSessions(sessions, village = []) {
@@ -54,7 +54,7 @@ export async function stewardLive(sessions, steward, run = exec, ps = () => psTa
 export const jobWorld = () => ({ s: { siteOf: {} }, id: prefix => `${prefix}${Date.now()}`, changed() {}, addFeed() {} });
 // opts.steward: the session the server named as the Steward; opts.ps: process table reader (tests stub it).
 export async function executeJob(job, latestJobs, sessions, village, run = exec, tail = transcriptTail, pastes = null, opts = {}) {
-  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image', 'start', 'snapshot', 'show', 'release'].includes(job.kind)) throw new Error('Unrequested job.');
+  if (!latestJobs.some(j => j.id === job.id && j === job) || !['commission', 'send', 'tail', 'stop', 'revive', 'forget', 'image', 'start', 'snapshot', 'show', 'fix', 'release'].includes(job.kind)) throw new Error('Unrequested job.');
   if (job.kind === 'commission') {
     const sites = new Sites(jobWorld());
     const result = await sites.commission({ ...job.commission, node: null }); return JSON.stringify(result);
@@ -66,10 +66,11 @@ export async function executeJob(job, latestJobs, sessions, village, run = exec,
   // A Temple offering of this hero's work (v0.43): git only, in its own folder. Our own errors go back as data, so the
   // server can tell "not a git repository" (offer a scroll instead) from a failure.
   // v0.46: a release's governance facts (base..commit), read the same way; the server classifies them.
-  if (job.kind === 'snapshot' || job.kind === 'show' || job.kind === 'release') {
+  if (job.kind === 'snapshot' || job.kind === 'show' || job.kind === 'fix' || job.kind === 'release') {
     if (s.remote_name || s.ssh_host) throw new Error('Remote sessions cannot be offered.');
     try {
       if (job.kind === 'show') return JSON.stringify(await (opts.lines || commitLines)(w.path, job.commit, job.file, job.start, job.end));
+      if (job.kind === 'fix') return JSON.stringify(await (opts.fix || fixView)(w.path, job.commit, job.file, job.evidence));
       if (job.kind === 'release') return JSON.stringify(await (opts.release || releaseFacts)(w.path, job.base, job.commit));
       const { head, kind, diff } = await (opts.snapshot || snapshotOf)(w.path, job.commit), d = digest(diff);
       return JSON.stringify({ head, kind, diff: d.kept, hash: d.hash, allFiles: d.allFiles, truncated: d.truncated });
@@ -247,7 +248,7 @@ export async function main(args = process.argv.slice(2)) {
       // Jobs run concurrently so a long wrap-up cannot interrupt heartbeats.
       // A start's refusals are fixed sentences; the catch-all text is what the server reads as an un-updated node.
       // A failed commission says why (home folder masked), so the Steward can fix this machine without the human.
-      for (const job of next.jobs || []) { inflight++; executeJob(job, next.jobs, sessions, village, exec, transcriptTail, null, { steward }).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, ['snapshot', 'show', 'release'].includes(job.kind) ? RESULT_MAX : 24000), error: '' }), e => results.push({ id: job.id, ok: false, output: '', error: job.kind === 'start' ? (e?.safe ? e.message : 'The Steward could not be started.') : job.kind === 'commission' ? jobReason(e) : 'Local node job failed; check folder and agent-deck.' })).finally(() => inflight--); }
+      for (const job of next.jobs || []) { inflight++; executeJob(job, next.jobs, sessions, village, exec, transcriptTail, null, { steward }).then(output => results.push({ id: job.id, ok: true, output: String(output || '').slice(0, ['snapshot', 'show', 'fix', 'release'].includes(job.kind) ? RESULT_MAX : 24000), error: '' }), e => results.push({ id: job.id, ok: false, output: '', error: job.kind === 'start' ? (e?.safe ? e.message : 'The Steward could not be started.') : job.kind === 'commission' ? jobReason(e) : 'Local node job failed; check folder and agent-deck.' })).finally(() => inflight--); }
       if (next.version && process.env.AMYGDALA_NODE_WORKER === '1' && !inflight && !updating && Date.now() - lastUpdate > 600000) {
         lastUpdate = Date.now(); updating = true;
         selfUpdate(REPO, next.version).then(r => { if (r === 'updated') { console.error('Node updated; restarting.'); process.exit(75); } if (r !== 'current') console.error(`Node update skipped: ${r}.`); }, () => {}).finally(() => { updating = false; });

@@ -1865,3 +1865,10 @@ The High Priest is no longer woken for every offering. She wakes automatically o
 or when one has waited 12 h; appeals still wake their reviewer at once. `POST /api/governance/wake` wakes her now for
 everything waiting (the usage and hibernation gates still apply; it refuses when nothing waits) and records a `wake`
 ledger entry. The governance snapshot adds `priest`, `wakes.autoAt` and `wakes.maxWaitHours`, and each pending row adds `wokeAt`.
+
+## v0.76: fix checks for work on other machines
+
+The node `fix` job takes `{ sessionId, commit, file, evidence }` and returns the current head, the file's diff since the
+reviewed commit, whether the evidence is still in the committed and working file, and whether there are uncommitted
+changes. A fix check on node work asks the offering's hero, then a live village worker on the same node and project;
+if neither is reachable, `answer` is `{ unavailable: <why> }` instead of null.
