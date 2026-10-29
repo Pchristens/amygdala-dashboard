@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Tests no longer read this machine's real Codex usage (a v0.48 slip that made four tests fail whenever Codex ran hot).
 - Allowance reset times in Lamps roll over to days past 24 hours: 26 hours reads "resets in 1d 2h 0m".
 
 ## v0.49 — 2026-10-28
