@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Allowances whose reset time has passed now read "reset" in Lamps instead of an old figure, and an old 100% no longer
+  keeps residents on that provider paused after the reset (v0.55).
 - Tests no longer read this machine's real Codex usage (a v0.48 slip that made four tests fail whenever Codex ran hot).
 - Lamps now shows each village resident's average cost per turn as a share of its provider's weekly allowance, measured
   only from turns when no hero, other resident or answer run used that provider at the same time (v0.54).

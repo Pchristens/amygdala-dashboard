@@ -1669,3 +1669,11 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
   `sumDelta / n` to two decimals, or null with no clean samples. The isle's usage view has no such field.
 - Lamps shows it under "Weekly allowance per turn", reading "measuring…" below 3 samples. Providers report whole
   percentages, so a single turn reads 0 or 1; the figure is the average over many.
+
+## v0.55: windows past their reset
+
+- A provider window whose `resets_at` has passed is treated as reset until a fresh reading arrives: it no longer counts
+  toward usage pressure (`providerPressure`), so an old 100% stops pausing that pool's residents after the reset. Codex
+  reports its allowance only when a request is made, which is why its reading can sit past a reset.
+- **Snapshot.** In `usage.limits.providers[].windows[]`, such a window reads `used_percentage: 0` with `rolledOver: true`;
+  the stored reading is unchanged. Lamps shows it as "reset · waiting for a fresh reading".

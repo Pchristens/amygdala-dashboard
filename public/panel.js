@@ -1435,7 +1435,7 @@ export function createPanel(opts) {
     card.appendChild(svg);
     card.appendChild(h('div', { class: 'amphora-label', text: label }));
     card.appendChild(h('div', { class: 'amphora-pct', text: remaining == null ? (note || 'not reported') : `${Math.round(remaining)}% left` }));
-    for (const w of windows) card.appendChild(h('div', { class: 'amphora-win', text: `${w.label || w.kind || 'window'}: ${Math.round(+w.used_percentage)}% used${w.stale || stale ? ' · stale' : ''}${untilText(w.resets_at) ? ` · ${untilText(w.resets_at)}` : ''}` }));
+    for (const w of windows) card.appendChild(h('div', { class: 'amphora-win', text: w.rolledOver ? `${w.label || w.kind || 'window'}: reset · waiting for a fresh reading` : `${w.label || w.kind || 'window'}: ${Math.round(+w.used_percentage)}% used${w.stale || stale ? ' · stale' : ''}${untilText(w.resets_at) ? ` · ${untilText(w.resets_at)}` : ''}` }));
     if (stale) card.appendChild(h('div', { class: 'amphora-win stale-note', text: 'reading may be stale' }));
     return card;
   }

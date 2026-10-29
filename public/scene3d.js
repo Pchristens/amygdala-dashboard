@@ -643,7 +643,7 @@ export const BUILDERS = {
     return { h: 22, hit: [60, 26, 40], ...(deploy && { bowl: { x: x - 16, y: y + 3.7, z: z + 6, r: 3.4 } }) };
   },
   // The Steward's House (v0.49): a plain whitewashed house with a low tiled roof under the cliff, beside the Quiet Stone.
-  // Deliberately humble (no columns, no podium, no tower) and smaller than the Kettle: the Steward keeps accounts here, it
+  // Deliberately humble (no columns, no podium, no tower) and well below the Temple: the Steward keeps accounts here, it
   // does not rule. Its forecourt of travertine flags runs to the stone's sand ring, so the two read as one precinct.
   stewardhouse(b, e, pool, ao, x, y, z) {
     const W = 36, D = 24, H = 26, R = 9, F = y + 1.2, front = z + D / 2;
