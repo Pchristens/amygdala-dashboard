@@ -36,8 +36,10 @@ try {
   fs.mkdirSync(c.logs); w.conductor = c;
   const mcp = createMcpHandler(w);
   const rpc = (token, name, args) => new Promise(resolve => mcp({ method: 'POST' }, { writeHead() {}, end(s) { resolve(JSON.parse(s).result); } }, JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }), token));
-  // Any Claude window blocks even a different model-specific pool; queued orders stay queued.
+  // Fable's own weekly stops only Fable models; a hot all-model Claude window stops them all; queued orders stay queued.
   w.usage.limits = { providers: [{ id: 'claude', windows: [{ kind: 'seven_day_fable', used_percentage: 95 }] }] };
+  assert(!c.pressureBlocked({ agent: 'claude', model: 'claude-opus-5-5' }), 'the Fable weekly must not stop other Claude models'); assert(c.pressureBlocked({ agent: 'claude', model: 'claude-fable-5-1' }));
+  w.usage.limits = { providers: [{ id: 'claude', windows: [{ kind: 'seven_day', used_percentage: 95 }] }] };
   c.tick(); assert.equal(w.activeTurns.length, 0); assert(queued.every(o => o.status === 'queued'));
   w.usage.limits.providers = []; const offTick = w.onChange(() => c.tick()); c.tick(); c.tick(); offTick(); await settle();
   assert.equal(w.activeTurns.length, 4); assert.equal(w.activeTurns.filter(t => t.resident === 'Quill').length, 3);

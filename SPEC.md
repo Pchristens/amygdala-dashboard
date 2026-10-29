@@ -1801,3 +1801,10 @@ The conductor drops a governance duty once none of its `offeringIds` still needs
 
 Resident map cards offer Wake, Details, Order and Follow/Unfollow; Order selects only the named eligible recipient.
 Pinned resident cards update in place on snapshots, preserve focus, and return focus to their opener when closed.
+
+## v0.69: Fable's weekly stops only Fable
+
+`Conductor.pressureBlocked(r)` (the 95% hard stop) reads only `usage.providerPressure(provider, r.model)`, which counts
+the windows that apply to that model: the `seven_day_fable` window gates Fable models only. Usage hibernation uses
+`pressureLimit(pool, model)`: 85% (waking below 80%) for Claude models other than Fable, 80% (waking below 75%) for
+everyone else, Fable included.

@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Fable running out of its weekly allowance no longer stops the other Claude residents (like the High Priest on Opus); they keep acting until 85% of the Claude weekly limit (v0.69).
 - A resident with long plans no longer pushes their card off the screen: long notes fold to two lines and the card never grows taller than the map.
 - Resident card buttons wrap instead of overflowing when a label grows, and focus returns to the right place after reopening a card from inside itself.
 - Resident map cards offer wake, details, orders and follow controls, and keep keyboard focus as the village updates (v0.66).
