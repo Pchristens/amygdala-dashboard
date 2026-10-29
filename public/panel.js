@@ -1281,7 +1281,7 @@ export function createPanel(opts) {
     const ms = (t < 1e12 ? t * 1000 : t) - Date.now();
     if (ms <= 0) return 'resets now';
     const m = Math.round(ms / 60000);
-    return `resets in ${m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`}`;
+    return `resets in ${m >= 1440 ? `${Math.floor(m / 1440)}d ${Math.floor(m % 1440 / 60)}h ${m % 60}m` : m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`}`;
   }
   function renderLamps() {
     const root = els.lamps;
