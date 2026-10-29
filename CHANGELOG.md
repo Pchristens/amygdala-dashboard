@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Tales no longer wipe what you are typing: a live update waits until you click away (sealing the isle still applies at once).
+- The rail tooltips number Orders (5) and Lamps (6) to match the keys.
 - The Happening now feed tells screen readers and the keyboard whether it is open.
 - Order recipients are themed checkboxes (Whole village is one click and exclusive), and picked names survive a roster change.
 - The Residents tab now opens on the people: open petitions sit above them (nothing shows when there are none), and visitor passes and "Notify me" are tucked into one closed "Visitors & passes" section.

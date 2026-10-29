@@ -239,8 +239,15 @@ export function createPanel(opts) {
     els.exhibits.hidden = exhibitView !== 'art'; $('tales').hidden = exhibitView !== 'tales'; renderTales();
   });
   let taleControls = null;
+  let talesDirty = false;
+  let talesFocusout = false;
   function renderTales() {
     const root = $('tales');
+    if (!talesFocusout) { root.addEventListener('focusout', (e) => { if (root.contains(e.relatedTarget)) return; queueMicrotask(() => { if (!root.contains(document.activeElement) && talesDirty) renderTales(); }); }); talesFocusout = true; }
+    const active = document.activeElement;
+    // A sealed isle always applies at once; otherwise wait until the human stops typing in a tale.
+    if (!isleLocked() && root.contains(active) && !taleControls?.contains(active)) { talesDirty = true; return; }
+    talesDirty = false;
     if (isleLocked() || !state.taleSettings) taleControls = null;
     clearExcept(root, taleControls);
     if (isleLocked()) { renderSealedTablet(root); return; }
