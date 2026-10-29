@@ -1708,3 +1708,18 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
   hero model's villager if it is of that agent, else the first villager of that agent, else the hero model's villager,
   else the hero's own echo. The model never appears in snapshots; only the resident name does. The Steward hero is not
   special: its apprentices walk to and from its house like any hero's.
+
+## v0.58: bells survive a lost report response
+
+Amends the v0.25 node bell rule "dispatched bells are never resent, even if the response is lost".
+
+- **Ack-aware helpers.** A report carrying `bellAck` (every current helper sends it, `0` after a restart) is answered with
+  the bells after the pass's acknowledgement cursor, not after its dispatch cursor: anything sent but not yet
+  acknowledged is sent again. The helper skips ids it has already processed, so a resend notifies at most once per
+  helper run. Acknowledgements still cannot pass the dispatch cursor, which only moves forward.
+- **Older helpers.** A report without `bellAck` keeps at-most-once delivery: what is dispatched counts as acknowledged.
+- **Muted passes.** Turning notifications off moves both cursors to the current bell id, so turning them back on replays
+  nothing.
+- **Node terminals.** Terminal output or an exit for a terminal the server has already closed for that same node is
+  validated and then dropped, instead of failing the whole `/node/term` poll (which made the helper close every terminal
+  on that machine). Output for a terminal id never issued to that node is still refused.

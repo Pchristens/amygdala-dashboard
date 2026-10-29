@@ -1,6 +1,6 @@
 import { Steward, stewardGet } from './lib/steward.js';
 import { Watchtower } from './lib/audit.js';
-import { notify, bellBatch } from './lib/notify.js';
+import { notify, bellBatch, pagePresence } from './lib/notify.js';
 // Amygdala server: static front end, world API + SSE, MCP endpoint for residents, conductor, agent-deck sync.
 import http from 'node:http';
 import fs from 'node:fs';
@@ -149,7 +149,7 @@ const API = {
   // Long-running (waits for the hero's wrap-up): start it and return; progress shows in the feed.
   'POST /api/tales/end': b => { const id = String(b.workerId); if (!world.workers.some(w => w.id === id)) throw new Error('No such hero.'); world.tales.endLabour(id).catch(e => world.addFeed(null, `Ending the labour failed: ${e.message}`)); return { started: true }; },
   'POST /api/nodes/pass': b => world.nodes.issue(b.name, b.hours),
-  'POST /api/bells/presence': b => { if (typeof b.id !== 'string' || !/^[a-z0-9-]{1,80}$/i.test(b.id) || typeof b.visible !== 'boolean') throw new Error('Invalid page presence.'); if (b.visible && bellPages.size < 256) bellPages.set(b.id, Date.now()); else bellPages.delete(b.id); },
+  'POST /api/bells/presence': b => pagePresence(bellPages, b),
   'POST /api/nodes/notify': b => world.nodes.setNotify(b.id, b.on),
   'POST /api/nodes/revoke': b => world.nodes.revoke(String(b.id)),
   'POST /api/nodes/keeper': b => setKeeper(world, String(b.id), b.on === true),

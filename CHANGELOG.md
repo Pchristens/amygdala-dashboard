@@ -9,6 +9,12 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A bell sent to another machine is sent again if the reply carrying it was lost, instead of being dropped (v0.58).
+- Closing a terminal for a hero on another machine no longer closes that machine's other open terminals (v0.58).
+- A hero quarantined to the Far Isle while its tale was being recorded no longer gets a village tale.
+- Temple rulings waiting on a resident who was disabled or sent to the isle, and duties no one on that side can hold,
+  no longer pile up and stop new duties (tales, omens, fix-checks) from being handed out.
+- A dashboard page that is already open keeps silencing the machine's own bell toasts even with many pages open.
 - Agent CLIs a hero starts from its terminal (claude -p, codex exec, agy, grok, gemini) now walk beside it as apprentices,
   drawn as the villager whose model they run; only the tool and model are read, never the prompt (v0.57).
 - Orders give a resident up to 15 minutes to finish (other turns keep 6), so a resident asked to review code has time
