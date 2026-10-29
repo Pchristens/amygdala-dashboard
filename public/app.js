@@ -1,5 +1,6 @@
 import { createBells } from './bell.js';
 import { placeCard } from './card-place.js';
+import { residentCard } from './cards.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Amygdala front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
 // the Far Isle navigation, shared-tree cards, milestones, and the rune seal.
@@ -207,26 +208,7 @@ function buildCard(info) {
   if (type === 'resident') {
     const r = (state.residents || []).find((x) => x && x.name === id);
     if (!r) return null;
-    const lastPost = [...(state.posts || [])].reverse().find((p) => p && p.author === r.name);
-    const onIsle = zoneOf(r) === 'isle';
-    const sealedR = r.mood === 'sealed' || (onIsle && sealLocked());
-    const out = [
-      h('div', { class: 'card-head' }, avatar(r.name, r.color), h('div', {},
-        h('div', { class: 'card-name', text: r.name }),
-        residentIdentity(r, state),
-        h('div', { class: 'card-sub' },
-          h('span', { class: `chip ${agentClass(r.agent)}`, text: String(r.agent || 'agent') }), ' ',
-          h('span', { class: `chip model ${agentClass(r.agent)}`, text: String(r.model || '') }), ' ', zoneChip(r), ' ',
-          r.rank ? h('span', { class: `chip chip-rank rank-${r.rank}`, text: r.rank === 'priest' ? '☀ High Priest' : r.rank === 'high' ? '✦ high' : 'low' }) : null))),
-      r.persona ? h('div', { class: 'card-quote', text: String(r.persona) }) : null,
-      r.appearance && (r.appearance.self_description || r.appearance.motto) ? h('div', { class: 'own-words' }, String(r.appearance.self_description || '').slice(0, 240), r.appearance.motto ? h('span', { class: 'motto', text: `“${String(r.appearance.motto).slice(0, 70)}”` }) : null) : (r.appearance === null && r.persona ? h('div', { class: 'card-row dim-note', text: 'Not yet sculpted — still plain clay.' }) : null),
-      h('div', { class: 'card-row' }, h('b', { text: capitalize(r.mood || '—') }), ` · ${sealedR ? 'beyond the seal' : r.doing || 'idle'}`),
-      h('div', { class: 'card-row' }, `${+r.turns || 0} turns`, r.enabled === false ? ' · asleep (disabled)' : '', (state.world?.activeTurns || [state.world?.activeTurn].filter(Boolean)).some(t => t.resident === r.name) ? ' · taking a turn now' : ''),
-    ];
-    if (lastPost && !sealedR) out.push(h('div', { class: 'card-row' }, h('b', { text: 'Last post: ' }), String(lastPost.text || '').slice(0, 160), h('span', { class: 'post-time', text: ` · ${relTime(lastPost.ts)}` })));
-    const mine = (state.commitments || []).filter((c) => c && c.ownerId === r.name && c.status === 'active');
-    for (const c of mine) out.push(commitmentEl(c, { compact: true }));
-    return out.filter(Boolean);
+    return [residentCard(r, state, { onClose: closeCard }, { embedded: true })];
   }
   if (type === 'worker') {
     const w = (state.workers || []).find((x) => x && x.id === id);

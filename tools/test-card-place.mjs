@@ -6,6 +6,9 @@ const result = placeCard({ above: { x: 250, y: 200 }, below: { x: 250, y: 200 },
 assert.deepEqual(result, { left: 250, top: 200, below: false, docked: false });
 assert.equal(placeCard({ above: { x: 250, y: 80 }, below: { x: 250, y: 90 }, size, bounds }).below, true);
 assert.equal(placeCard({ above: { x: 250, y: 80 }, below: { x: 250, y: 90 }, size, bounds }).top >= 64, true);
+assert.equal(placeCard({ above: { x: 250, y: 200 }, below: { x: 250, y: 200 }, size: { w: 200, h: 300 }, bounds }).top, 80);
+const crowdedAbove = placeCard({ above: { x: 250, y: 350 }, below: { x: 250, y: 350 }, size: { w: 200, h: 300 }, bounds });
+assert.deepEqual(crowdedAbove, { left: 250, top: 384, below: false, docked: false });
 const drawer = placeCard({ above: { x: 400, y: 250 }, below: { x: 400, y: 250 }, size, bounds, obstacles: [{ left: 350, top: 64, right: 500, bottom: 400 }] });
 assert.equal(drawer.left + size.w / 2 <= 350, true);
 assert.equal(placeCard({ above: { x: 1, y: 200 }, below: { x: 1, y: 200 }, size, bounds }).left, 106);

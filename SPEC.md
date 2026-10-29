@@ -1792,3 +1792,7 @@ snapshot's `wakes` is `{ used }` (wakes started today, for display). `pump()` gr
 offering due while that resident's duty is still queued joins it without a new wake. No offering due, no wake. The gates are
 unchanged: enabled, in the village, not hibernating, provider not hot, and an offering woken for is retried after six hours.
 The conductor drops a governance duty once none of its `offeringIds` still needs that resident.
+
+## v0.65: compact resident card
+
+`public/cards.js` mounts a resident card once and updates its keyed fields from snapshots; only supplied action callbacks are shown. Sealed residents never expose doing, posts or commitments. When neither side fits, `placeCard` clamps the card within the usable vertical bounds while retaining its chosen side.

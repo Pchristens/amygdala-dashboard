@@ -29,6 +29,8 @@ export function placeCard({ above, below, size, bounds, obstacles = [], gap = 14
   if (docked) {
     if (a.y < usable.top || a.y > usable.bottom) isBelow = false;
     top = isBelow ? Math.max(usable.top, Math.min(usable.bottom - gap - h, anchor.y)) : Math.max(usable.top + gap + h, Math.min(usable.bottom, anchor.y));
+  } else if (!fitsAbove(a) && !fitsBelow(b)) {
+    top = isBelow ? Math.max(usable.top, Math.min(usable.bottom - gap - h, anchor.y)) : Math.max(usable.top + gap + h, Math.min(usable.bottom, anchor.y));
   }
   return { left: x(anchor), top, below: isBelow, docked };
 }
