@@ -1180,5 +1180,5 @@ export async function createMap3D(container, opts = {}) {
   setQuality(URLQ.get('gfx') || opts.quality);
   setSunGoal({ phase: 'morning' }, null);
   panTo('village', false);
-  return { setHover, playIntro, getVillageState, sunInfo, update, project, toWorld, entityPos, pulseAt, recenter, panTo, setView, viewInfo, setGiftMode, get state() { return current; }, setQuality, quality, follow: (name) => { follow = name ? figureKey('resident', name) : null; } };
+  return { setHover, playIntro, getVillageState, sunInfo, update, project, toWorld, entityPos, pulseAt, recenter, panTo, setView, viewInfo, setGiftMode, get state() { return current; }, setQuality, quality, following: (name) => follow === figureKey('resident', name), follow: (name) => { follow = name ? figureKey('resident', name) : null; } };
 }

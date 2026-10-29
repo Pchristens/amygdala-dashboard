@@ -1516,7 +1516,14 @@ export function createPanel(opts) {
   }
 
   function openOrder(id) { selectTab('orders'); const card = [...document.querySelectorAll('.order-card')].find(c => JSON.parse(c.dataset.orderIds || '[]').includes(id)); if (card) { card.querySelector('details').open = true; card.scrollIntoView({ block: 'nearest' }); } }
-  return { openOrder, update, selectTab, setChannel, setZone, refreshTimes, get activeTab() { return activeTab; }, get channel() { return channel; }, get zone() { return zone; } };
+  function orderTo(name) {
+    selectTab('orders'); renderOrders();
+    const root = document.getElementById('orders'); if (!root?._to) return;
+    const options = [...root._to.options], eligible = options.some(o => o.value === name && o.value !== 'all');
+    for (const option of options) option.selected = eligible && option.value === name;
+    if (eligible) root._form.querySelector('[aria-label="Headline"]')?.focus();
+  }
+  return { openOrder, orderTo, update, selectTab, setChannel, setZone, refreshTimes, get activeTab() { return activeTab; }, get channel() { return channel; }, get zone() { return zone; } };
 }
 
 // ---------- WebAudio melody ----------

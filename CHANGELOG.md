@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Resident map cards offer wake, details, orders and follow controls, and keep keyboard focus as the village updates (v0.66).
 - Resident map cards show a compact status, current work, recent post and weekly usage (v0.65).
 - When an offering joins a High Priest wake that hasn't started yet, her instructions now name it too.
 - The High Priest no longer has a daily wake limit: one wake rules on every offering waiting for her, and she is only woken when something waits (v0.64).

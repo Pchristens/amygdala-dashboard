@@ -75,7 +75,7 @@ export function residentCard(resident, snapshot, actions = {}, { embedded = fals
     const lastPost = sealed ? null : [...(state.posts || [])].reverse().find(p => p && p.author === r.name && zoneOf(p) === zoneOf(r));
     post.hidden = !lastPost;
     text(post, lastPost ? `Last post: ${line(lastPost.text)}${lastPost.ts ? ` · ${relTime(lastPost.ts)}` : ''}` : '');
-    const usage = r.zone === 'village' && !sealed ? state.usage?.village?.weeklyPerTurn?.[r.name] : null;
+    const usage = zoneOf(r) === 'village' && !sealed ? state.usage?.village?.weeklyPerTurn?.[r.name] : null;
     const measured = usage?.perTurnPct != null && Number.isFinite(+usage.perTurnPct) && +usage.samples >= 3;
     weekly.hidden = !measured;
     text(weekly, measured ? `${+usage.perTurnPct}% weekly allowance per turn` : '');

@@ -138,13 +138,15 @@ function pinCard(info) {
   if (card.pinned && card.info && card.info.type === info.type && card.info.id === info.id) return closeCard();
   showCard(info, true);
 }
-function closeCard() { card.info = null; card.pinned = false; cardEl.hidden = true; cardEl.textContent = ''; }
+function closeCard() { const root = card.root; card.root = null; root?.close(); card.info = null; card.pinned = false; cardEl.hidden = true; cardEl.textContent = ''; }
 cardEl.addEventListener('click', (e) => { if (e.target.closest('.card-close')) closeCard(); });
 
 function showCard(info, pinned) {
   if (!state) return;
+  const opener = document.activeElement;
   const content = buildCard(info);
   if (!content) return closeCard();
+  card.root?.close({ restoreFocus: false });
   card.info = info; card.pinned = pinned;
   cardEl.textContent = '';
   const where = cardPlaceName(info);
@@ -153,6 +155,8 @@ function showCard(info, pinned) {
   cardEl.classList.toggle('wide', info.type === 'tree' || info.type === 'ghost');
   cardEl.appendChild(h('button', { class: 'btn btn-ghost btn-xs card-close', type: 'button', text: '✕', 'aria-label': 'Close' }));
   cardEl.hidden = false;
+  card.root = info.type === 'resident' ? content[0] : null;
+  card.root?.open(opener);
   card.size = { w: cardEl.offsetWidth, h: cardEl.offsetHeight };
   repositionCard();
 }
@@ -197,6 +201,14 @@ function repositionCard() {
 function zoneChip(item) {
   return zoneOf(item) === 'isle' ? h('span', { class: 'chip chip-isle', text: 'isle' }) : null;
 }
+function wakeResident(name) { return api(`/api/residents/${encodeURIComponent(name)}/wake`, {}).then((ok) => { if (okResult(ok)) toast(`Waking ${name}…`); }); }
+const residentActions = {
+  onClose: closeCard, onWake: wakeResident,
+  onDetails: () => setDrawer(true, 'residents'),
+  onOrder: name => { setDrawer(true, 'orders'); panel.orderTo(name); },
+  onFollow: (name, on) => map.follow(on ? name : null),
+  isFollowing: name => map.following(name),
+};
 function buildCard(info) {
   const { type, id } = info;
   if (type === 'ghost') {
@@ -208,7 +220,7 @@ function buildCard(info) {
   if (type === 'resident') {
     const r = (state.residents || []).find((x) => x && x.name === id);
     if (!r) return null;
-    return [residentCard(r, state, { onClose: closeCard }, { embedded: true })];
+    return [residentCard(r, state, residentActions, { embedded: true })];
   }
   if (type === 'worker') {
     const w = (state.workers || []).find((x) => x && x.id === id);
@@ -367,7 +379,7 @@ const panel = createPanel({
   onPost: ({ text, channel, replyTo, zone }) => api('/api/human/post', { text, channel, replyTo: replyTo || null, zone }),
   onToggleResident: (name, enabled) => api(`/api/residents/${encodeURIComponent(name)}`, { enabled }),
   onHibernate: (name, on) => api(`/api/residents/${encodeURIComponent(name)}/hibernate`, { on }),
-  onWake: (name) => api(`/api/residents/${encodeURIComponent(name)}/wake`, {}).then((ok) => { if (okResult(ok)) toast(`Waking ${name}…`); }),
+  onWake: wakeResident,
   onQuarantine: (project, host, on) => api('/api/quarantine', { project, host, on }).then((ok) => { if (okResult(ok)) toast(on ? `${project} is quarantined on the isle.` : `${project} is back in The Works.`); }),
   onMilestone: (project, host) => openMilestone(project, host),
   onFocusWorker: (id) => { const w = (state?.workers || []).find((x) => x.id === id); if (w) pinCard({ type: 'worker', id }); },
@@ -1229,7 +1241,11 @@ function applyState(s) {
   renderHeader();
   renderHappening();
   if (card.info) {
-    if (card.pinned) showCard(card.info, true); else repositionCard();
+    if (card.pinned && card.info.type === 'resident' && card.root?.parentNode === cardEl) {
+      const r = (state.residents || []).find(r => r && r.name === card.info.id);
+      if (!r) closeCard();
+      else { card.root.update(r, state, residentActions); card.size = { w: cardEl.offsetWidth, h: cardEl.offsetHeight }; repositionCard(); }
+    } else if (card.pinned) showCard(card.info, true); else repositionCard();
   }
   if (placePane.id && drawerOpen && currentTab() === 'place') { renderPlacePane(); if (!MOCK && Date.now() - placePane.fetchedAt > 2000) openPlacePane(placePane.id, true); }
 }

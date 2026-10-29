@@ -1796,3 +1796,8 @@ The conductor drops a governance duty once none of its `offeringIds` still needs
 ## v0.65: compact resident card
 
 `public/cards.js` mounts a resident card once and updates its keyed fields from snapshots; only supplied action callbacks are shown. Sealed residents never expose doing, posts or commitments. When neither side fits, `placeCard` clamps the card within the usable vertical bounds while retaining its chosen side.
+
+## v0.66: resident card actions
+
+Resident map cards offer Wake, Details, Order and Follow/Unfollow; Order selects only the named eligible recipient.
+Pinned resident cards update in place on snapshots, preserve focus, and return focus to their opener when closed.
