@@ -1018,7 +1018,7 @@ export function createPanel(opts) {
       fold.append(box);
     }
     if (pending.length) {
-      const box = h('div', { class: 'panel-settings' }, h('b', { text: 'Awaiting a ruling' }), priestWake(state.governance, pending));
+      const box = h('div', { class: 'panel-settings' }, h('b', { text: 'Awaiting a ruling' }));
       for (const r of pending) box.append(h('p', { class: 'gov-row' }, h('span', { class: `pill gov-state gov-${r.state}`, text: r.state }), h('span', { class: 'need-name', text: ` ${r.title || r.project} ` }), h('span', { class: 'worker-path', text: `${r.project} ${shortHash(r.sha)}${r.stewardOwn ? ' · the Steward’s own' : ''} · report ${r.report ? 'given' : 'missing'} · tests ${r.tests || 'missing'}` }),
         h('span', { class: 'dim-note gov-why', text: (r.reasons || []).join('; ') }), decideButton(r)));
       fold.append(box);
@@ -1035,8 +1035,8 @@ export function createPanel(opts) {
     const who = gov?.priest, waiting = pending.filter(r => r.state !== 'evidence').length;
     if (!who || !waiting || !opts.api) return null;
     const woke = Math.max(0, ...pending.map(r => +r.wokeAt || 0)), wakes = gov.wakes || {};
-    const note = h('span', { class: 'dim-note gov-wake-note', text: ` ${woke ? `woken ${relTime(woke)}` : 'not woken yet'} · she wakes on her own at ${wakes.autoAt || 5} waiting or after ${wakes.maxWaitHours || 12} h` });
-    const button = h('button', { class: 'btn btn-ghost btn-xs gov-wake', type: 'button', text: `Wake ${who} (${waiting})`, title: `Wake ${who} now to rule on everything waiting`,
+    const note = h('span', { class: 'dim-note gov-wake-note', text: ` ${woke ? `woken ${relTime(woke)}` : 'not woken yet'} · on her own at ${wakes.autoAt || 5} waiting or ${wakes.maxWaitHours || 12} h` });
+    const button = h('button', { class: 'btn btn-xs gov-wake', type: 'button', text: `Wake ${who} (${waiting})`, title: `Wake ${who} now to rule on everything waiting`,
       onClick: async () => { button.disabled = true; const r = await opts.api('/api/governance/wake', {}); button.disabled = false; if (r?.ok !== false && r?.resident) note.textContent = ` waking ${r.resident} for ${r.offerings}…`; } });
     return h('span', { class: 'gov-wake-row' }, button, note);
   }
@@ -1188,6 +1188,7 @@ export function createPanel(opts) {
     const live = all.filter((o) => o.status !== 'closed').sort(byNew), list = all.filter((o) => o.status === 'closed').sort(byNew);
     if (live.length) {
       els.workshop.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Offerings' }), h('span', { class: 'count', text: String(live.length) })));
+      const wake = zone === 'village' ? priestWake(state.governance, state.governance?.pending || []) : null; if (wake) els.workshop.appendChild(h('div', { class: 'gov-wake-bar' }, wake));
       for (const o of live) els.workshop.appendChild(offeringCard(o));
     }
     const fold = foldSection('offerings', 'Offerings history', list.length);

@@ -37,8 +37,8 @@ assert.equal(closed, 1); assert.match(toasts[0], /Accepted/);
 assert(fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8').includes('id="decide-dialog"'));
 // v0.75: a Wake button for the High Priest sits on the box, counts what waits for her, and calls the wake route.
 const woken = [], wakePanel = createPanel({ api: async (path, body) => { woken.push(path); return { ok: true, resident: 'Themis', offerings: 1 }; } });
-wakePanel.update({ workers: [], residents: [], counsel: [], sites: [], world: {}, governance: { ...governance, priest: 'Themis', wakes: { used: 0, autoAt: 5, maxWaitHours: 12 } } });
-const wake = [...document.getElementById('workshop').querySelectorAll('.gov-wake')].at(-1);
+wakePanel.update({ workers: [], residents: [], counsel: [], sites: [], world: {}, offerings: [{ id: 'of1', title: 'Synthetic', project: 'p', status: 'open', zone: 'village', createdAt: 1 }], governance: { ...governance, priest: 'Themis', wakes: { used: 0, autoAt: 5, maxWaitHours: 12 } } });
+const bar = [...document.getElementById('workshop').querySelectorAll('.gov-wake-bar')].at(-1); assert(bar, 'the Wake button sits under the Offerings heading'); const wake = bar.querySelector('button');
 assert.equal(wake.textContent, 'Wake Themis (1)'); await wake.onclick?.() ?? wake.dispatchEvent({ type: 'click', stopPropagation() {} }); await new Promise(setImmediate);
 assert.deepEqual(woken, ['/api/governance/wake']);
 console.log('decide ok');
