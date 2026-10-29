@@ -1614,3 +1614,32 @@ record of its own; the Temple ledger, `governance.approved` and `governance.depl
   worker carries `home: 'stewards-house'` and the house's coordinates, and keeps its `site`. Resting, private or isle
   Stewards are not placed there; other heroes are unchanged. `setStewardHero` refreshes workers so the move is immediate.
 - No new route, MCP tool or permission. The pane reads the human snapshot, plus `orders` and `governance.digest`.
+
+## v0.54: weekly allowance per turn
+
+- **What it measures.** For each village resident, the average rise in the weekly allowance that gates its model across one
+  of its turns, in percentage points. The window is chosen by `gatingWeekly(provider, model)` in `lib/usage.js`: Claude
+  `seven_day_fable` for a Fable model when reported, else `seven_day`; Antigravity the pool whose label matches the model
+  (Argon → the Argon pool, Claude or GPT through agy → "Claude and GPT", other models → "Gemini Models"), weekly windows
+  only; Codex and Grok `seven_day`. Stale windows and windows without a reading time are never used.
+- **Reading times.** `setProvider` stamps each window with `observedAt` (the reading's time). Windows carried over from an
+  older reading keep their own stamp (agent-deck's Claude reading carries the Fable weekly from `claude /usage`); an
+  `observedAt` supplied inside a window by agent-deck, a probe or a node is dropped and never trusted.
+- **A sample.** When a resident turn starts (`usage.turnBegan`), the gating weekly must have been read at most 20 minutes
+  before it; otherwise there is no sample. The sample waits (in memory) for a reading of the same window observed between
+  1 and 20 minutes after the turn ends; with none by then it is set aside as `noReading`. Delta = after − before. A fall,
+  or a reset time that moved by more than an hour, is set aside as `reset`.
+- **Clean only.** The span checked runs from 2 minutes before the first reading to the second. A sample is set aside as
+  `overlap` when any other resident turn, or a guidance, triage or audit run, on the same pool touched that span (resident
+  turns in either zone count, recorded in memory with no name); as `isolated` when an isolated run is still under way; and
+  as `hero` when a hero on that pool, on any machine, was running, stale, of unknown status or last active in the span, when
+  any hero of an unknown tool was, or when heroes have not been synced in the last 2 minutes. Heroes' pools follow their tool
+  (claude → anthropic, codex → openai, antigravity and gemini → google, grok → xai; anything else could be any).
+- **Stored.** Village turns only: an isle resident's turn never makes a sample. `world.s.turnWeekly` (persisted) holds one
+  entry per resident, model and window: `{ resident, model, window, n, sumDelta, discarded, reasons, recent (last 50
+  deltas), since, updatedAt }`.
+- **Snapshot.** `usage.village.weeklyPerTurn[resident] = { model, window, perTurnPct, samples, discarded, reasons, since }`,
+  for village residents, from the entry for the model they run now (else their best-sampled one). `perTurnPct` is
+  `sumDelta / n` to two decimals, or null with no clean samples. The isle's usage view has no such field.
+- Lamps shows it under "Weekly allowance per turn", reading "measuring…" below 3 samples. Providers report whole
+  percentages, so a single turn reads 0 or 1; the figure is the average over many.

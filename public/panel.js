@@ -1340,6 +1340,21 @@ export function createPanel(opts) {
       root.appendChild(bars('By provider · all time', Object.entries(byProvider).map(([k, v]) => ({ label: k, tokens: +v?.tokens || 0, turns: +v?.turns || 0, extra: `${+v?.measuredTurns || 0} measured${fmtCost(v?.cost) ? ` · ${fmtCost(v.cost)}` : ''}${Number.isFinite(+v?.today) ? ` · today ${fmtTok(v.today)}` : ''}` }))));
     }
 
+    // weekly cost per turn (v0.54): measured only when nothing else spent that pool across the turn
+    const weekly = zoneUsage?.weeklyPerTurn && typeof zoneUsage.weeklyPerTurn === 'object' ? Object.entries(zoneUsage.weeklyPerTurn).filter(([, v]) => v && typeof v === 'object') : [];
+    if (weekly.length) {
+      root.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Weekly allowance per turn' }), h('span', { class: 'dim-note lamps-note', text: 'clean turns only' })));
+      for (const [name, v] of weekly) {
+        const n = +v.samples || 0, pct = Number.isFinite(+v.perTurnPct) && v.perTurnPct != null ? +v.perTurnPct : null;
+        root.appendChild(h('div', { class: `turn-row ${n < 3 ? 'unmeasured' : ''}`, title: 'The rise in the weekly allowance from a reading just before the turn to one just after, kept only when no hero, other resident or answer run used that provider in between. Providers report whole percentages, so single turns read 0 or 1; the average over many turns is the figure.' },
+          avatar(name, residentByName(name)?.color, 'xs'),
+          h('span', { class: 'turn-who' }, h('b', { text: name })),
+          h('span', { class: 'chip chip-other', text: `${v.window || '?'}${v.model ? ` · ${v.model}` : ''}` }),
+          h('span', { class: 'turn-total', text: n < 3 || pct == null ? 'measuring…' : `≈${pct.toFixed(pct < 10 ? 1 : 0)}%` }),
+          h('span', { class: 'dim-note turn-meta', text: `${n} sample${n === 1 ? '' : 's'}${+v.discarded ? ` · ${+v.discarded} set aside` : ''}${n < 3 ? ' · needs 3' : ' of weekly per turn'}` })));
+      }
+    }
+
     // recent turns
     const recent = Array.isArray(zoneUsage?.recent) ? zoneUsage.recent.filter(Boolean).slice(-12).reverse() : [];
     root.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Recent turns' })));
