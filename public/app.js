@@ -735,6 +735,8 @@ $('commission-form').addEventListener('submit', async (e) => {
   if (effort) body.effort = effort;
   const err = $('cm-error');
   err.hidden = true;
+  if (/^(mnt|home|Users|Volumes)\//.test(body.path)) body.path = '/' + body.path; // a full path typed without its leading slash
+  if (/^~[^/\\]/.test(body.path)) { err.textContent = 'Write ~/ for the home folder on that machine, or a full path such as /mnt/c/Users/you for Windows files from WSL.'; err.hidden = false; return; }
   if (!body.path || !(body.path.startsWith('/') || body.path.startsWith('~') || /^[A-Za-z]:[\\/]/.test(body.path) || body.path.startsWith('\\\\'))) { err.textContent = 'The project folder must be an absolute path (or start with ~).'; err.hidden = false; return; }
   if (!body.title || !body.prompt) { err.textContent = 'Give the god a title and a task.'; err.hidden = false; return; }
   $('cm-submit').disabled = true;
@@ -742,7 +744,7 @@ $('commission-form').addEventListener('submit', async (e) => {
   const res = petition ? await api(`/api/petitions/${encodeURIComponent(petition.id)}/commission`, { ...body, brief: body.prompt, prompt: undefined }) : await api('/api/commission', body);
   $('cm-submit').disabled = false;
   if (okResult(res)) { commissionDialog.close(); toast(petition ? `A hero takes up ${petition.visitor}'s request.` : `A hero sets out for ${siteLabel(body.site)}.`); }
-  else { err.textContent = (res && res.error) || 'The commission was refused.'; err.hidden = false; }
+  else { err.textContent = (body.node ? `On ${$('cm-machine').selectedOptions[0]?.text || 'that machine'}: ` : '') + ((res && res.error) || 'The commission was refused.'); err.hidden = false; }
 });
 
 // ---------- Rune seal ----------

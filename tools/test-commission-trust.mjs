@@ -20,5 +20,8 @@ try {
   fs.mkdirSync(path.join(dir, 'real', 'inner'), { recursive: true }); fs.symlinkSync(path.join(dir, 'real', 'inner'), path.join(dir, 'link'));
   assert.equal(diskCase(path.join(dir, 'link') + '/../Users'), path.join(dir, 'link') + '/../Users', "'..' is never folded lexically");
   assert.equal(diskCase('C:\\x', 'win32'), 'C:\\x');
+  // The dialog adds a missing leading slash, explains '~mnt', and names the machine that refused the folder.
+  const app = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert(app.includes("body.path = '/' + body.path") && app.includes('Write ~/ for the home folder') && app.includes("`On ${$('cm-machine').selectedOptions[0]"));
   console.log('commission trust ok');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }

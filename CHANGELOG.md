@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The hero dialog fixes a folder typed without its leading slash (`mnt/c/...`), explains `~` without a slash, and says which machine refused a folder.
 - Sending a hero to a Windows folder from WSL works whatever capitals you type (like `/mnt/c/users/you`): the village uses the folder's real spelling, so Claude's trust check matches.
 - Opening "Send a hero on a labour" after making a petition a hero no longer leaves the model and effort fields locked.
 - The Terminal button is back on each hero's row in the Temple drawer, next to More, instead of hidden inside it.
