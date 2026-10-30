@@ -471,7 +471,7 @@ select {
   background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 10px; align-items: center;
 }
 .worker-row.waiting { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--panel-2)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--amber) 30%, transparent); }
-.worker-row .row-toggle { grid-column: 2; justify-self: end; }
+.worker-row .row-quick { grid-column: 2; justify-self: end; display: flex; gap: 6px; align-items: center; }
 .worker-row > .counsel { grid-column: 1 / -1; }
 .worker-more { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .hero-messages { flex-basis: 100%; color: var(--ink); }

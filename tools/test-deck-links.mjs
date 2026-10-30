@@ -22,7 +22,7 @@ globalThis.document = panelDocument();
 const ui = createPanel({ canOpenTerminal: () => true });
 ui.update({ workers: [{ id: 'local:abc123', title: 'hero', status: 'running', tool: 'codex', host: 'local', site: 'forge', zone: 'village' }], residents: [], counsel: [], sites: [{ id: 'forge', label: 'Forge' }], world: {} });
 const row = document.querySelector('.worker-row');
-assert(row.querySelector('.worker-actions').querySelector('button').textContent === 'Terminal ▸');
+assert(row.querySelector('.row-quick').querySelector('button').textContent === 'Terminal ▸' && !row.querySelector('.worker-more').textContent.includes('Terminal'));
 const server = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
 assert.match(server, /req\.headers\['x-amygdala-relayed'\][\s\S]*hf-relayed/);
 
