@@ -209,7 +209,7 @@ export function createPanel(opts) {
       }
       if (p.answer) card.append(h('b', { text: p.answerer || 'Answer' }), h('p', { class: 'petition-text', text: p.answer }));
       for (const f of p.followups || []) card.append(h('div', { class: 'dim-note', text: 'Visitor follow-up' }), h('p', { class: 'petition-text', text: f.question }), h('p', { class: 'petition-text', text: f.answer || f.status }));
-      if (p.rounds != null && p.status === 'answered') card.append(h('div', { class: 'dim-note', text: `${Math.max(0, p.rounds - (p.followups || []).length)} follow-ups left` }));
+      if (p.rounds != null && p.status === 'answered') card.append(h('div', { class: 'dim-note', text: `${Math.max(0, p.rounds - (p.followups || []).filter(f => f.status !== 'failed').length)} follow-ups left` }));
       if (p.note) card.append(h('p', { class: 'petition-text dim-note', text: p.note }));
       if (p.heroTitle && p.status !== 'pending') petitionHero(card, p);
       if (p.status === 'pending') card.append(h('button', { class: 'btn btn-xs', text: 'Allow…', onClick: () => petitionDecision(p) }), ' ', h('button', { class: 'btn btn-xs', text: 'Deny…', onClick: () => petitionDecision(p, true) }), ' ', h('button', { class: 'btn btn-xs', text: 'Make it a hero…', title: 'Commission a hero for this request; it can talk with the visitor', onClick: () => opts.onPetitionHero?.(p) }));

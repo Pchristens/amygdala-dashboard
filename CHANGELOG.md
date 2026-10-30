@@ -9,7 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
-- When you allow a petition you can choose **Research**: the resident searches the web for up to 15 minutes and writes a longer answer with sources, and the visitor can ask up to five private follow-ups (you set how many). Research is offered only when the provider has headroom, and follow-ups wait while the village is paused or usage runs hot (v0.78).
+- When you allow a petition you can choose **Research**: the resident searches the web for up to 15 minutes and writes a longer answer with sources, and the visitor can ask up to five private follow-ups (you set how many). Research is offered only when the provider has headroom, and follow-ups wait while the village is paused or usage runs hot, and one lost to a restart can be asked again without using up a round (v0.78).
 - A plain-language guide, VISITORS.md, walks a guest through connecting Claude Desktop to your village over Tailscale and asking for guidance.
 - Dark mode is warm stone instead of indigo, with solid panels so the sea no longer shows through, and attention colours that each mean one thing: amber needs you, terracotta omens, olive counsel.
 - The Temple's omen counts and the counsel markers use the same terracotta and olive as their badges, so no violet or blue is left meaning "omen" or "counsel".

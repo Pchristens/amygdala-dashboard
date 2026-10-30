@@ -83,13 +83,20 @@ try {
   assert.throws(() => rpc(b.token, 'follow_up_guidance', { id: p.id, text: 'x'.repeat(2001) }), /2000/);
   w.usage.limits.providers = [{ id: 'claude', windows: [{ used_percentage: 96 }] }]; c.turn = null; c.tick();
   assert.equal(followRun, 0); assert(c.queue.some(j => j.followup === 0));
-  w.usage.limits.providers = []; w.s.paused = true; c.tick(); assert.equal(followRun, 0, 'a paused village holds follow-ups');
+  w.usage.limits.providers = [{ id: 'claude', windows: [{ used_percentage: 75 }] }]; c.tick(); assert.equal(followRun, 0, 'a research follow-up keeps to the 70% bar');
+  w.usage.limits.providers = [{ id: 'claude', windows: [{ used_percentage: 20 }] }]; w.s.paused = true; c.tick(); assert.equal(followRun, 0, 'a paused village holds follow-ups');
   w.s.paused = false; c.tick(); assert.equal(followRun, 1);
   finishFollow({ answer: 'A sourced follow-up.', text: 'usage' }); await new Promise(resolve => setImmediate(resolve));
   assert.equal(rpc(b.token, 'check_guidance', { id: p.id }).followups[0].answer, 'A sourced follow-up.');
   c.turn = { name: 'busy' };
   assert.equal(rpc(b.token, 'follow_up_guidance', { id: p.id, text: 'second' }).status, 'waiting');
   assert.throws(() => rpc(b.token, 'follow_up_guidance', { id: p.id, text: 'third' }), /No follow-ups/);
+  // A restart forgets the queue: the waiting follow-up fails, and a failed follow-up gives its round back.
+  new v.constructor(w); assert.equal(w.s.petitions.find(x => x.id === p.id).followups[1].status, 'failed');
+  assert.equal(rpc(b.token, 'follow_up_guidance', { id: p.id, text: 'second again' }).status, 'waiting');
+  assert.throws(() => rpc(b.token, 'follow_up_guidance', { id: p.id, text: 'third' }), /No follow-ups/);
+  const newest = guidanceCommand({ name: 'Lyra', agent: 'claude', model: 'm', persona: '' }, { visitor: 'Guest', question: 'q', answer: 'a', depth: 'research', followupRun: true, followups: [{ question: 'f1' }] }, '/tmp/empty');
+  assert.match(newest.args[1], /Answer the newest follow-up/);
   assert(!JSON.stringify([w.s.posts, w.s.feed]).includes('PRIVATE FOLLOW-UP'));
   c.queue = []; c.turn = { name: 'busy' };
   assert.throws(() => c.validateGuidance('Other'), /Claude or Codex/);

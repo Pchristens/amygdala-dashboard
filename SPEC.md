@@ -1888,3 +1888,7 @@ Terminal is the way in.
 Visitor tool `follow_up_guidance({id,text})` accepts 1–2000 characters on the caller's own answered petition while fewer than `rounds` follow-ups exist. Follow-ups count toward the existing 20 messages per pass per UTC day limit. Each is `{question, askedAt, status, answer}` and queues a non-human guidance job that waits while the village is paused or the resident's provider runs hot. Removed or disabled answerers cannot receive follow-ups. Restarted `answering` follow-ups become `failed`.
 
 Research guidance remains isolated in an empty temporary directory with strict MCP isolation and read-only sandboxing. Claude may use only WebSearch and WebFetch; Codex uses live web search with every execution, file, editing, browser, plugin, app, and other feature disabled. It has a 15-minute timeout and 1500-word cap. Answer depth retains the tool-less five-minute, 400-word run. Follow-up text is fenced with random delimiters and labelled untrusted; the run receives the original question, prior answer, and earlier follow-ups and answers. Petition and follow-up text and answers remain private and are absent from public surfaces.
+
+Amendment (same release): a research follow-up also waits while its answerer's provider pressure is at or above 70% (or
+unknown). The queue isn't kept across restarts, so a follow-up still waiting or answering at a restart becomes `failed`
+with a note; failed follow-ups don't count against `rounds`. Follow-up runs are told to answer the newest follow-up.
