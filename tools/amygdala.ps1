@@ -18,7 +18,7 @@ function Get-OwnedProcess {
   if (!(Test-Path $PidFile)) { return $null }
   $Record = Get-Content $PidFile -Raw | ConvertFrom-Json
   $Proc = Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$Record.pid)"
-  if ($Proc -and $Proc.Name -eq 'node.exe' -and $Proc.CommandLine.Contains((Join-Path $Repo 'server.js')) -and $Proc.CreationDate.ToUniversalTime().Ticks.ToString() -eq $Record.created) { return $Proc }
+  if ($Proc -and $Proc.Name -eq 'node.exe' -and $Proc.CommandLine -and $Proc.CommandLine.Contains((Join-Path $Repo 'server.js')) -and $Proc.CreationDate.ToUniversalTime().Ticks.ToString() -eq $Record.created) { return $Proc }
   return $null
 }
 function Start-Amygdala {
@@ -46,7 +46,7 @@ switch ($Command) {
   'node' { if (!$env:AMYGDALA_SERVER) { throw 'Set AMYGDALA_SERVER to the Tailscale gate URL.' }; & node (Join-Path $Repo 'tools/amygdala-node.mjs') --server $env:AMYGDALA_SERVER --pass-file (Join-Path $env:APPDATA 'Amygdala/node.pass') }
   'start' { Start-Amygdala; 'Amygdala is running.' }
   'open' { Start-Amygdala; Start-Process $Base }
-  'stop' { $Proc = Get-OwnedProcess; if ($Proc) { & taskkill.exe /pid $Proc.ProcessId /T /F | Out-Null; Remove-Item $PidFile; 'Stopped.' } else { 'No owned Amygdala process found.' } }
+  'stop' { $Proc = Get-OwnedProcess; if ($Proc) { & taskkill.exe /pid $Proc.ProcessId /T /F | Out-Null; Remove-Item $PidFile; 'Stopped.' } else { 'No owned Amygdala process found (a server started from an SSH login runs in session 0 and must be stopped from there).' } }
   'status' { try { $null = Get-PageToken; 'Amygdala is running.' } catch { 'Amygdala is not responding.' } }
   'logs' { Get-Content -Path $Log -Tail 60 -Wait }
   'pass' {
