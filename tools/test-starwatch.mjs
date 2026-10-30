@@ -18,6 +18,8 @@ const w = { s: { residents: { Atlas: { enabled: true } } }, config: [{ name: 'At
 let scheduler = new Starwatch(w, c, { start: false });
 scheduler.scan(now); scheduler.scan(now + 1);
 assert.equal(wakes.length, 1); assert(scheduler.snapshot(now).running);
+// A guidance job (no reasons) for the starwatcher once crashed every snapshot.
+c.queue.unshift({ name: 'Atlas', guidance: 'petition1' }); c.current = { name: 'Atlas', guidance: 'petition1', followup: 0 }; assert(scheduler.snapshot(now).running); c.queue.shift(); c.current = null;
 w.s = JSON.parse(JSON.stringify(w.s)); scheduler = new Starwatch(w, c, { start: false }); scheduler.scan(now + 2);
 assert.equal(wakes.length, 1);
 limits.providers[0].windows[0].resets_at += 604800;
