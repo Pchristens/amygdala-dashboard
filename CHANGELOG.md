@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Sending a hero to a Windows folder from WSL works whatever capitals you type (like `/mnt/c/users/you`): the village uses the folder's real spelling, so Claude's trust check matches.
 - Opening "Send a hero on a labour" after making a petition a hero no longer leaves the model and effort fields locked.
 - The Terminal button is back on each hero's row in the Temple drawer, next to More, instead of hidden inside it.
 - The Steward (or you) can message any village hero, on this machine or another, with `amygdala tell`, and its reply comes back; the conversation shows as a private thread on the hero's card and never on the board (v0.81).

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { claudeTrusts } from '../lib/sites.js';
+import { claudeTrusts, diskCase } from '../lib/sites.js';
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-trust-')), file = path.join(dir, '.claude.json');
 try {
   fs.writeFileSync(file, JSON.stringify({ projects: { '/home/u/proj': { hasTrustDialogAccepted: true }, '/home/u/no': { hasTrustDialogAccepted: false }, 'C:/Users/U/work': { hasTrustDialogAccepted: true } } }));
@@ -13,5 +13,10 @@ try {
   assert(t('c:\\users\\u\\work\\a', 'win32') && !t('C:\\Users\\U', 'win32'), 'Windows paths, case-insensitive');
   assert(claudeTrusts('/anything', path.join(dir, 'missing.json')), 'no readable config: no worse than before');
   fs.writeFileSync(file, '{ not json'); assert(t('/anything'));
+  // A case-insensitive drive (/mnt/c under WSL) accepts any spelling; the launch uses the on-disk one so the trust check matches.
+  fs.mkdirSync(path.join(dir, 'Users', 'Ana'), { recursive: true });
+  assert.equal(diskCase(path.join(dir, 'users', 'ana').toLowerCase().replace(dir.toLowerCase(), dir)), path.join(dir, 'Users', 'Ana'));
+  assert.equal(diskCase(path.join(dir, 'Users', 'nope')), path.join(dir, 'Users', 'nope'), 'a missing name is left alone');
+  assert.equal(diskCase('C:\\x', 'win32'), 'C:\\x');
   console.log('commission trust ok');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }
