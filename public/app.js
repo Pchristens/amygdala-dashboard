@@ -390,8 +390,6 @@ const panel = createPanel({
   onOffer: (w) => openOffering(w),
   onCommand: (o) => openCommand(o),
   onCloseOffering: (o) => api('/api/temple/close', { offeringId: o.id }).then((ok) => { if (okResult(ok)) toast('Offering closed.'); }),
-  onFindingStatus: (id, status) => api('/api/findings/status', { id, status }).then((ok) => { if (okResult(ok)) toast(status === 'decreed' ? 'Decreed. The session will hear of it.' : status === 'fixed' ? 'Confirmed fixed. The tree grows. 🌸' : 'Set aside.'); }),
-  onDecreeMode: (mode) => api('/api/temple/decree-mode', { mode }),
   onCommission: () => openCommission(),
   onPetitionHero: (p) => openCommission(p),
   onMoveSite: (workerId, site) => api('/api/workers/site', { workerId, site }).then((ok) => { if (okResult(ok)) toast(site === 'auto' ? 'Automatic placement enabled.' : `Moved to ${siteLabel(site)}.`); }),
@@ -643,11 +641,6 @@ function renderTrail(f, t) {
   const L5 = mk('Ⅴ', 'The hero\u2019s answer', b5); layers.appendChild(L5);
   const acts = $('dig-actions');
   acts.textContent = '';
-  if (f.status === 'decreed') {
-    const b = h('button', { class: 'btn btn-primary', type: 'button', text: 'Confirm fixed 🌸', title: 'Confirms the decree was carried out; this grows the shared tree' });
-    b.addEventListener('click', async () => { b.disabled = true; const ok = await api('/api/findings/status', { id: f.id, status: 'fixed' }); b.disabled = false; if (okResult(ok)) { digDialog.close(); toast('Confirmed fixed. The tree grows. 🌸'); } });
-    acts.appendChild(b);
-  }
   acts.appendChild(h('button', { class: 'btn btn-ghost', type: 'button', text: 'Close', onClick: () => digDialog.close() }));
 }
 function excerptBlock(excerpt, line, found) {

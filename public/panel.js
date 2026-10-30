@@ -1404,13 +1404,7 @@ export function createPanel(opts) {
       for (const f of live) { const e = omenEntry(f); e.classList.add('live'); e.querySelector('.omen-head')?.prepend(h('span', { class: 'pill pill-running', text: 'live' })); box.appendChild(e); }
       els.workshop.appendChild(box);
     }
-    const mode = state.decreeMode === 'approve' || state.world?.decreeMode === 'approve' ? 'approve' : 'auto';
-    const modeSw = h('span', { class: 'decree-mode', title: 'auto: the High Priest\u2019s decrees are delivered to the session at once · approve: you confirm each decree first' },
-      h('span', { class: 'decree-mode-label', text: 'decrees' }),
-      h('button', { class: `zone-opt ${mode === 'auto' ? '' : ''}`, type: 'button', text: 'auto', 'aria-selected': mode === 'auto' ? 'true' : 'false', onClick: () => opts.onDecreeMode?.('auto') }),
-      h('button', { class: 'zone-opt', type: 'button', text: 'approve', 'aria-selected': mode === 'approve' ? 'true' : 'false', onClick: () => opts.onDecreeMode?.('approve') }));
     const fold = foldSection('tablet', 'The Tablet of Omens', list.length);
-    fold.appendChild(h('div', { class: 'tablet-mode' }, modeSw));
     const tablet = h('div', { class: 'rune-tablet omens' });
     tablet.appendChild(h('div', { class: 'rune-tablet-title', text: list.length ? 'Omens read by the High Priest' : 'The tablet is blank' }));
     if (!list.length) tablet.appendChild(h('div', { class: 'rune-tablet-hint', text: 'When a finding gathers a second, it becomes an omen for the High Priest to judge.' }));
@@ -1450,22 +1444,9 @@ export function createPanel(opts) {
         d.ts ? h('span', { class: 'post-time', text: ` · ${relTime(d.ts)}` }) : null));
     }
     if (f.fixCheck) e.appendChild(fixCheckEl(f.fixCheck));
-    const acts = h('div', { class: 'card-actions omen-actions' });
-    if (status === 'decreed' || status === 'awaiting_confirmation') {
-      const b = h('button', { class: 'btn btn-primary btn-xs', type: 'button', text: 'Confirm fixed 🌸', title: 'Confirms the decree was carried out; this grows the shared tree' });
-      b.addEventListener('click', () => opts.onFindingStatus?.(f.id, 'fixed'));
-      acts.appendChild(b);
-    } else if (status !== 'fixed') {
-      const b = h('button', { class: 'btn btn-primary btn-xs', type: 'button', text: 'Decree' });
-      b.addEventListener('click', () => opts.onFindingStatus?.(f.id, 'decreed'));
-      acts.appendChild(b);
-    }
-    if (status !== 'rejected' && status !== 'fixed') {
-      const b = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Set aside' });
-      b.addEventListener('click', () => opts.onFindingStatus?.(f.id, 'rejected'));
-      acts.appendChild(b);
-    }
-    e.appendChild(acts);
+    // The village judges omens and checks fixes (smith, then High Priest); the human gets no verdict buttons here.
+    const next = { decreed: 'Next: the hero fixes it, then the smith checks the fix and the High Priest confirms it.', awaiting_confirmation: 'Next: the smith checks the fix and the High Priest confirms it.' }[status];
+    if (next) e.appendChild(h('div', { class: 'omen-verdict dim-note', text: next }));
     return e;
   }
 

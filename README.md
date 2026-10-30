@@ -127,8 +127,8 @@ The stone is the deploy stone: gold when what runs is what the Temple approved, 
 deploy has no receipt, unlit when nothing is known. Click the house or the stone for a read-only account of approvals,
 receipts, overrides, node health, orders and commissions in flight, and your digest. Work is still offered at the Temple.
 
-When a hero reports a Temple decree fixed, the smith checks it and the High Priest confirms it; you never have to, though
-**Confirm fixed** stays available.
+When a hero reports a Temple decree fixed, the smith checks it and the High Priest confirms it. The page has no buttons
+for judging omens or confirming fixes: the village checks itself.
 
 ## Visitors and petitions
 
