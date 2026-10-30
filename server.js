@@ -244,8 +244,8 @@ const server = http.createServer(async (req, res) => {
     if (p.startsWith('/api/')) {
       if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
       if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
-      const petitionFile = p.match(/^\/api\/petitions\/([^/]+)\/files(\/remove)?$/);
-      const b = JSON.parse((await readBody(req, petitionFile && !petitionFile[2] ? 4 << 20 : 1 << 20)) || '{}');
+      const petitionFile = p.match(/^\/api\/petitions\/([^/]+)\/files(\/remove)?$/); // 1e6 characters can escape to ~6 MB of JSON
+      const b = JSON.parse((await readBody(req, petitionFile && !petitionFile[2] ? 8 << 20 : 1 << 20)) || '{}');
       if (petitionFile) {
         if (petitionFile[2]) { world.visitors.removeFile(petitionFile[1], b.fileId); return json(res, 200, { ok: true }); }
         return json(res, 200, { ok: true, file: world.visitors.attachFile(petitionFile[1], b) });

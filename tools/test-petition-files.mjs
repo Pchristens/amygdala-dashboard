@@ -53,8 +53,9 @@ try {
   v.revoke(a.pass.id); assert(!fs.existsSync(disk)); assert(!pet.files);
   assert.throws(() => v.attachFile(id, { name: 'ok.txt', content: 'ok' }), /eligible/);
   assert.throws(() => rpc(a.token, 'get_petition_file', { id, file: 'file0.txt' }), /revoked/);
+  { const worst = JSON.stringify({ name: 'ok.txt', content: '\u0001'.repeat(1000000) }); assert(Buffer.byteLength(worst) < 8 << 20, 'the largest allowed file still fits the route body limit'); }
   const server = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
   assert(server.indexOf("p.startsWith('/api/') && !tokenOk(req, url)") < server.indexOf('const petitionFile ='), 'page token gates file routes');
-  assert(server.includes('petitionFile && !petitionFile[2] ? 4 << 20 : 1 << 20'));
+  assert(server.includes('petitionFile && !petitionFile[2] ? 8 << 20 : 1 << 20'));
   console.log('PASS: petition files, validation, paging, pass isolation, privacy, removal and revocation');
 } finally { if (w) { clearTimeout(w.saveTimer); clearInterval(w.seal.timer); } fs.rmSync(dir, { recursive: true, force: true }); }

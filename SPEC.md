@@ -1918,7 +1918,7 @@ A failed or interrupted message keeps its text and gets `status: 'failed'` with 
 
 ## v0.82: petition files
 
-The keeper can attach text deliverables with page-token-authenticated `POST /api/petitions/:id/files {name, content}` → `{ok, file}` and remove them with `POST /api/petitions/:id/files/remove {fileId}` → `{ok}`. The petition must exist, its pass must not be revoked, and attachment is refused while pending or declined (including the existing `denied` status). At most five files may be attached. Names match `/^[\w][\w .-]{0,79}\.(csv|tsv|txt|md|json)$/i`; content is a string of 1–1,000,000 characters without NUL. Only the attachment route permits a JSON body up to 4 MiB; other ordinary routes retain their 1 MiB limit.
+The keeper can attach text deliverables with page-token-authenticated `POST /api/petitions/:id/files {name, content}` → `{ok, file}` and remove them with `POST /api/petitions/:id/files/remove {fileId}` → `{ok}`. The petition must exist, its pass must not be revoked, and attachment is refused while pending or declined (including the existing `denied` status). At most five files may be attached. Names match `/^[\w][\w .-]{0,79}\.(csv|tsv|txt|md|json)$/i`; content is a string of 1–1,000,000 characters without NUL. Only the attachment route permits a JSON body up to 8 MiB; other ordinary routes retain their 1 MiB limit.
 
 Contents live under `<dataDir>/petition-files/<petitionId>/<fileId>`; petition records contain only `files: [{id, name, size, lines, at}]`, with UTF-8 byte size, newline-separated line count and attachment timestamp. Revoking a pass deletes its petitions' file directories and metadata.
 
