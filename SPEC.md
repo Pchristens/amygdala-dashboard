@@ -1872,3 +1872,11 @@ The node `fix` job takes `{ sessionId, commit, file, evidence }` and returns the
 reviewed commit, whether the evidence is still in the committed and working file, and whether there are uncommitted
 changes. A fix check on node work asks the offering's hero, then a live village worker on the same node and project;
 if neither is reachable, `answer` is `{ unavailable: <why> }` instead of null.
+
+## v0.77: Agent Deck links only where they open
+
+Keeper relay requests carry `x-amygdala-relayed: <keeper node pass id>`, and relayed HTML carries
+`<meta name="hf-relayed" content="<that id>">`. Agent Deck links point at `http://127.0.0.1:8420/s/<session>`, the
+viewer's own loopback: on the village machine only for local Agent Deck heroes (`local:` ids), through a keeper only for
+heroes of the viewing node (`worker.node` equals the id, `worker.sessionId`). Other heroes get no Deck link; the in-page
+Terminal is the way in.

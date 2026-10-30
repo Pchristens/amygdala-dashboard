@@ -7,14 +7,13 @@ const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os
 import { createMap, GIFT_KINDS, giftIconSVG } from './map.js';
 import { createMap3D } from './map3d.js';
 import * as map3d from './map3d.js';
-import { createPanel, mountHeroTerminal, residentIdentity, stewardPane } from './panel.js';
+import { createPanel, deckLink, mountHeroTerminal, residentIdentity, stewardPane, VIEW_DESTINATION, DESTINATION_VIEWS } from './panel.js';
 import { h, agentClass, relTime, avatar, toast, capitalize, commitmentEl, runeTablet } from './util.js';
 import { STAGE_NAMES, STAGE_THRESHOLDS, stageOf, stageProgress } from './trees.js';
 import { zoneOf, laLine, LA_GLYPHS } from './svg-util.js';
 
 const params = new URLSearchParams(location.search);
 const MOCK = params.get('mock') === '1';
-const AGENT_DECK_URL = 'http://127.0.0.1:8420';
 const $ = (id) => document.getElementById(id);
 if (params.get('theme') === 'light' || params.get('theme') === 'dark') document.documentElement.dataset.theme = params.get('theme');
 
@@ -85,7 +84,7 @@ const mapOpts = {
     api('/api/human/move', { x, y });
   },
   onResidentClick(name) { pinCard({ type: 'resident', id: name }); },
-  onApprenticeClick(name, orderId) { panel.openOrder(orderId); setDrawer(true); },
+  onApprenticeClick(name, orderId) { openView('orders'); panel.openOrder(orderId); },
   onGhostClick(ghost) { pinCard({ type: 'ghost', id: ghost.key, heroId: ghost.heroId, ghost }); },
   onWorkerClick(id) { pinCard({ type: 'worker', id }); },
   onObjectClick(id) { pinCard({ type: 'object', id }); },
@@ -205,8 +204,8 @@ function zoneChip(item) {
 function wakeResident(name) { return api(`/api/residents/${encodeURIComponent(name)}/wake`, {}).then((ok) => { if (okResult(ok)) toast(`Waking ${name}…`); }); }
 const residentActions = {
   onClose: closeCard, onWake: wakeResident,
-  onDetails: name => { setDrawer(true, 'residents'); panel.showResident(name); },
-  onOrder: name => { setDrawer(true, 'orders'); panel.orderTo(name); },
+  onDetails: name => { openView('residents'); panel.showResident(name); },
+  onOrder: name => { openView('orders'); panel.orderTo(name); },
   onFollow: (name, on) => map.follow(on ? name : null),
   isFollowing: name => map.following(name),
 };
@@ -247,7 +246,7 @@ function buildCard(info) {
       w.sealed ? null : h('div', { class: 'card-row worker-path', text: String(w.path || '') }),
       stale ? null : h('div', { class: 'card-row' }, h('span', { class: 'post-time', text: `updated ${relTime(w.updatedAt)}` })),
       !w.node && state?.world?.terminalReason ? h('div', { class: 'dim-note', text: state.world.terminalReason }) : null,
-      h('div', { class: 'card-actions' }, canOpenTerminal(w) ? h('button', { class: 'btn btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => openTerminal(w) }) : null, h('a', { class: 'btn btn-primary', href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }), milestone, endLabourButton(w), h('button', { class: 'btn btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => tellTale(w.id) })),
+      h('div', { class: 'card-actions' }, canOpenTerminal(w) ? h('button', { class: 'btn btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => openTerminal(w) }) : null, deckLink(w) ? h('a', { class: 'btn btn-primary', href: deckLink(w), target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null, milestone, endLabourButton(w), h('button', { class: 'btn btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => tellTale(w.id) })),
     ].filter(Boolean);
   }
   if (type === 'object') {
@@ -468,9 +467,9 @@ async function tellTale(workerId) {
   if (okResult(result)) toast('The labour is recorded; the bard has been summoned.');
 }
 function siteLabel(id) { return (state?.sites || []).find((s) => s && s.id === id)?.label || id; }
-$('counsel-chip').addEventListener('click', () => setDrawer(true, 'workshop'));
+$('counsel-chip').addEventListener('click', () => openView('workshop'));
 const omenChip = $('omen-chip');
-omenChip.addEventListener('click', () => setDrawer(true, 'workshop'));
+omenChip.addEventListener('click', () => openView('workshop'));
 function renderOmenChip(n) {
   omenChip.hidden = !n;
   $('omen-chip-text').textContent = `${n} ${n === 1 ? 'omen' : 'omens'}`;
@@ -849,9 +848,9 @@ document.addEventListener('keydown', sealTouch, { passive: true });
 // ---------- Place pane: description, who is here, and the place log ----------
 let placePane = { id: null, log: null, fetchedAt: 0 };
 async function openPlacePane(id, refresh = false) {
-  if (id === 'hall') { panel.selectTab('workshop'); setDrawer(true); const hall = $('hall-heroes'); if (hall) { hall.open = true; hall.scrollIntoView({ block: 'nearest' }); } return; }
+  if (id === 'hall') { openView('workshop'); const hall = $('hall-heroes'); if (hall) { hall.open = true; hall.scrollIntoView({ block: 'nearest' }); } return; }
   const el = $('place-pane');
-  if (!refresh) { placePane = { id, log: null, fetchedAt: 0 }; closeCard(); panel.selectTab('place'); setDrawer(true); el.textContent = ''; el.appendChild(h('div', { class: 'dim-note', text: 'Reading the record…' })); }
+  if (!refresh) { placePane = { id, log: null, fetchedAt: 0 }; closeCard(); openView('place'); el.textContent = ''; el.appendChild(h('div', { class: 'dim-note', text: 'Reading the record…' })); }
   if (!state) return;
   let log = null;
   try {
@@ -879,7 +878,7 @@ function renderPlacePane() {
   const heroesHere = (Array.isArray(here.heroes) ? here.heroes : (site ? (state.workers || []).filter((w) => w && w.site === site.id).map((w) => w.id) : [])).filter((wid) => !(state.workers || []).some((w) => w && w.id === wid && w.home)).concat((state.workers || []).filter((w) => w && w.home === id).map((w) => w.id));
   const visitorsHere = Array.isArray(here.visitors) ? here.visitors : [];
   el.textContent = '';
-  el.appendChild(h('div', { class: 'place-pane-head' }, h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: '← Back', onClick: () => panel.selectTab(currentTabBeforePlace || 'board') }), h('div', {}, h('h3', { text: String(p.name || p.project || id) }), h('div', { class: 'kind', text: `${p.kind === 'stewardhouse' ? 'house' : p.kind || 'workshop'}${site ? ` · ${site.label}` : ''}${zoneOf(p) === 'isle' ? ' · the Far Isle' : ''}` }))));
+  el.appendChild(h('div', { class: 'place-pane-head' }, h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: '← Back', onClick: () => openView(currentTabBeforePlace || 'board') }), h('div', {}, h('h3', { text: String(p.name || p.project || id) }), h('div', { class: 'kind', text: `${p.kind === 'stewardhouse' ? 'house' : p.kind || 'workshop'}${site ? ` · ${site.label}` : ''}${zoneOf(p) === 'isle' ? ' · the Far Isle' : ''}` }))));
   if (p.description || site?.purpose) el.appendChild(h('details', { class: 'place-desc', open: true }, h('summary', { text: 'About this place' }), h('div', { text: String(p.description || site.purpose) }), p.keeper ? h('div', { class: 'dim-note', text: `kept by ${p.keeper}` }) : null, p.builtBy ? h('div', { class: 'dim-note', text: `built by ${p.builtBy}` }) : null));
   // The Steward's pane, at the house and at the deploy stone: the human's snapshot only, never in ?shot=1 or for visitors.
   if ((id === 'stewards-house' || id === 'quiet-stone') && state.stewardHouse && !SHOT) el.appendChild(h('details', { class: 'place-desc steward-desc', open: true }, h('summary', { text: id === 'quiet-stone' ? 'The deploy stone' : 'The Steward’s accounts' }), stewardPane(state, { onHero: (wid) => pinCard({ type: 'worker', id: wid }) })));
@@ -892,7 +891,7 @@ function renderPlacePane() {
   // the log: newest first, merged from every list the server returned
   const items = [];
   for (const f of log.feed || []) items.push({ ts: +f.ts || 0, who: f.actor && f.actor !== 'system' ? f.actor : '', what: f.text, kind: '' });
-  for (const e of log.exhibits || []) items.push({ ts: +e.ts || 0, who: e.author, what: `exhibited “${e.title}”`, kind: e.kind, onClick: () => { panel.setZone(zoneOf(e)); panel.selectTab('exhibits'); } });
+  for (const e of log.exhibits || []) items.push({ ts: +e.ts || 0, who: e.author, what: `exhibited “${e.title}”`, kind: e.kind, onClick: () => { panel.setZone(zoneOf(e)); openView('exhibits'); } });
   for (const o of log.objects || []) items.push({ ts: +o.ts || 0, who: o.author, what: `left a ${o.kind}${o.note ? `: “${o.note}”` : ''}`, kind: 'gift' });
   for (const t of log.tales || []) items.push({ ts: +t.ts || +t.completedAt || 0, who: t.bard || '', what: `tale: “${t.title || 'untold'}”`, kind: 'tale' });
   for (const o of (log.offerings || []).filter((o) => zoneOf(o) === zoneOf(p))) items.push({ ts: +o.createdAt || 0, who: '', what: `offering “${o.title}” (${o.status})`, kind: 'offering' });
@@ -942,7 +941,7 @@ function syncTerminalWidth(name) {
 function openTerminal(w) {
   if (!canOpenTerminal(w)) return;
   closeCard();
-  setDrawer(true, 'terminal');
+  openView('terminal');
   if (terminalHeroId !== w.id || !terminalDispose) {
     disposeTerminal();
     terminalHeroId = w.id;
@@ -967,16 +966,19 @@ function setDrawer(open, tab) {
   drawer.inert = !drawerOpen;
   drawer.setAttribute('aria-hidden', drawerOpen ? 'false' : 'true');
   document.body.classList.toggle('drawer-open', drawerOpen);
-  if (tab) panel.selectTab(tab);
-  for (const b of rail.querySelectorAll('.rail-tab')) b.setAttribute('aria-selected', drawerOpen && b.dataset.tab === currentTab() ? 'true' : 'false');
+  if (tab) { panel.selectTab(tab); const destination = VIEW_DESTINATION[tab]; if (destination) lastDestinationView[destination] = tab; }
+  for (const b of rail.querySelectorAll('.rail-tab')) b.setAttribute('aria-selected', drawerOpen && b.dataset.destination === VIEW_DESTINATION[currentTab()] ? 'true' : 'false');
   savePref({ open: drawerOpen, tab: currentTab() });
   refreshCardBounds();
   repositionCard();
 }
 function currentTab() { return panel.activeTab; }
-rail.addEventListener('click', (e) => { const b = e.target.closest('.rail-tab'); if (!b) return; if (drawerOpen && currentTab() === b.dataset.tab) setDrawer(false); else setDrawer(true, b.dataset.tab); });
+const lastDestinationView = { activity: 'board', people: 'residents', work: 'workshop', lamps: 'lamps' };
+function openView(view) { setDrawer(true, view); }
+// A place reopens on the view last used there, by rail or by key.
+function openDestination(dest) { const views = DESTINATION_VIEWS[dest] || []; openView(views.includes(lastDestinationView[dest]) ? lastDestinationView[dest] : views[0]); }
+rail.addEventListener('click', (e) => { const b = e.target.closest('.rail-tab'); if (!b) return; if (drawerOpen && VIEW_DESTINATION[currentTab()] === b.dataset.destination) setDrawer(false); else openDestination(b.dataset.destination); });
 $('drawer-close').addEventListener('click', () => setDrawer(false));
-document.querySelector('.tabs').addEventListener('click', (e) => { if (e.target.closest('.tab')) setDrawer(true); });
 // resize by dragging the handle
 (() => {
   const handle = $('drawer-handle');
@@ -996,9 +998,9 @@ document.addEventListener('keydown', (e) => {
     if (!typing && drawerOpen) { setDrawer(false); return; }
   }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
-  const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
+  const tabs = [...rail.querySelectorAll('.rail-tab')];
   const index = Number(e.key) - 1;
-  if (Number.isInteger(index) && index >= 0 && index < tabs.length) { setDrawer(true, tabs[index].dataset.tab); e.preventDefault(); }
+  if (Number.isInteger(index) && index >= 0 && index < tabs.length) { openDestination(tabs[index].dataset.destination); e.preventDefault(); }
 });
 { const pref = loadPref(); if (pref.open) setDrawer(true, pref.tab === 'terminal' ? 'board' : pref.tab); else setDrawer(false); }
 // credits
@@ -1067,7 +1069,7 @@ function renderHeader() {
   if (!['normal', 'conserve', 'exhausted'].includes(guidance)) lg.hidden = true;
   else { lg.hidden = false; lg.dataset.guidance = guidance; lg.title = guidance === 'normal' ? 'Lamps: allowances fine' : guidance === 'conserve' ? 'Lamps: conserve oil — an allowance is running low' : 'Lamps: oil exhausted — an allowance is used up'; $('lamp-glyph-text').textContent = guidance; }
 }
-$('lamp-glyph').addEventListener('click', () => setDrawer(true, 'lamps'));
+$('lamp-glyph').addEventListener('click', () => openView('lamps'));
 $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: !state?.world?.paused }));
 const updateBells = createBells($('bell-settings'));
 const bellPageId = crypto.randomUUID();
@@ -1230,7 +1232,7 @@ function stripIsle(s) {
 function applyState(s) {
   if (!s || typeof s !== 'object') return;
   if (SHOT) s = stripIsle(s);
-  if (SHOT && params.get('tab') && !applyState.tabbed) { applyState.tabbed = true; setTimeout(() => setDrawer(true, params.get('tab')), 0); }
+  if (SHOT && params.get('tab') && !applyState.tabbed) { applyState.tabbed = true; setTimeout(() => openView(DESTINATION_VIEWS[params.get('tab')] ? DESTINATION_VIEWS[params.get('tab')][0] : params.get('tab')), 0); }
   if (PHASE_OVERRIDE) s = { ...s, world: { ...(s.world || {}), phase: PHASE_OVERRIDE, sun: null } };
   const previousCreatedAt = state?.world?.createdAt;
   const firstState = !state;
@@ -1356,7 +1358,7 @@ async function bootMock() {
   if (params.get('sealed') === '1' || (s.seal.enabled && s.seal.locked)) { s.seal.locked = false; mockSeal(true); }
   connected = true;
   applyState(s);
-  if (params.get('tab')) { panel.selectTab(params.get('tab')); setDrawer(true); }
+  if (params.get('tab')) { openView(DESTINATION_VIEWS[params.get('tab')] ? DESTINATION_VIEWS[params.get('tab')][0] : params.get('tab')); }
   if (params.get('zone')) { panel.setZone(params.get('zone')); map.panTo(params.get('zone'), false); }
   if (params.get('channel')) panel.setChannel(params.get('channel'));
   if (params.get('vb')) { const [x, y, w] = params.get('vb').split(',').map(Number); map.setView({ x, y, w }); }

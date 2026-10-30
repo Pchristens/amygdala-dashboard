@@ -121,24 +121,17 @@
     </section>
 
     <nav class="rail" id="rail" aria-label="Open a panel">
-      <button class="rail-tab" data-tab="board" type="button" title="Board (1)"><span class="rail-glyph">✎</span><span class="rail-text">Board</span></button>
-      <button class="rail-tab" data-tab="exhibits" type="button" title="Exhibits (2)"><span class="rail-glyph">❦</span><span class="rail-text">Exhibits</span></button>
-      <button class="rail-tab" data-tab="residents" type="button" title="Residents (3)" aria-label="Residents and visitors"><span class="rail-glyph">☺</span><span class="rail-text">Residents</span><span class="count" id="badge-petitions" aria-label="Pending petitions" hidden>0</span></button>
-      <button class="rail-tab" data-tab="workshop" type="button" title="Temple (4)"><span class="rail-glyph">⛩</span><span class="rail-text">Temple</span><span class="rail-dot" id="rail-dot-temple" hidden></span></button>
-      <button class="rail-tab" data-tab="orders" type="button" title="Orders (5)"><span class="rail-glyph">✉</span><span class="rail-text">Orders</span></button>
-      <button class="rail-tab" data-tab="lamps" type="button" title="Lamps (6)"><span class="rail-glyph">🕯</span><span class="rail-text">Lamps</span></button>
+      <button class="rail-tab" data-destination="activity" type="button" title="Activity (1)" aria-selected="true"><svg class="rail-glyph" viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 3.5h9a1 1 0 0 1 1 1v10H5a1 1 0 0 1-1-1zM6 6h5M6 8.5h5M6 11h3"/><path d="M4 5H3v9a1 1 0 0 0 1 1"/></svg><span class="rail-text">Activity</span></button>
+      <button class="rail-tab" data-destination="people" type="button" title="People (2)" aria-label="People and visitors" aria-selected="false"><svg class="rail-glyph" viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="2"/><circle cx="13" cy="6" r="1.7"/><path d="M2.5 14a3.5 3.5 0 0 1 7 0M10 10.5a3 3 0 0 1 5.5 2.5"/></svg><span class="rail-text">People</span><span class="count" id="badge-petitions" aria-label="Pending petitions" hidden>0</span></button>
+      <button class="rail-tab" data-destination="work" type="button" title="Work (3)" aria-selected="false"><svg class="rail-glyph" viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 7 9 3l7 4H2ZM3 14h12M2 16h14M4.5 7.5V14M7.5 7.5V14M10.5 7.5V14M13.5 7.5V14"/></svg><span class="rail-text">Work</span><span class="rail-dot" id="rail-dot-temple" hidden></span></button>
+      <button class="rail-tab" data-destination="lamps" type="button" title="Lamps (4)" aria-selected="false"><svg class="rail-glyph" viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11h12l2 2H4zM3 11l2-4h5l3 4M7 7c-1-1 1-1 0-2"/><path d="M6 15h8"/></svg><span class="rail-text">Lamps</span></button>
     </nav>
     <aside class="panel drawer" id="drawer" aria-hidden="true" inert>
       <div class="drawer-handle" id="drawer-handle" title="Drag to resize"></div>
-      <nav class="tabs" role="tablist">
-        <button class="tab" role="tab" id="tabbtn-board" aria-controls="tab-board" data-tab="board" aria-selected="true" tabindex="0" type="button">Board <span class="count" id="count-board">0</span></button>
-        <button class="tab" role="tab" id="tabbtn-exhibits" aria-controls="tab-exhibits" data-tab="exhibits" tabindex="-1" type="button">Exhibits <span class="count" id="count-exhibits">0</span></button>
-        <button class="tab" role="tab" id="tabbtn-residents" aria-controls="tab-residents" data-tab="residents" tabindex="-1" type="button">Residents <span class="count" id="count-residents">0</span></button>
-        <button class="tab" role="tab" id="tabbtn-workshop" aria-controls="tab-workshop" data-tab="workshop" tabindex="-1" type="button">Temple <span class="count" id="count-workshop">0</span><span class="badge-wait" id="badge-wait" hidden>!</span><span class="badge-omen" id="badge-omen" hidden>0</span><span class="badge-counsel" id="badge-counsel" hidden>0</span></button>
-        <button class="tab" role="tab" id="tabbtn-orders" aria-controls="tab-orders" data-tab="orders" tabindex="-1" type="button">Orders</button>
-        <button class="tab" role="tab" id="tabbtn-lamps" aria-controls="tab-lamps" data-tab="lamps" tabindex="-1" type="button" title="The Lamplighter's House: usage">Lamps <span class="count" id="count-lamps">—</span></button>
-        <button class="btn btn-ghost btn-xs drawer-close" id="drawer-close" type="button" title="Close (Esc)" aria-label="Close panel">✕</button>
-      </nav>
+      <header class="drawer-head"><div class="drawer-head-row"><h2 class="drawer-title" id="drawer-title">Activity</h2><button class="btn btn-ghost btn-xs drawer-close" id="drawer-close" type="button" title="Close (Esc)" aria-label="Close panel">✕</button></div><nav class="drawer-switcher" role="tablist" aria-label="Activity views">
+        <button class="drawer-tab" role="tab" id="tabbtn-board" aria-controls="tab-board" data-tab="board" aria-selected="true" tabindex="0" type="button">Board</button><button class="drawer-tab" role="tab" id="tabbtn-exhibits" aria-controls="tab-exhibits" data-tab="exhibits" aria-selected="false" tabindex="-1" type="button">Exhibits</button><button class="drawer-tab" role="tab" id="tabbtn-tales" aria-controls="tab-exhibits" data-tab="tales" aria-selected="false" tabindex="-1" type="button">Tales</button>
+        <button class="drawer-tab" role="tab" id="tabbtn-workshop" aria-controls="tab-workshop" data-tab="workshop" aria-selected="false" tabindex="-1" type="button" hidden>Temple <span class="badge-wait" id="badge-wait" hidden>!</span><span class="badge-omen" id="badge-omen" hidden>0</span><span class="badge-counsel" id="badge-counsel" hidden>0</span></button><button class="drawer-tab" role="tab" id="tabbtn-orders" aria-controls="tab-orders" data-tab="orders" aria-selected="false" tabindex="-1" type="button" hidden>Orders</button>
+      </nav></header>
 
       <section class="tab-body" id="tab-board" role="tabpanel" aria-labelledby="tabbtn-board" data-tab="board">
         <div class="zone-switch" data-for="board" hidden>
@@ -175,7 +168,6 @@
           <button class="zone-opt" data-zone="village" aria-selected="true" type="button">Village <span class="n"></span></button>
           <button class="zone-opt" data-zone="isle" type="button"><span class="lock" hidden>🔒 </span>Isle <span class="n"></span></button>
         </div>
-        <nav class="subtabs" id="exhibit-tabs"><button class="subtab" type="button" data-view="art" aria-selected="true">Exhibits</button><button class="subtab" type="button" data-view="tales" aria-selected="false">Tales</button></nav>
         <div class="scroll" id="tales" hidden></div>
         <div class="scroll" id="exhibits">
           <div id="exhibits-sealed" hidden></div>
@@ -183,7 +175,7 @@
         </div>
       </section>
 
-      <section class="tab-body" id="tab-residents" role="tabpanel" aria-labelledby="tabbtn-residents" data-tab="residents" hidden>
+      <section class="tab-body" id="tab-residents" role="tabpanel" aria-labelledby="drawer-title" data-tab="residents" hidden>
         <div class="scroll"><section id="petitions" class="gate"></section><div id="residents"></div><section id="gate" class="gate"></section></div>
       </section>
 
@@ -200,14 +192,14 @@
       <section class="tab-body" id="tab-place" data-tab="place" hidden>
         <div class="scroll place-pane" id="place-pane"></div>
       </section>
-      <section class="tab-body" id="tab-lamps" role="tabpanel" aria-labelledby="tabbtn-lamps" data-tab="lamps" hidden>
+      <section class="tab-body" id="tab-lamps" role="tabpanel" aria-labelledby="drawer-title" data-tab="lamps" hidden>
         <div class="zone-switch" data-for="lamps" hidden>
           <button class="zone-opt" data-zone="village" aria-selected="true" type="button">Village <span class="n"></span></button>
           <button class="zone-opt" data-zone="isle" type="button"><span class="lock" hidden>🔒 </span>Isle <span class="n"></span></button>
         </div>
         <div class="scroll" id="lamps"></div>
       </section>
-      <footer class="drawer-foot"><button class="btn btn-ghost btn-xs" id="credits-btn" type="button">Credits &amp; licences</button><span class="drawer-foot-hint">Esc closes · 1–6 switch panels</span></footer>
+      <footer class="drawer-foot"><button class="btn btn-ghost btn-xs" id="credits-btn" type="button">Credits &amp; licences</button><span class="drawer-foot-hint">Esc closes · 1–4 switch places</span></footer>
     </aside>
   </main>
 

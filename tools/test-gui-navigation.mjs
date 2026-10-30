@@ -9,24 +9,26 @@ class Element {
   setAttribute(k, v) { this.attrs[k] = v; }
   getAttribute(k) { return this.attrs[k]; }
   addEventListener(k, f) { (this.listeners[k] ||= []).push(f); }
-  closest(selector) { return selector === '.tab' && this.isTab ? this : selector === '.rail-tab' && this.isRail ? this : this.parent?.closest(selector); }
+  closest(selector) { return selector === '.drawer-tab' && this.isTab ? this : selector === '.rail-tab' && this.isRail ? this : this.parent?.closest(selector); }
   click() { const event = { target: this }; for (let el = this; el; el = el.parent) for (const fn of el.listeners.click || []) fn(event); }
   focus() { for (let el = this; el; el = el.parent) if (el.inert) return; document.activeElement = this; }
 }
 const ids = Object.fromEntries(['drawer','rail','drawer-close','lamp-glyph','omen-chip','counsel-chip','happening'].map(id => [id, new Element()]));
 const tabs = new Element(ids.drawer); ids['drawer-close'].parent = tabs;
-const nav = ['board','exhibits','residents','workshop','orders','lamps'].map(tab => { const el = new Element(ids.rail, tab); el.isRail = true; return el; });
+const nav = ['activity','people','work','lamps'].map(destination => { const el = new Element(ids.rail); el.dataset.destination = destination; el.isRail = true; return el; });
 ids.rail.querySelectorAll = () => nav;
 const feedButton = new Element(ids.happening); ids.happening.querySelector = () => feedButton;
-const document = { body: new Element(), activeElement: null, querySelector: s => s === '.tabs' ? tabs : null };
+const document = { body: new Element(), activeElement: null, querySelector: () => null };
 const timers = [], prefs = new Map(), panel = { activeTab: 'board', selectTab(tab) { this.activeTab = tab; } };
-const context = vm.createContext({ document, panel, $: id => ids[id], localStorage: { getItem: k => prefs.get(k), setItem: (k,v) => prefs.set(k,v) }, setTimeout: f => timers.push(f), disposeTerminal() {}, repositionCard() {}, refreshCardBounds() {}, currentTabBeforePlace: 'board' });
+const context = vm.createContext({ document, panel, VIEW_DESTINATION: { board:'activity', exhibits:'activity', tales:'activity', residents:'people', workshop:'work', orders:'work', terminal:'work', place:'activity', lamps:'lamps' }, DESTINATION_VIEWS: { activity:['board','exhibits','tales'], people:['residents'], work:['workshop','orders'], lamps:['lamps'] }, $: id => ids[id], localStorage: { getItem: k => prefs.get(k), setItem: (k,v) => prefs.set(k,v) }, setTimeout: f => timers.push(f), disposeTerminal() {}, repositionCard() {}, refreshCardBounds() {}, currentTabBeforePlace: 'board' });
 vm.runInContext(app.slice(app.indexOf('const drawer ='), app.indexOf('// resize by dragging the handle')), context);
 for (const line of app.split('\n').filter(l => /^\$\('(lamp-glyph|counsel-chip)'\)\.addEventListener|^omenChip\.addEventListener/.test(l))) vm.runInContext(line.replace('omenChip.', "$('omen-chip')."), context);
 vm.runInContext(app.slice(app.indexOf("const happeningButton ="), app.indexOf('const happeningList =')), context);
 const cases = [
+  ['rail opens a destination first view and closes on repeat', () => { vm.runInContext('setDrawer(false)', context); nav[2].click(); assert.equal(panel.activeTab, 'workshop'); assert.equal(ids.drawer.classList.contains('open'), true); assert.equal(nav[2].attrs['aria-selected'], 'true'); nav[2].click(); assert.equal(ids.drawer.classList.contains('open'), false); }],
+  ['rail remembers the last view within a destination', () => { vm.runInContext("openView('orders')", context); vm.runInContext('setDrawer(false)', context); nav[2].click(); assert.equal(panel.activeTab, 'orders'); assert.equal(nav[2].attrs['aria-selected'], 'true'); }],
   ['close click does not reopen through tabs', () => { vm.runInContext("setDrawer(true, 'board')", context); ids['drawer-close'].click(); while(timers.length) timers.shift()(); assert.equal(ids.drawer.classList.contains('open'), false); }],
-  ...[['lamp-glyph','lamps'],['omen-chip','workshop'],['counsel-chip','workshop']].map(([id,tab]) => [id + ' opens and synchronizes navigation', () => { vm.runInContext('setDrawer(false)', context); ids[id].click(); assert.equal(ids.drawer.classList.contains('open'), true); assert.equal(panel.activeTab, tab); assert.deepEqual(nav.filter(el => el.attrs['aria-selected'] === 'true').map(el => el.dataset.tab), [tab]); }]),
+  ...[['lamp-glyph','lamps','lamps'],['omen-chip','workshop','work'],['counsel-chip','workshop','work']].map(([id,tab,destination]) => [id + ' opens and synchronizes navigation', () => { vm.runInContext('setDrawer(false)', context); ids[id].click(); assert.equal(ids.drawer.classList.contains('open'), true); assert.equal(panel.activeTab, tab); assert.deepEqual(nav.filter(el => el.attrs['aria-selected'] === 'true').map(el => el.dataset.destination), [destination]); }]),
   ['closed drawer rejects focus, open drawer accepts it', () => { const control = new Element(ids.drawer); vm.runInContext('setDrawer(false)', context); document.activeElement = null; control.focus(); assert.equal(document.activeElement, null); assert.equal(ids.drawer.attrs['aria-hidden'], 'true'); vm.runInContext('setDrawer(true)', context); control.focus(); assert.equal(document.activeElement, control); assert.equal(ids.drawer.attrs['aria-hidden'], 'false'); }],
   ['feed is a native button with explicit type', () => assert.match(html.match(/<[^>]+class="happening-title"[^>]*>[^<]*<\/[^>]+>/)?.[0] || '', /<button\b[^>]*class="happening-title"[^>]*type="button"[^>]*>Happening now<\/button>/)],
   ['feed button still toggles and remembers collapse', () => { feedButton.click(); assert.equal(ids.happening.classList.contains('collapsed'), true); assert.equal(JSON.parse(prefs.get('hf.drawer')).feed, 'collapsed'); feedButton.click(); assert.equal(ids.happening.classList.contains('collapsed'), false); }],

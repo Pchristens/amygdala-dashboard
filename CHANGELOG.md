@@ -9,6 +9,10 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- "Open in Agent Deck" links go to the hero's own session and appear only where they open: on the village machine for its own heroes, and on another machine (through its keeper) for that machine's heroes (v0.77).
+- A hero card's More section is two lines: its actions (Terminal first), then the path and site with the Move picker.
+- The drawer has four places instead of six: Activity (Board, Exhibits, Tales), People, Work (Temple, Orders) and Lamps. The rail is the one way in, with plain line icons (a Greek temple for Work instead of the torii) and keys 1–4.
+- The Temple no longer snaps shut a hero's "Move to…" picker or a half-typed answer when the village updates; the update waits until you click away.
 - The Temple tab lists sites with heroes first and the empty ones on one line; a waiting hero in Needs you jumps to its card and highlights it instead of opening a second copy.
 - A quiet Lamps tab stays short: the allowance and today's numbers, then one line until the first village turn.
 - The Finished orders fold stays open across updates once you open it.

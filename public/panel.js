@@ -7,6 +7,16 @@ import { zoneOf } from './svg-util.js';
 const CHANNELS = ['commons', 'projects', 'discoveries', 'play'];
 const AGENT_DECK_URL = 'http://127.0.0.1:8420';
 const DAY = 24 * 3600 * 1000;
+export const VIEW_DESTINATION = Object.freeze({ board: 'activity', exhibits: 'activity', tales: 'activity', residents: 'people', workshop: 'work', orders: 'work', terminal: 'work', place: 'activity', lamps: 'lamps' });
+export const DESTINATION_VIEWS = Object.freeze({ activity: ['board', 'exhibits', 'tales'], people: ['residents'], work: ['workshop', 'orders'], lamps: ['lamps'] });
+
+// Agent Deck lives on each machine's own loopback: on the village machine link its local heroes; through a keeper
+// (another machine viewing), link only that node's heroes, to the viewer's own Deck.
+export function deckLink(worker) {
+  const viewer = globalThis.document?.querySelector?.('meta[name="hf-relayed"]')?.getAttribute?.('content');
+  const session = !viewer ? (worker?.id?.startsWith('local:') ? worker.id.slice(6) : null) : viewer !== '1' && worker?.node === viewer ? worker.sessionId : null;
+  return session ? `${AGENT_DECK_URL}/s/${encodeURIComponent(session)}` : null;
+}
 
 export function residentIdentity(r, snapshot) {
   const box = h('div', { class: 'resident-identity' });
@@ -23,7 +33,7 @@ export function residentIdentity(r, snapshot) {
 export function createPanel(opts) {
   const $ = (id) => document.getElementById(id);
   const els = {
-    tabs: Array.from(document.querySelectorAll('.tab')),
+    tabs: Array.from(document.querySelectorAll('.drawer-tab')),
     bodies: Array.from(document.querySelectorAll('.tab-body')),
     channels: $('channels'),
     boardScroll: $('board-scroll'),
@@ -232,12 +242,6 @@ export function createPanel(opts) {
     root.append(fold);
   }
   let exhibitView = 'art';
-  $('exhibit-tabs').addEventListener('click', (e) => {
-    const button = e.target.closest('[data-view]'); if (!button) return;
-    exhibitView = button.dataset.view;
-    for (const b of $('exhibit-tabs').children) b.setAttribute('aria-selected', String(b === button));
-    els.exhibits.hidden = exhibitView !== 'art'; $('tales').hidden = exhibitView !== 'tales'; renderTales();
-  });
   let taleControls = null;
   let taleFold = null;
   let taleSettingsOpen = false;
@@ -327,17 +331,25 @@ export function createPanel(opts) {
   for (const t of els.tabs) t.addEventListener('click', () => selectTab(t.dataset.tab));
   // WAI-ARIA tabs: arrows move focus and select (wrapping), Home/End jump to the ends; the close button is not in els.tabs.
   function tabKey(e, tabs = els.tabs) {
-    const list = [...tabs]; const i = list.indexOf(e.target); if (i < 0) return;
+    const list = [...tabs].filter(t => !t.hidden); const i = list.indexOf(e.target); if (i < 0) return;
     const to = e.key === 'ArrowRight' ? (i + 1) % list.length : e.key === 'ArrowLeft' ? (i - 1 + list.length) % list.length : e.key === 'Home' ? 0 : e.key === 'End' ? list.length - 1 : -1;
     if (to < 0) return;
     e.preventDefault(); selectTab(list[to].dataset.tab); list[to].focus();
   }
   for (const t of els.tabs) t.addEventListener('keydown', tabKey);
   function selectTab(name) {
+    if (name === 'tales') { exhibitView = 'tales'; name = 'exhibits'; } else if (name === 'exhibits') exhibitView = 'art';
     if (!els.bodies.some((b) => b.dataset.tab === name)) return;
-    activeTab = name;
-    for (const t of els.tabs) { const on = t.dataset.tab === name; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; }
+    activeTab = exhibitView === 'tales' && name === 'exhibits' ? 'tales' : name;
+    const destination = VIEW_DESTINATION[activeTab];
+    const switcher = document.querySelector('.drawer-switcher');
+    const views = DESTINATION_VIEWS[destination];
+    const switcherView = views.includes(activeTab) ? activeTab : views[0];
+    for (const t of els.tabs) { const belongs = views.includes(t.dataset.tab); t.hidden = !belongs; const on = t.dataset.tab === switcherView; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; }
+    if (switcher) { switcher.hidden = views.length < 2; switcher.setAttribute('aria-label', `${destination[0].toUpperCase()}${destination.slice(1)} views`); }
+    const title = document.getElementById('drawer-title'); if (title) title.textContent = ({ activity: 'Activity', people: 'People', work: 'Work', lamps: 'Lamps' })[destination];
     for (const b of els.bodies) b.hidden = b.dataset.tab !== name;
+    if (name === 'exhibits') { els.exhibits.hidden = exhibitView !== 'art'; $('tales').hidden = exhibitView !== 'tales'; if (exhibitView === 'tales') renderTales(); }
     if (name === 'board') scrollBoardToBottom(true);
     opts.onViewChange?.(name);
   }
@@ -909,7 +921,13 @@ export function createPanel(opts) {
   // The tab reads top-down by urgency: what needs the human, the heroes at work, then history and settings folded away.
   // It re-renders on every snapshot, so fold, strip and clamp state is remembered here for the session.
   let settingsFold = null;
+  let workshopDirty = false, workshopFocusout = false;
   function renderWorkshop() {
+    const root = els.workshop, active = document.activeElement;
+    if (!workshopFocusout) { root.addEventListener('focusout', (e) => { if (root.contains(e.relatedTarget)) return; queueMicrotask(() => { if (!root.contains(document.activeElement) && workshopDirty) renderWorkshop(); }); }); workshopFocusout = true; }
+    // Like Tales: an open site picker or a half-typed answer waits for focus to leave; Settings keeps its own fold, a sealed isle applies at once.
+    if (!isleLocked() && root.contains(active) && !settingsFold?.contains(active) && (/^(INPUT|TEXTAREA|SELECT)$/.test(active?.tagName || '') || active?.isContentEditable)) { workshopDirty = true; return; }
+    workshopDirty = false;
     if (zone !== 'village' || !(state.steward || state.auditSettings)) settingsFold = null;
     const focusKey = els.workshop.contains(document.activeElement) ? document.activeElement?.dataset?.key : null;
     clearExcept(els.workshop, settingsFold);
@@ -1168,18 +1186,21 @@ export function createPanel(opts) {
       h('div', { class: 'worker-sub' },
         h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }),
         h('span', { class: w.sealed ? 'runic' : '', text: `${w.project || ''} @ ${w.host || 'local'}${w.os ? ` · ${osLabel(w.os)}` : ''}` }),
-        opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
       ),
       h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `${prefix}:${w.id}` }, 'aria-expanded': String(open), 'aria-controls': `${prefix}-more-${w.id}`, text: open ? 'Less ▴' : 'More ▾' }),
       h('div', { class: 'worker-more', id: `${prefix}-more-${w.id}`, hidden: !open },
-        w.sealed ? null : h('span', { class: 'worker-path', text: String(w.path || '') }),
-        h('a', { href: AGENT_DECK_URL, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
-        offer,
-        state.auditSettings && zoneOf(w) === 'village' && !w.private && !w.sealed ? h('button', { class: 'btn btn-ghost btn-xs', text: state.auditSettings.optOut.includes(w.id) ? 'Audit off' : 'Audit on', onClick: () => opts.api('/api/audit/settings', { heroId: w.id, optOut: !state.auditSettings.optOut.includes(w.id) }) }) : null,
-        opts.endLabourButton?.(w),
-        h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => opts.onTellTale?.(w.id) }),
-        zoneOf(w) !== 'isle' && !w.sealed ? h('span', { text: `at ${siteList().find(s => s.id === w.site)?.label || w.site} · ${w.siteReason || ''}` }) : null,
-        zoneOf(w) !== 'isle' && !w.sealed ? sitePicker(w) : null,
+        h('div', { class: 'worker-actions' },
+          opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
+          deckLink(w) ? h('a', { href: deckLink(w), target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null,
+          offer,
+          h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => opts.onTellTale?.(w.id) }),
+          opts.endLabourButton?.(w),
+          state.auditSettings && zoneOf(w) === 'village' && !w.private && !w.sealed ? h('button', { class: 'btn btn-ghost btn-xs', text: state.auditSettings.optOut.includes(w.id) ? 'Audit off' : 'Audit on', onClick: () => opts.api('/api/audit/settings', { heroId: w.id, optOut: !state.auditSettings.optOut.includes(w.id) }) }) : null,
+        ),
+        h('div', { class: 'dim-note' },
+          w.sealed ? null : h('span', { class: 'worker-path', text: String(w.path || '') }),
+          zoneOf(w) !== 'isle' && !w.sealed ? h('span', {}, `at ${siteList().find(s => s.id === w.site)?.label || w.site || ''}${w.siteReason ? ` · ${w.siteReason}` : ''}`, sitePicker(w)) : null,
+        ),
       ),
     );
     const toggle = row.querySelector('.row-toggle');
@@ -1611,11 +1632,7 @@ export function createPanel(opts) {
     renderGate();
     renderWorkshop();
     renderLamps();
-    const posts = state.posts || [], workers = state.workers || [];
-    document.getElementById('count-board').textContent = String(posts.length);
-    document.getElementById('count-exhibits').textContent = String((state.exhibits || []).length);
-    document.getElementById('count-residents').textContent = String((state.residents || []).length);
-    document.getElementById('count-workshop').textContent = String(workers.length);
+    const workers = state.workers || [];
     els.badgeWait.hidden = !workers.some((w) => w && w.status === 'waiting' && !w.stale);
     const omens = omenCount();
     const ob = document.getElementById('badge-omen');
@@ -1625,8 +1642,6 @@ export function createPanel(opts) {
     const cb = document.getElementById('badge-counsel');
     if (cb) { cb.hidden = !cc; cb.textContent = String(cc); }
     opts.onCounselCount?.(cc);
-    const lc = document.getElementById('count-lamps');
-    if (lc) lc.textContent = state.usage?.village?.today ? fmtTok(state.usage.village.today.tokens) : '—';
   }
   function refreshTimes() {
     for (const t of els.posts.querySelectorAll('.post-time')) t.textContent = relTime(+t.dataset.ts);
@@ -1712,7 +1727,7 @@ function playMelody(notes, tempo, onStep, onDone) {
 
 // A terminal view owns all of its network and xterm resources.
 export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
-  const url = `http://127.0.0.1:8420/s/${encodeURIComponent(worker.id.slice(6))}`;
+  const url = deckLink(worker);
   const status = String(worker.status || 'idle');
   root.textContent = '';
   const body = h('div', { class: 'terminal-body' });
@@ -1737,7 +1752,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   root.append(h('div', { class: 'terminal-header' },
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status }),
-    h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }),
+    url ? h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null,
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
     endButton), hint, connection, note, endError, body);
   if (mock) {

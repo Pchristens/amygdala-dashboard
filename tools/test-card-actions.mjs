@@ -9,7 +9,7 @@ globalThis.document = panelDocument();
 const cardEl = h('div'), opener = h('button'), calls = [], card = {};
 document.body.append(opener, cardEl);
 const resident = { name: 'Synthetic Ada', zone: 'village', enabled: true, doing: 'reading' };
-const ctx = vm.createContext({ document, h, residentCard, card, cardEl, state: { residents: [resident] }, api: async (...args) => { calls.push(['api', ...args]); return {}; }, okResult: () => true, toast: text => calls.push(['toast', text]), setDrawer: (...args) => calls.push(['drawer', ...args]), panel: { orderTo: name => calls.push(['order', name]), showResident: name => calls.push(['resident', name]) }, map: { follow: name => { ctx.following = name; calls.push(['follow', name]); }, following: name => ctx.following === name }, cardPlaceName: () => null, repositionCard() {} });
+const ctx = vm.createContext({ document, h, residentCard, card, cardEl, state: { residents: [resident] }, api: async (...args) => { calls.push(['api', ...args]); return {}; }, okResult: () => true, toast: text => calls.push(['toast', text]), setDrawer: (...args) => calls.push(['drawer', ...args]), openView: view => calls.push(['drawer', true, view]), panel: { orderTo: name => calls.push(['order', name]), showResident: name => calls.push(['resident', name]) }, map: { follow: name => { ctx.following = name; calls.push(['follow', name]); }, following: name => ctx.following === name }, cardPlaceName: () => null, repositionCard() {} });
 const run = code => vm.runInContext(code, ctx);
 vm.runInContext(app.slice(app.indexOf('function pinCard('), app.indexOf("// The map's place label")), ctx);
 const actionsStart = app.indexOf('function wakeResident(');

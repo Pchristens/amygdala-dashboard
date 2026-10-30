@@ -16,7 +16,7 @@ const button = (row, text) => row.querySelectorAll('button').find(b => b.textCon
 const one = workshop.querySelectorAll('.worker-row').find(r => r.textContent.includes('hero-one'));
 assert(one && !visible(one).includes('/secret/path'), 'hero path starts collapsed');
 assert(!visible(one).includes('Lay an offering…'), 'hero actions start collapsed');
-assert(button(one, 'Terminal ▸'), 'terminal remains visible');
+assert.equal(button(one, 'Terminal ▸')?.parentElement?.className, 'worker-actions', 'terminal sits with the expanded hero actions');
 assert(visible(one).includes('Question'), 'counsel remains visible');
 const toggle = button(one, 'More ▾');
 toggle?.dispatchEvent({ type: 'click', stopPropagation() {} });

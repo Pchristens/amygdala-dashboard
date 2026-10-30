@@ -36,7 +36,7 @@ function terminal(fetch, mock = false) {
   const root = h('div'), worker = { id: 'local:test', title: 'Synthetic task', status: 'running' }, closed = [];
   const start = source.indexOf('export function mountHeroTerminal('), end = source.indexOf('  if (mock) {', start);
   // Only mount the real terminal header: the remainder opens xterm/network resources irrelevant to End session.
-  const context = vm.createContext({ h, navigator: { platform: 'MacIntel' }, fetch });
+  const context = vm.createContext({ h, navigator: { platform: 'MacIntel' }, fetch, deckLink: w => `http://127.0.0.1:8420/s/${w.id.slice(6)}` });
   vm.runInContext(source.slice(start, end).replace('export function', 'function') + '\n}', context);
   context.mountHeroTerminal(root, worker, { token: 'synthetic-token', mock, onClose: () => closed.push(true) });
   const header = root.querySelector('.terminal-header'), button = header.children.find(el => el.textContent === 'End session');

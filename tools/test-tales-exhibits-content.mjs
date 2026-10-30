@@ -17,7 +17,7 @@ assert.equal(root.childNodes[1].children[0].text, 'Tale settings');
 
 const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
 const exhibits = html.slice(html.indexOf('<section class="tab-body" id="tab-exhibits"'), html.indexOf('</section>', html.indexOf('<section class="tab-body" id="tab-exhibits"')));
-assert.match(exhibits, /id="exhibit-tabs"/);
+assert.doesNotMatch(exhibits, /id="exhibit-tabs"/);
 assert.match(exhibits, /id="exhibits-list"/);
 assert.doesNotMatch(exhibits, /<h[1-6][^>]*>\s*Exhibits\s*<\/h[1-6]>/i, 'exhibits has no repeated inner heading');
 console.log('ok: tales and exhibits content lead');

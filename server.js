@@ -288,7 +288,8 @@ const server = http.createServer(async (req, res) => {
     const headers = { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' };
     if (path.extname(file) === '.html') {
       res.writeHead(200, { ...headers, 'Referrer-Policy': 'no-referrer' });
-      return res.end(fs.readFileSync(file, 'utf8').replace('</head>', `<meta name="hf-token" content="${API_TOKEN}">\n</head>`));
+      const relayed = String(req.headers['x-amygdala-relayed'] || ''), relayMeta = relayed ? `<meta name="hf-relayed" content="${/^[\w-]{1,64}$/.test(relayed) ? relayed : '1'}">\n` : '';
+      return res.end(fs.readFileSync(file, 'utf8').replace('</head>', `${relayMeta}<meta name="hf-token" content="${API_TOKEN}">\n</head>`));
     }
     res.writeHead(200, headers);
     fs.createReadStream(file).pipe(res);
@@ -366,7 +367,7 @@ function openGate() {
     try {
       const p = decodeURIComponent(new URL(req.url, 'http://gate').pathname);
       // A keeper pass reaches the dashboard itself (its relay prefixes paths); any other caller gets nothing here.
-      if (req.url === KEEPER_PREFIX || req.url.startsWith(KEEPER_PREFIX + '/') || req.url.startsWith(KEEPER_PREFIX + '?')) { if (!keeperAuth(world, req)) return json(res, 401, { ok: false, error: 'Invalid keeper pass.' }); const rest = req.url.slice(KEEPER_PREFIX.length); return relay(req, res, PORT, rest.startsWith('/') ? rest : '/' + rest); }
+      if (req.url === KEEPER_PREFIX || req.url.startsWith(KEEPER_PREFIX + '/') || req.url.startsWith(KEEPER_PREFIX + '?')) { const keeper = keeperAuth(world, req); if (!keeper) return json(res, 401, { ok: false, error: 'Invalid keeper pass.' }); const rest = req.url.slice(KEEPER_PREFIX.length); return relay(req, res, PORT, rest.startsWith('/') ? rest : '/' + rest, keeper.id); }
       if (p === '/node/term') {
         const pass = world.nodes.auth(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
         if (!pass) return json(res, 401, { ok: false, error: 'Invalid node pass.' });
