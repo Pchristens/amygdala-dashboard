@@ -156,6 +156,7 @@ const API = {
   'POST /api/nodes/keeper': b => setKeeper(world, String(b.id), b.on === true),
   'POST /api/heroes/revive': b => world.sites.heroAction(b.workerId, 'revive'),
   'POST /api/heroes/forget': b => world.sites.heroAction(b.workerId, 'forget'),
+  'POST /api/heroes/message': b => world.messageHero(b.workerId, b.message),
   'POST /api/heroes/pass': b => world.bridge.issue(b.name, b.zone, b.hours, b.label),
   'POST /api/heroes/revoke': b => world.bridge.revoke(String(b.id)),
   'POST /api/quarantine': b => world.setQuarantine(String(b.project), String(b.host), !!b.on),
@@ -280,7 +281,7 @@ const server = http.createServer(async (req, res) => {
       const fn = API[`POST ${p}`];
       if (!fn) return json(res, 404, { ok: false, error: 'not found' });
       const result = await fn(b);
-      return json(res, 200, { ok: true, ...(result && typeof result === 'object' && result.token ? result : {}) });
+      return json(res, 200, { ok: true, ...(result && typeof result === 'object' && (result.token || p === '/api/heroes/message' && result.id) ? result : {}) });
     }
     // static
     const file = path.join(PUBLIC, p === '/' ? 'index.html' : p);

@@ -168,6 +168,7 @@ amygdala pass Visitor "label" 24
 amygdala stop
 amygdala node            # run this machine as a node (see below)
 amygdala order …         # give a resident an order (see Giving orders)
+amygdala tell <hero title|workerId> <message…> # message a village hero and wait for its reply
 amygdala steward-wait    # the Steward's bell wait (see Steward)
 ```
 

@@ -17,6 +17,7 @@ start() {
 case ${1:-open} in
   steward-wait) shift; exec node "$repo/tools/amygdala-steward.mjs" "$@";;
   order) shift; exec node "$repo/tools/amygdala-order.mjs" "$@";;
+  tell) shift; exec node "$repo/tools/amygdala-tell.mjs" "$@";;
   node) exec node "$repo/tools/amygdala-node.mjs" --server "${AMYGDALA_SERVER:?Set AMYGDALA_SERVER to the Tailscale gate URL}" --pass-file "$HOME/.config/amygdala/node.pass";;
   start) start;;
   open) start; if [ "$(uname)" = Darwin ]; then open "$base"; else xdg-open "$base"; fi;;

@@ -1014,6 +1014,7 @@ export function createPanel(opts) {
     const details = foldSection('hall', 'Hall of Heroes', state.hall.length);
     for (const w of state.hall) {
       const row = h('div', { class: 'panel-settings' }, h('b', { text: w.title }), h('p', { text: `${w.tool} · ${w.model || 'unknown model'} · ${w.host} (${w.os || 'unknown OS'}) · ${w.project} · ${w.lastActivityAt == null ? 'activity unknown' : new Date(w.lastActivityAt).toLocaleString()}` }));
+      if (w.messages?.length) row.append(h('details', { class: 'hero-messages' }, h('summary', { text: `Messages (${w.messages.length})` }), ...w.messages.map(m => h('div', { class: 'hero-message' }, h('div', { class: 'dim-note', text: `${m.from === 'keeper' ? 'Keeper' : 'Hero'} · ${relTime(m.ts) || 'just now'}${m.status === 'sending' ? ' · waiting for a reply…' : m.status === 'failed' ? ` · failed: ${m.note || 'not delivered'}` : ''}` }), m.status === 'sending' ? null : h('div', { class: 'hero-message-text', text: m.text })))));
       for (const action of ['revive', 'tale', 'forget']) {
         const key = `${w.id}:${action}`, error = h('span', { role: 'status', text: hallErrors.get(key) || '' });
         const button = h('button', { class: 'btn btn-xs', type: 'button', text: action === 'revive' ? 'Revive' : action === 'tale' ? 'Tell the tale' : 'Forget', disabled: hallBusy.has(w.id) });
@@ -1192,6 +1193,7 @@ export function createPanel(opts) {
       ),
       h('button', { class: 'btn btn-ghost btn-xs row-toggle', type: 'button', dataset: { key: `${prefix}:${w.id}` }, 'aria-expanded': String(open), 'aria-controls': `${prefix}-more-${w.id}`, text: open ? 'Less ▴' : 'More ▾' }),
       h('div', { class: 'worker-more', id: `${prefix}-more-${w.id}`, hidden: !open },
+        prefix === 'hero' && w.messages?.length ? h('details', { class: 'hero-messages' }, h('summary', { text: `Messages (${w.messages.length})` }), ...w.messages.map(m => h('div', { class: `hero-message ${m.from}` }, h('div', { class: 'dim-note', text: `${m.from === 'keeper' ? 'Keeper' : 'Hero'} · ${relTime(m.ts) || 'just now'}${m.status === 'sending' ? ' · waiting for a reply…' : ''}${m.status === 'failed' ? ` · failed: ${m.note || 'not delivered'}` : ''}` }), m.status === 'sending' ? null : h('div', { class: 'hero-message-text', text: m.text })))) : null,
         h('div', { class: 'worker-actions' },
           opts.canOpenTerminal?.(w) ? h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Terminal ▸', onClick: () => opts.onTerminal?.(w) }) : null,
           deckLink(w) ? h('a', { href: deckLink(w), target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null,

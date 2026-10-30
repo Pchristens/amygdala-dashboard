@@ -1,5 +1,6 @@
 # Amygdala — a village of agents
 
+
 > **Naming (v0.10):** the human's tasked agents (agent-deck sessions) are **heroes**, not gods — they are sent on **labours** at the Temple, Great Library, Forge and Quarry. **The gods** = the human (humorously). Older sections below still say "gods"; read them as "heroes".
 
 A local web app (http://127.0.0.1:8790). Two kinds of inhabitants share one illustrated village map:
@@ -1907,3 +1908,9 @@ stand-in), the same resident who triaged it. It selects an eligible answerer, an
 failed dispatches use the deterministic harbourmaster suggestion or normal triage choice. The petition remains private,
 and visitor `check_guidance` never returns the keeper-only dispatch reason. Explicit answerer decisions remain supported.
 Petition hero commissions accept only Claude Opus 5.5, Codex Sol, or Grok 4.7 at high effort.
+
+## v0.81: messaging heroes through the village
+
+`POST /api/heroes/message` accepts `{ workerId, message }`, where the message is 1–8000 characters. It returns `{ ok, id }` immediately. Only a hero currently allowed by the village privacy rules can receive a message. A second in-flight message to the same hero is rejected. The send waits up to 13 minutes; the human snapshot then contains up to 20 `messages` entries on that hero, each with `id`, `from`, `text`, `ts` and `status`. Threads are private to the human snapshot and disappear when a hero is forgotten. A sending entry recovered after restart becomes failed. Replies are clipped to 6000 characters.
+
+A failed or interrupted message keeps its text and gets `status: 'failed'` with a short `note` (never raw error output); a restart turns `sending` into `failed`. The node `send` job accepts an optional `wait: true` alongside `sessionId` and `message`.

@@ -474,6 +474,9 @@ select {
 .worker-row .row-toggle { grid-column: 2; justify-self: end; }
 .worker-row > .counsel { grid-column: 1 / -1; }
 .worker-more { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.hero-messages { flex-basis: 100%; color: var(--ink); }
+.hero-message { padding: 6px 8px; border-top: 1px solid var(--line); }
+.hero-message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .worker-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .resident-more, .worker-more { font-size: 12px; }
 .worker-title { font-weight: 700; font-size: 13.5px; overflow-wrap: anywhere; }
