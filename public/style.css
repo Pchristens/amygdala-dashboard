@@ -1403,3 +1403,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .petition-files { margin: 8px 0; }
 .petition-file { display: flex; align-items: center; gap: 8px; margin: 4px 0; overflow-wrap: anywhere; }
 .petition-file span { min-width: 0; }
+
+.petition-history .petition-row { border-top: 1px solid var(--line-soft); padding: 6px 0; }
+.petition-history .petition-row > summary { cursor: pointer; overflow-wrap: anywhere; }
+.gate-pass .petition-text { max-height: 14em; overflow: auto; }

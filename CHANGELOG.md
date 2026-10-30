@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Residents tab no longer fills up with old petitions: only open ones show in full, and finished ones fold into "Earlier petitions", each opening to its card.
 - The keeper can attach text files to petitions for visitors to fetch and save through Claude. (v0.82)
 
 - The hero dialog fixes a folder typed without its leading slash (`mnt/c/...`), explains `~` without a slash, and says which machine refused a folder.

@@ -143,6 +143,7 @@ export function createPanel(opts) {
     dialog.showModal(); name.focus();
   }
   const petitionSeen = new Set();
+  let petitionFoldOpen = false; const petitionRowsOpen = new Set(); // survive the redraw on every state update
   let notifyPetitions = false, titleTimer = null;
   let visitorFoldOpen = false;
   const baseTitle = document.title;
@@ -202,7 +203,21 @@ export function createPanel(opts) {
     const live = ['pending', 'allowed', 'answering', 'commissioning', 'commissioned'];
     const active = petitions.filter(p => live.includes(p.status));
     const history = petitions.filter(p => !live.includes(p.status)).slice(-20).reverse();
-    for (const p of [...active, ...history]) {
+    for (const p of active) root.append(petitionCard(p));
+    if (!history.length) return;
+    // Finished petitions fold away so the residents stay in view; each opens to its full card on demand.
+    const fold = h('details', { class: 'temple-fold petition-history' }, h('summary', { text: `Earlier petitions (${history.length})` })); fold.open = petitionFoldOpen;
+    fold.addEventListener('toggle', () => { petitionFoldOpen = fold.open; });
+    for (const p of history) {
+      const row = h('details', { class: 'petition-row' }, h('summary', {}, h('b', { text: p.visitor }), ` · ${p.about || 'Guidance'} · `, h('span', { class: 'dim-note', text: `${new Date(p.askedAt).toLocaleDateString()} · ${p.status}` })));
+      row.open = petitionRowsOpen.has(p.id); if (row.open) row.append(petitionCard(p));
+      row.addEventListener('toggle', () => { if (row.open) { petitionRowsOpen.add(p.id); if (row.children.length < 2) row.append(petitionCard(p)); } else petitionRowsOpen.delete(p.id); });
+      fold.append(row);
+    }
+    root.append(fold);
+  }
+  function petitionCard(p) {
+    {
       const card = h('div', { class: 'gate-pass' }, h('b', { text: p.visitor }), h('div', { text: p.about || 'Guidance' }),
         h('div', { class: 'dim-note', text: `${new Date(p.askedAt).toLocaleString()} · ${p.status}${p.depth === 'research' ? ' · research' : ''}` }), h('p', { class: 'petition-text', text: p.question }));
       if (p.status === 'pending') {
@@ -218,7 +233,7 @@ export function createPanel(opts) {
       if (p.heroTitle && p.status !== 'pending') petitionHero(card, p);
       if (p.status === 'pending') card.append(h('button', { class: 'btn btn-xs', text: 'Allow…', onClick: () => petitionDecision(p) }), ' ', h('button', { class: 'btn btn-xs', text: 'Deny…', onClick: () => petitionDecision(p, true) }), ' ', h('button', { class: 'btn btn-xs', text: 'Make it a hero…', title: 'Commission a hero for this request; it can talk with the visitor', onClick: () => opts.onPetitionHero?.(p) }));
       if (!['pending', 'declined', 'denied'].includes(p.status)) petitionFiles(card, p);
-      root.append(card);
+      return card;
     }
   }
   function renderGate() {
