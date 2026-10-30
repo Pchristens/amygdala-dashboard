@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A hero's last message is no longer lost when its earlier messages were long: milestone reports, tales and petition replies read the end of the conversation, not the start of it.
 - Village heroes now relay committed milestone reports to the Steward’s bell for review at the Temple, including heroes on other machines. (v0.85)
 
 - Decisions show AI-written reasons and objections, and superseded rejected Steward work can be withdrawn from your reading list. (v0.84)

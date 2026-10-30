@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { milestoneOf, verifyCommit, MilestoneScanner } from '../lib/milestones.js';
 import { validateReport } from '../lib/nodes.js';
 import { Watch } from '../lib/watch.js';
-import { standingNote } from '../lib/sites.js';
+import { standingNote, transcriptTail } from '../lib/sites.js';
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'milestones-'));
 try {
   assert.deepEqual(milestoneOf('Milestone: parser — commit abc1234 — tested: fixtures'), { sha: 'abc1234', name: 'Milestone: parser' });
@@ -31,5 +31,9 @@ try {
   for (const flags of [{ zone: 'isle' }, { sealed: true }, { private: true }, { isleTagged: true }, { quarantined: true }, { petition: true }]) { w.workers = [{ ...w.workers[0], ...flags, id: 'excluded' }]; watch.scan(); assert.equal(w.s.bells.length, 1); }
   w.workers = [{ ...hero, id: 'offered', milestone: { sha, name: '' } }]; w.s.offerings = [{ headCommit: sha }]; watch.scan(); assert.equal(w.s.bells.length, 1);
   assert.ok(standingNote().includes('`Milestone: <name> — commit <hash> — tested: <how>`'));
+  // Long earlier messages must not push the final report out of the tail (fi6668).
+  const jsonl = path.join(dir, 'long.jsonl'), say = text => JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: text } });
+  fs.writeFileSync(jsonl, [say('x'.repeat(12000)), say('y'.repeat(12000)), say('Done.\nMilestone: parser — commit abc1234 — tested: unit')].join('\n'));
+  assert.equal(milestoneOf(transcriptTail(jsonl, 4000))?.sha, 'abc1234');
   console.log('milestones ok');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }
