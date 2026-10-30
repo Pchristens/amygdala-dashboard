@@ -113,7 +113,7 @@ try {
   const look = createMcpHandler(w).lookFor('Lyra'); assert(!look.includes("Visitor's labour") && !look.includes('SECRETQ'));
   assert.match(await w.sites.observe('Lyra'), /quiet/);
   assert.throws(() => w.sites.leaveCounsel('Lyra', hero.id, 'A concrete and useful suggestion for this hero.'), /No such hero/);
-  await assert.rejects(w.tales.recordLabour(hero.id), /stays private/); await assert.rejects(w.tales.endLabour(hero.id), /stays private/);
+  await assert.rejects(w.tales.recordLabour(hero.id), /stays private/);
   assert(!w.s.heroWatch[hero.id], 'no labour record');
   await assert.rejects(w.temple.offer(hero.id), /stays private/);
   assert.equal(w.watchtower.allowed(w.workers.find(x => x.id === hero.id)), false);
@@ -149,6 +149,10 @@ try {
   sync(); v.close(id); assert.equal(pet().status, 'closed');
   assert(!jobs.some(j => j.kind === 'stop'));
   assert.throws(() => rpc(a.token, 'add_to_petition', { id, text: 'after close' }), /No hero/);
+  // End labour stops a visitor's hero quietly: a stop job, no wrap-up send, no tale, no feed line naming the labour.
+  { const before = jobs.length, feed = w.s.feed.length; pet().status = 'commissioned'; await w.tales.endLabour(hero.id); assert.equal(pet().status, 'closed', 'its petition link closes'); const mine = jobs.slice(before);
+    assert.deepEqual(mine.map(j => j.kind), ['stop']); assert.equal(mine[0].payload.sessionId, hero.sessionId);
+    assert(!w.s.tales.some(t => t.heroId === hero.id)); assert(!JSON.stringify(w.s.feed.slice(feed)).includes("Visitor's labour")); jobs.length = before; }
   const n = jobs.length; v.heroTick(Date.now() + 1200000); await tick(); assert.equal(jobs.length, n);
   assert(w.petitionHero(w.workers.find(x => x.id === hero.id)), 'still hidden from residents after Close');
 

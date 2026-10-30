@@ -413,7 +413,8 @@ function openEndLabour(w) {
   const message = $('end-labour-message');
   const submit = $('end-labour-submit');
   $('end-labour-title').textContent = `End labour — ${w.title || w.id}`;
-  message.textContent = "End this hero's labour? They'll be asked to wrap up, then stopped, and a tale will be written.";
+  const petition = (state.petitions || []).some((p) => p.heroId === w.id);
+  message.textContent = petition ? "End this visitor's labour? The hero is stopped at once and its petition link closed; a visitor's labour gets no wrap-up or tale." : "End this hero's labour? They'll be asked to wrap up, then stopped, and a tale will be written.";
   submit.hidden = false; submit.disabled = false;
   submit.onclick = async () => {
     if (endingLabour) return;
@@ -423,6 +424,8 @@ function openEndLabour(w) {
     const result = await api('/api/tales/end', { workerId: w.id });
     if (!okResult(result)) {
       endingLabour = null; message.textContent = result?.error || 'Could not end the labour.'; submit.disabled = false;
+    } else if (petition) {
+      endingLabour = null; submit.hidden = true; message.textContent = 'The hero was stopped and its petition link closed.'; toast('The visitor\'s hero was stopped.');
     } else if (endingLabour?.id === w.id) {
       submit.hidden = true;
       message.textContent = 'Wrapping up… The hero will stop after replying, then its tale will be recorded. Progress also appears in Happening now.';

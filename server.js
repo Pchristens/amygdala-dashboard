@@ -148,7 +148,7 @@ const API = {
   'POST /api/tales/settings': b => world.tales.settings(b),
   'POST /api/tales/complete': b => world.tales.request(String(b.workerId)),
   // Long-running (waits for the hero's wrap-up): start it and return; progress shows in the feed.
-  'POST /api/tales/end': b => { const id = String(b.workerId); if (!world.workers.some(w => w.id === id)) throw new Error('No such hero.'); world.tales.endLabour(id).catch(e => world.addFeed(null, `Ending the labour failed: ${e.message}`)); return { started: true }; },
+  'POST /api/tales/end': b => { const id = String(b.workerId); if (!world.workers.some(w => w.id === id)) throw new Error('No such hero.'); if (world.petitionHero(world.workers.find(w => w.id === id))) return world.tales.endLabour(id); world.tales.endLabour(id).catch(e => world.addFeed(null, `Ending the labour failed: ${e.message}`)); return { started: true }; },
   'POST /api/nodes/pass': b => world.nodes.issue(b.name, b.hours),
   'POST /api/bells/presence': b => pagePresence(bellPages, b),
   'POST /api/nodes/notify': b => world.nodes.setNotify(b.id, b.on),
