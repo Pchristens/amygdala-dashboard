@@ -1160,7 +1160,7 @@ export function createPanel(opts) {
   }
   // Line-art site marks drawn like the rail's icons (C11): constant markup, never data, so innerHTML is safe here.
   const SITE_PATHS = { temple: 'M2 7 9 3l7 4H2ZM3 14h12M2 16h14M4.5 7.5V14M7.5 7.5V14M10.5 7.5V14M13.5 7.5V14', library: 'M5 3h9v10.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V12h3ZM5 3a2 2 0 0 0-2 2v1h2M7.5 7h4.5M7.5 10h4.5', forge: 'M9 2c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0c0-2 1-3 2-4 0 1.5 1 2.5 2 2.5 0-2.5-1-4 0-7Z', quarry: 'M2.5 6.5C5 3.5 13 3.5 15.5 6.5M9 4.6 5 15.5' };
-  function siteGlyph(id) { const span = h('span', { class: 'site-glyph', 'aria-hidden': 'true' }); span.innerHTML = `<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="${SITE_PATHS[id] || 'M9 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'}"/></svg>`; return span; }
+  function siteGlyph(id) { const span = h('span', { class: 'site-glyph', 'aria-hidden': 'true' }); span.innerHTML = `<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="${(Object.hasOwn(SITE_PATHS, id) && SITE_PATHS[id]) || 'M9 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'}"/></svg>`; return span; }
   function groupByProject(list) {
     const m = new Map();
     for (const w of list) { const proj = `${w.project || '(no project)'} @ ${w.host || 'local'}`; if (!m.has(proj)) m.set(proj, []); m.get(proj).push(w); }

@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Dark mode is warm stone instead of indigo, with solid panels so the sea no longer shows through, and attention colours that each mean one thing: amber needs you, terracotta omens, olive counsel.
 - The Temple's sites are marked with the same line icons as the rail (a Greek temple, not a torii), and "Share a milestone" loses its emoji.
 - The gift button is a small icon on the map (lit while you place a gift), and the map hint mentions pinch-to-zoom.
 - The "need you" button keeps the village's count while you look at the isle or type in the Temple.

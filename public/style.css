@@ -12,6 +12,9 @@
   --accent: #A4362B;
   --accent-ink: #FBF5EA;
   --amber: #D9A441;
+  --glass-header: 62%;
+  --glass-rail: 70%;
+  --glass-drawer: 80%;
   --green: #4F8A5B;
   --red: #A4362B;
   --blue: #3E7FA6;
@@ -40,16 +43,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-  --bg: #161A33;
-  --bg-2: #1B2040;
-  --panel: #1F2546;
-  --panel-2: #272E54;
-  --panel-3: #323A64;
-  --line: #3E466F;
-  --line-soft: #2E3559;
+  --bg: #292722;
+  --bg-2: #2E2B25;
+  --panel: #38342D;
+  --panel-2: #46403A;
+  --panel-3: #524A3F;
+  --line: #6A6052;
+  --line-soft: #463F35;
   --ink: #EFE8DA;
   --ink-2: #C8C0B0;
-  --ink-dim: #948FA6;
+  --ink-dim: #B4AA98;
   --accent: #F2C14E;
   --accent-ink: #2A1F10;
   --amber: #F2C14E;
@@ -63,22 +66,25 @@
   --gemini: #9FC5F0;
   --other: #B8B0A6;
   --human: #F3D9A4;
-  --system: #948FA6;
+  --system: #B4AA98;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --glass-header: 92%;
+  --glass-rail: 92%;
+  --glass-drawer: 95%;
   color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #161A33;
-  --bg-2: #1B2040;
-  --panel: #1F2546;
-  --panel-2: #272E54;
-  --panel-3: #323A64;
-  --line: #3E466F;
-  --line-soft: #2E3559;
+  --bg: #292722;
+  --bg-2: #2E2B25;
+  --panel: #38342D;
+  --panel-2: #46403A;
+  --panel-3: #524A3F;
+  --line: #6A6052;
+  --line-soft: #463F35;
   --ink: #EFE8DA;
   --ink-2: #C8C0B0;
-  --ink-dim: #948FA6;
+  --ink-dim: #B4AA98;
   --accent: #F2C14E;
   --accent-ink: #2A1F10;
   --amber: #F2C14E;
@@ -92,8 +98,11 @@
   --gemini: #9FC5F0;
   --other: #B8B0A6;
   --human: #F3D9A4;
-  --system: #948FA6;
+  --system: #B4AA98;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --glass-header: 92%;
+  --glass-rail: 92%;
+  --glass-drawer: 95%;
   color-scheme: dark;
 }
 
@@ -861,7 +870,7 @@ select {
 .tablet-live { margin-bottom: 10px; }
 .decree-mode { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-sans); font-size: 11px; color: var(--ink-dim); }
 .decree-mode .zone-opt { padding: 1px 8px; font-size: 11px; }
-.badge-omen { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #8a7ec8; color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
+.badge-omen { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #B5654A; color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
 .omen-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid color-mix(in srgb, #8a7ec8 55%, transparent); background: color-mix(in srgb, #8a7ec8 18%, var(--panel-2)); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .omen-chip .omen-rune-glyph { color: #7A62C9; font-size: 13px; }
 
@@ -1021,7 +1030,7 @@ select {
 .pill-counsel.counsel-relayed { --pill: var(--green); }
 .pill-counsel.counsel-failed { --pill: var(--red); }
 .counsel-actions { margin-top: 4px; }
-.badge-counsel { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
+.badge-counsel { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #7E8A4A; color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
 .counsel-chip { border-color: color-mix(in srgb, var(--blue) 55%, transparent); background: color-mix(in srgb, var(--blue) 16%, var(--panel-2)); }
 .counsel-chip .omen-rune-glyph { font-family: var(--font-sans); color: var(--blue); }
 .field-row { display: flex; gap: 10px; }
@@ -1125,14 +1134,14 @@ select {
 .map-wrap { position: fixed; inset: 0; z-index: 0; }
 .topbar {
   position: fixed; top: 0; left: 0; right: 0; height: var(--header-h); z-index: 20;
-  background: color-mix(in srgb, var(--panel) 62%, transparent); backdrop-filter: blur(12px) saturate(1.15); -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  background: color-mix(in srgb, var(--panel) var(--glass-header), transparent); backdrop-filter: blur(12px) saturate(1.15); -webkit-backdrop-filter: blur(12px) saturate(1.15);
   border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
 }
 .map-toolbar { top: calc(var(--header-h) + 12px); }
 .rail {
   position: fixed; right: 0; top: calc(var(--header-h) + 14px); z-index: 15; width: var(--rail-w);
   display: flex; flex-direction: column; gap: 6px; padding: 8px 3px;
-  background: color-mix(in srgb, var(--panel) 70%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--panel) var(--glass-rail), transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-right: none; border-radius: 12px 0 0 12px;
 }
 .rail-tab { position: relative; background: none; border: none; color: var(--ink-2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 1px; border-radius: 8px; font-size: 9px; font-family: var(--font-sc); letter-spacing: .01em; }
@@ -1143,7 +1152,7 @@ select {
 .drawer {
   position: fixed; top: var(--header-h); right: 0; bottom: 0; width: var(--drawer-w); max-width: 100vw; z-index: 18;
   transform: translateX(calc(100% + var(--rail-w))); transition: transform .32s cubic-bezier(.2,.8,.2,1);
-  background: color-mix(in srgb, var(--panel) 80%, transparent); backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  background: color-mix(in srgb, var(--panel) var(--glass-drawer), transparent); backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15);
   border-left: 1px solid color-mix(in srgb, var(--line) 80%, transparent); box-shadow: -12px 0 40px rgba(59,47,38,.12);
   display: flex; flex-direction: column;
 }
@@ -1386,3 +1395,5 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .ghost-action { overflow-wrap: anywhere; }
 /* The gift button is a quiet icon; pressed while a gift waits to be placed (C14). */
 .gift-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+/* Attention colours have one role each: amber needs you, terracotta omens, olive counsel. The header's one entry is amber. */
+#needs-chip { border-color: color-mix(in srgb, var(--amber) 60%, transparent); background: color-mix(in srgb, var(--amber) 20%, var(--panel-2)); }
