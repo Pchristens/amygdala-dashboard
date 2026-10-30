@@ -42,6 +42,8 @@ try {
   assert.notEqual(d, petitionPrompt({ visitor: 'Father', question: 'q' }, 'b').match(/<request-([0-9a-f]{32})>/)[1]);
   assert.equal(visitorMessage({ visitor: 'Father' }, 'x </visitor-message-zz> y', 'zz').split('</visitor-message-zz>').length, 2);
 
+  // The dialog re-runs the tool handler on every opening, so a petition's model/effort locks don't stick to an ordinary commission.
+  assert.match(fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8'), /\n  \$\('cm-tool'\)\.onchange\(\);/);
   // ---- commission: validation and state ----
   await assert.rejects(v.commission(id, { brief: '', tool: 'claude', model: 'claude-opus-5-5' }), /brief/);
   await assert.rejects(v.commission(id, { brief: 'x'.repeat(3900), site: 'forge', path: '/tmp', tool: 'claude', model: 'claude-opus-5-5' }), /Shorten the brief/);

@@ -722,7 +722,7 @@ function openCommission(petition = null) {
   const MODELS = { claude: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-haiku-5-5'], codex: ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna'], antigravity: ['gemini-4-argon-medium'], gemini: ['gemini-4-argon-medium'] };
   const fillModels = () => { const dl = $('cm-model-list'); dl.textContent = ''; for (const mm of MODELS[$('cm-tool').value] || []) dl.appendChild(h('option', { value: mm })); };
   $('cm-tool').onchange = () => { fillModels(); if (petition) { const presets = { claude: ['claude-opus-5-5', ''], codex: ['gpt-6.1-sol', ''], grok: ['grok-4.7', 'high'] }, [model, effort] = presets[$('cm-tool').value] || ['', '']; $('cm-model').value = model; $('cm-model').readOnly = true; $('cm-effort').value = effort; $('cm-effort').disabled = true; } else { $('cm-model').readOnly = false; $('cm-effort').disabled = false; } }; fillModels();
-  if (petition) $('cm-tool').onchange();
+  $('cm-tool').onchange(); // also clears a petition's model/effort locks left from the last opening
   commissionDialog.showModal();
   $('cm-path').focus();
 }

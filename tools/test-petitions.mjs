@@ -152,6 +152,10 @@ try {
     v.decide(q.id, 'allow', {}); await v.dispatches.get(q.id); const pet = w.s.petitions.find(x => x.id === q.id);
     assert.equal(pet.status, 'allowed'); check(pet.dispatch); c.queue.length = 0;
   }
+  // A failed dispatch never falls back to the harbourmaster for a considered petition, even when triage named it.
+  v.dispatchRunner = async () => { throw new Error('boom'); };
+  { const q = rpc(g2.token, 'ask_guidance', { question: 'considered' }); await v.triages.get(q.id); const pet = w.s.petitions.find(x => x.id === q.id); pet.triage = { ...pet.triage, tier: 'considered', suggest: 'Bram' };
+    v.decide(q.id, 'allow', {}); await v.dispatches.get(q.id); assert(pet.dispatch.fallback); assert.notEqual(pet.answerer, 'Bram'); c.queue.length = 0; }
   w.usage.limits.providers = [{ id: 'codex', windows: [{ used_percentage: 75 }] }];
   v.dispatchRunner = async () => ({ answer: JSON.stringify({ answerer: 'Atlas', depth: 'research', rounds: 3, reason: 'Needs sources.' }), text: '' });
   { const q = rpc(g2.token, 'ask_guidance', { question: 'hot' }); await v.triages.get(q.id); v.decide(q.id, 'allow', {}); await v.dispatches.get(q.id);
