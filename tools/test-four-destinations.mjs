@@ -24,3 +24,5 @@ assert.match(html, /<div class="scroll" id="tales" hidden><\/div>/);
 const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
 assert.doesNotMatch(rail, /[✎❦☺⛩✉🕯]/u);
 assert.match(app, /querySelectorAll\('\.rail-tab'\)/);
+// A tab body outside the four places (a future view) still opens instead of throwing (Themis residual on 4030a04).
+assert.match(fs.readFileSync(new URL('../public/panel.js', import.meta.url), 'utf8'), /const views = DESTINATION_VIEWS\[destination\] \|\| \[activeTab\]/);

@@ -392,13 +392,12 @@ const panel = createPanel({
   onCloseOffering: (o) => api('/api/temple/close', { offeringId: o.id }).then((ok) => { if (okResult(ok)) toast('Offering closed.'); }),
   onFindingStatus: (id, status) => api('/api/findings/status', { id, status }).then((ok) => { if (okResult(ok)) toast(status === 'decreed' ? 'Decreed. The session will hear of it.' : status === 'fixed' ? 'Confirmed fixed. The tree grows. 🌸' : 'Set aside.'); }),
   onDecreeMode: (mode) => api('/api/temple/decree-mode', { mode }),
-  onOmenCount: (n) => renderOmenChip(n),
   onCommission: () => openCommission(),
   onPetitionHero: (p) => openCommission(p),
   onMoveSite: (workerId, site) => api('/api/workers/site', { workerId, site }).then((ok) => { if (okResult(ok)) toast(site === 'auto' ? 'Automatic placement enabled.' : `Moved to ${siteLabel(site)}.`); }),
   onCounsel: (id, action) => api('/api/counsel', { id, action }).then((ok) => { if (okResult(ok)) toast(action === 'relay' ? 'Counsel relayed to the hero (fenced as untrusted).' : 'Counsel dismissed.'); }),
   onDig: (f) => openDig(f),
-  onCounselCount: (n) => { const b = $('counsel-chip'); if (b) { b.hidden = !n; $('counsel-chip-text').textContent = `${n} counsel`; } },
+  onNeedsCount: (n) => { const b = $('needs-chip'); if (b) { b.hidden = !n; $('needs-chip-text').textContent = `${n} need you`; } },
 });
 // The endpoint acknowledges immediately; snapshots carry the eventual tale and feed errors.
 let endingLabour = null;
@@ -467,13 +466,7 @@ async function tellTale(workerId) {
   if (okResult(result)) toast('The labour is recorded; the bard has been summoned.');
 }
 function siteLabel(id) { return (state?.sites || []).find((s) => s && s.id === id)?.label || id; }
-$('counsel-chip').addEventListener('click', () => openView('workshop'));
-const omenChip = $('omen-chip');
-omenChip.addEventListener('click', () => openView('workshop'));
-function renderOmenChip(n) {
-  omenChip.hidden = !n;
-  $('omen-chip-text').textContent = `${n} ${n === 1 ? 'omen' : 'omens'}`;
-}
+$('needs-chip').addEventListener('click', () => { openView('workshop'); requestAnimationFrame(() => document.querySelector('.needs-title')?.scrollIntoView({ block: 'nearest' })); });
 // ---------- Milestone dialog ----------
 const milestoneDialog = $('milestone-dialog');
 let noteDialogCfg = null;
@@ -1022,24 +1015,24 @@ function renderHeader() {
   document.title = String(w.name || 'Amygdala');
   const st = expired ? 'expired' : !connected ? 'reconnecting' : w.paused ? 'paused' : 'live';
   statusEl.dataset.state = st;
-  $('status-text').textContent = st === 'expired' ? 'Session expired — reload' : st === 'reconnecting' ? 'reconnecting…' : st === 'paused' ? 'paused' : MOCK ? 'live (mock)' : 'live';
+  $('status-text').textContent = st === 'expired' ? 'Session expired — reload' : st === 'reconnecting' ? 'reconnecting…' : MOCK ? 'live (mock)' : 'live';
   const residents = state?.residents || [], workers = state?.workers || [];
   const n = residents.length + workers.length;
   $('pop').textContent = `${n} inhabitant${n === 1 ? '' : 's'}`;
-  $('pop').title = `${residents.length} residents · ${workers.length} workers · you`;
+  $('pop').title = `${residents.length} residents · ${workers.length} heroes`;
   let clock = '';
   if (Number.isFinite(+w.now) && !PHASE_OVERRIDE) { try { clock = new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit', timeZone: w.tz || undefined }).format(new Date(+w.now)); } catch (_) { clock = new Date(+w.now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } }
   const sunNow = typeof map.sunInfo === 'function' ? map.sunInfo() : null;
   $('daytime').textContent = `Day ${Number.isFinite(+w.day) ? w.day : '—'} · ${capitalize(sunNow?.phase || w.phase || '—')}${clock ? ` · ${clock}` : ''}`;
   $('daytime').title = sunNow ? `sun ${sunNow.alt.toFixed(0)}° above the horizon, azimuth ${sunNow.az.toFixed(0)}°` : '';
   const btn = $('toggle-pause');
-  btn.textContent = w.paused ? 'Resume' : 'Pause';
+  btn.textContent = w.paused ? 'Paused · Resume' : 'Pause';
+  btn.title = w.paused ? 'Resume the village' : 'Pause the village';
   btn.classList.toggle('btn-primary', !!w.paused);
   const villageState = typeof map.getVillageState === 'function' ? map.getVillageState() : typeof map3d.getVillageState === 'function' ? map3d.getVillageState() : null;
   const idle = villageState === 'idle' || villageState?.idle || villageState?.state === 'idle' || villageState?.status === 'idle';
-  $('village-state').hidden = w.paused ? st === 'paused' : !idle;
-  $('village-state').textContent = w.paused ? 'Paused' : "Idle — everyone's resting";
-  $('village-state').classList.toggle('paused-chip', !!w.paused);
+  $('village-state').hidden = !idle;
+  $('village-state').textContent = "Idle — everyone's resting";
   const pace = $('pace');
   const tick = +w.tickSeconds;
   if (Number.isFinite(tick) && tick > 0) {
@@ -1067,7 +1060,7 @@ function renderHeader() {
   const lg = $('lamp-glyph');
   const guidance = state?.usage?.guidance;
   if (!['normal', 'conserve', 'exhausted'].includes(guidance)) lg.hidden = true;
-  else { lg.hidden = false; lg.dataset.guidance = guidance; lg.title = guidance === 'normal' ? 'Lamps: allowances fine' : guidance === 'conserve' ? 'Lamps: conserve oil — an allowance is running low' : 'Lamps: oil exhausted — an allowance is used up'; $('lamp-glyph-text').textContent = guidance; }
+  else { lg.hidden = guidance === 'normal'; lg.dataset.guidance = guidance; lg.title = guidance === 'normal' ? 'Lamps: allowances fine' : guidance === 'conserve' ? 'Lamps: conserve oil — an allowance is running low' : 'Lamps: oil exhausted — an allowance is used up'; $('lamp-glyph-text').textContent = guidance; }
 }
 $('lamp-glyph').addEventListener('click', () => openView('lamps'));
 $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: !state?.world?.paused }));

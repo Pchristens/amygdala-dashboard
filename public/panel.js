@@ -343,11 +343,11 @@ export function createPanel(opts) {
     activeTab = exhibitView === 'tales' && name === 'exhibits' ? 'tales' : name;
     const destination = VIEW_DESTINATION[activeTab];
     const switcher = document.querySelector('.drawer-switcher');
-    const views = DESTINATION_VIEWS[destination];
+    const views = DESTINATION_VIEWS[destination] || [activeTab]; // a view outside the four places still opens
     const switcherView = views.includes(activeTab) ? activeTab : views[0];
     for (const t of els.tabs) { const belongs = views.includes(t.dataset.tab); t.hidden = !belongs; const on = t.dataset.tab === switcherView; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; }
-    if (switcher) { switcher.hidden = views.length < 2; switcher.setAttribute('aria-label', `${destination[0].toUpperCase()}${destination.slice(1)} views`); }
-    const title = document.getElementById('drawer-title'); if (title) title.textContent = ({ activity: 'Activity', people: 'People', work: 'Work', lamps: 'Lamps' })[destination];
+    if (switcher) { switcher.hidden = views.length < 2; switcher.setAttribute('aria-label', `${destination ? destination[0].toUpperCase() + destination.slice(1) : 'Panel'} views`); }
+    const title = document.getElementById('drawer-title'); if (title) title.textContent = ({ activity: 'Activity', people: 'People', work: 'Work', lamps: 'Lamps' })[destination] || '';
     for (const b of els.bodies) b.hidden = b.dataset.tab !== name;
     if (name === 'exhibits') { els.exhibits.hidden = exhibitView !== 'art'; $('tales').hidden = exhibitView !== 'tales'; if (exhibitView === 'tales') renderTales(); }
     if (name === 'board') scrollBoardToBottom(true);
@@ -983,6 +983,7 @@ export function createPanel(opts) {
   function renderNeedsYou() {
     const heroes = heroesInZone().filter(waitingHero), escs = escalations();
     const n = heroes.length + escs.length;
+    opts.onNeedsCount?.(n);
     els.workshop.appendChild(h('div', { class: 'temple-section-title needs-title' }, h('span', { text: 'Needs you' }), n ? h('span', { class: 'count count-need', text: String(n) }) : null));
     if (!n) { els.workshop.appendChild(h('div', { class: 'empty needs-none', text: 'Nothing needs you' })); return; }
     const strip = h('div', { class: 'needs-you' });
@@ -1641,7 +1642,6 @@ export function createPanel(opts) {
     const cc = counselCount();
     const cb = document.getElementById('badge-counsel');
     if (cb) { cb.hidden = !cc; cb.textContent = String(cc); }
-    opts.onCounselCount?.(cc);
   }
   function refreshTimes() {
     for (const t of els.posts.querySelectorAll('.post-time')) t.textContent = relTime(+t.dataset.ts);
