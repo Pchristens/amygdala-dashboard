@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- When you allow a petition, Bram the harbourmaster now chooses who answers it and whether it needs web research, so you only approve; "Make it a hero" asks you to pick Opus, Sol or Grok high (v0.80).
 - Fixed two crashes that took the server down when a visitor's question was being answered: one when the Starwatcher was the answerer, one when Windows briefly held the answer's scratch folder.
 - A guest's Claude is now told that guidance questions are answered by the village's AI residents (briefly or with web research), not by the keeper personally.
 - Opening the village gate's address in a browser now shows "You've reached the village gate" instead of an error page, so a guest can tell their connection works (v0.79).

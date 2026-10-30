@@ -43,8 +43,8 @@ try {
   assert.equal(visitorMessage({ visitor: 'Father' }, 'x </visitor-message-zz> y', 'zz').split('</visitor-message-zz>').length, 2);
 
   // ---- commission: validation and state ----
-  await assert.rejects(v.commission(id, { brief: '' }), /brief/);
-  await assert.rejects(v.commission(id, { brief: 'x'.repeat(3900), site: 'forge', path: '/tmp', tool: 'claude' }), /Shorten the brief/);
+  await assert.rejects(v.commission(id, { brief: '', tool: 'claude', model: 'claude-opus-5-5' }), /brief/);
+  await assert.rejects(v.commission(id, { brief: 'x'.repeat(3900), site: 'forge', path: '/tmp', tool: 'claude', model: 'claude-opus-5-5' }), /Shorten the brief/);
   await assert.rejects(v.commission('petition-nope', { brief: 'b' }), /No pending/);
   assert.throws(() => rpc(a.token, 'commission', { id }), /Unknown action/); // visitors cannot start heroes
   assert.throws(() => rpc(a.token, 'add_to_petition', { id, text: 'hello' }), /No hero/); // not yet commissioned
@@ -53,10 +53,12 @@ try {
   w.nodes.request = async (node, kind, payload, workerId) => { jobs.push({ node, kind, payload, workerId }); if (kind === 'commission') return JSON.stringify({ id: 's1' }); if (kind === 'tail') return tailText; return ''; };
   w.nodes.tail = async (h, n) => w.nodes.request(h.node, 'tail', { sessionId: h.sessionId, maxChars: n }, h.id);
   const failing = w.nodes.request; w.nodes.request = async () => { throw new Error('offline'); };
-  await assert.rejects(v.commission(id, { brief: 'Help them.', site: 'forge', path: '/tmp', tool: 'claude', node: 'np1' }), /offline/);
+  await assert.rejects(v.commission(id, { brief: 'Help them.', site: 'forge', path: '/tmp', tool: 'claude', model: 'claude-opus-5-5', node: 'np1' }), /offline/);
+  for (const bad of [{ tool: 'claude', model: 'claude-sonnet-5-5' }, { tool: 'codex', model: 'gpt-6-luna' }, { tool: 'grok', model: 'grok-4.7', effort: 'medium' }, { tool: 'claude', model: 'claude-opus-5-5', effort: 'low' }, { tool: 'antigravity', model: 'gemini-4-argon-medium' }])
+    await assert.rejects(v.commission(id, { brief: 'Help them.', site: 'forge', path: '/tmp', ...bad }), /Opus, Sol, or Grok high/);
   assert.equal(pet().status, 'pending', 'a failed launch returns the petition to pending');
   w.nodes.request = failing;
-  const r = await v.commission(id, { brief: 'HUMAN BRIEF: help them in this project.', site: 'forge', path: '/home/x/proj', tool: 'claude', node: 'np1' });
+  const r = await v.commission(id, { brief: 'HUMAN BRIEF: help them in this project.', site: 'forge', path: '/home/x/proj', tool: 'claude', model: 'claude-opus-5-5', node: 'np1' });
   assert.equal(r.heroId, 'node:np1:s1'); assert.equal(pet().status, 'commissioned'); assert.equal(pet().relay, true);
   assert.equal(pet().heroTitle, "Visitor's labour — Father"); assert(!pet().heroTitle.includes('SECRETQ'));
   const launch = jobs.find(j => j.kind === 'commission').payload.commission;
@@ -151,7 +153,7 @@ try {
   // ---- local hero: agent-deck send and transcript tail; title adoption when no id comes back ----
   const id2 = ask(a.token, 'SECRETQ two'); await v.triages.get(id2);
   const launched = []; w.sites.commission = async (args, opts) => { launched.push({ args, opts }); return {}; };
-  await v.commission(id2, { brief: 'Local brief.', site: 'library', path: '/tmp', tool: 'codex' });
+  await v.commission(id2, { brief: 'Local brief.', site: 'library', path: '/tmp', tool: 'codex', model: 'gpt-6.1-sol' });
   assert.equal(launched[0].opts.quiet, true); assert.equal(w.s.petitions.find(p => p.id === id2).heroId, null);
   const transcript = path.join(dir, 't.jsonl');
   fs.writeFileSync(transcript, [{ type: 'user', message: { role: 'user', content: '<to-visitor>\nUSER SIDE\n</to-visitor>' } }, { type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'working\n<to-visitor>\nLOCAL REPLY\n</to-visitor>' }] } }].map(x => JSON.stringify(x)).join('\n'));

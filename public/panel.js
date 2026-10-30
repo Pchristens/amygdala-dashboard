@@ -149,28 +149,16 @@ export function createPanel(opts) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { clearInterval(titleTimer); titleTimer = null; document.title = baseTitle; } });
   function petitionDecision(p, deny = false) {
     const dialog = h('dialog', { class: 'dialog pass-dialog' });
-    const select = h('select', { class: 'input', 'aria-label': 'Answerer' });
-    const order = [p.triage?.suggest, ...(p.triage?.alternates || [])];
-    const residents = [...(p.answerers || [])].sort((a, b) => {
-      const rank = name => order.includes(name) ? order.indexOf(name) : 999;
-      return rank(a.name) - rank(b.name);
-    });
-    for (const r of residents) select.append(h('option', { value: r.name, text: `${r.name} · ${r.tier} · ${r.usage == null ? 'usage unknown' : `${r.usage}%`}` }));
-    select.append(h('option', { value: 'self', text: 'Answer myself' }));
-    select.value = residents.some(r => r.name === p.triage?.suggest) ? p.triage.suggest : residents[0]?.name || 'self';
     const answer = h('textarea', { class: 'input', rows: 8, maxlength: 20000, 'aria-label': 'Your answer' });
-    const depth = h('select', { class: 'input', 'aria-label': 'Depth' }, h('option', { value: 'answer', text: 'Answer — one reply' }), h('option', { value: 'research', text: 'Research — web, longer, follow-ups' }));
-    const rounds = h('input', { class: 'input', type: 'number', min: 0, max: 5, value: 0, 'aria-label': 'Follow-ups' });
-    depth.addEventListener('change', () => { if (+rounds.value === 0 || +rounds.value === 3) rounds.value = depth.value === 'research' ? 3 : 0; });
+    const self = h('label', { class: 'dim-note' }, h('input', { type: 'checkbox', 'aria-label': 'Answer myself', onChange: () => { answer.hidden = deny || !self.firstChild.checked; } }), ' Answer myself');
     const note = h('textarea', { class: 'input', rows: 2, maxlength: 2000, placeholder: 'Optional note', 'aria-label': 'Optional note' });
     const error = h('div', { class: 'dialog-error', role: 'alert' });
-    select.hidden = deny; depth.hidden = deny; rounds.hidden = deny;
-    const update = () => { answer.hidden = deny || select.value !== 'self'; }; select.addEventListener('change', update); update();
+    answer.hidden = true; self.hidden = deny;
     const decide = async action => {
-      const result = await opts.api(`/api/petitions/${encodeURIComponent(p.id)}/${action}`, { answerer: select.value, answer: answer.value, note: note.value, depth: depth.value, rounds: +rounds.value });
+      const result = await opts.api(`/api/petitions/${encodeURIComponent(p.id)}/${action}`, { ...(self.firstChild.checked && { answerer: 'self', answer: answer.value }), note: note.value });
       if (result?.ok === false) error.textContent = result.error; else dialog.close();
     };
-    dialog.append(h('h2', { text: `Guidance for ${p.visitor}` }), h('p', { class: 'petition-text', text: p.question }), select, depth, rounds, answer, note, error,
+    dialog.append(h('h2', { text: `Guidance for ${p.visitor}` }), h('p', { class: 'petition-text', text: p.question }), self, answer, note, error,
       h('div', { class: 'dialog-actions' }, h('button', { class: 'btn', text: 'Cancel', onClick: () => dialog.close() }), h('button', { class: 'btn', text: 'Deny', onClick: () => decide('deny') }), deny ? null : h('button', { class: 'btn btn-primary', text: 'Allow', onClick: () => decide('allow') })));
     document.body.append(dialog); dialog.addEventListener('close', () => dialog.remove(), { once: true }); dialog.showModal();
   }
@@ -207,6 +195,8 @@ export function createPanel(opts) {
         card.append(h('p', { class: 'dim-note' }, h('small', {}, h('i', { text: p.triage?.greeting || `${harbourName()} is reading your question` }))));
         if (p.triage) card.append(h('span', { class: 'chip', text: p.triage.tier }), h('p', { class: 'dim-note', text: `${p.triage.by || harbourName()} suggests ${p.triage.suggest || 'Answer myself'} — ${p.triage.reason}` }));
       }
+      if (p.status === 'dispatching') card.append(h('div', { class: 'dim-note', text: `${harbourName()} is choosing who answers…` }));
+      if (p.dispatch && p.status !== 'dispatching') card.append(h('div', { class: 'dim-note', text: `${p.dispatch.by === 'fallback' ? 'The village' : p.dispatch.by} sent it to ${p.dispatch.answerer} · ${p.dispatch.depth} · ${p.dispatch.rounds} follow-ups — ${p.dispatch.reason}${p.dispatch.fallback ? ' (fallback)' : ''}` }));
       if (p.answer) card.append(h('b', { text: p.answerer || 'Answer' }), h('p', { class: 'petition-text', text: p.answer }));
       for (const f of p.followups || []) card.append(h('div', { class: 'dim-note', text: 'Visitor follow-up' }), h('p', { class: 'petition-text', text: f.question }), h('p', { class: 'petition-text', text: f.answer || f.status }));
       if (p.rounds != null && p.status === 'answered') card.append(h('div', { class: 'dim-note', text: `${Math.max(0, p.rounds - (p.followups || []).filter(f => f.status !== 'failed').length)} follow-ups left` }));

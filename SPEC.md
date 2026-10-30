@@ -1899,3 +1899,11 @@ A `GET` to the gate's `/` or `/visit/mcp` whose `Accept` header includes `text/h
 fixed page saying the gate is reachable and that the address is for Claude Desktop. It carries no village data and needs
 no pass. Every other request is unchanged: MCP clients don't ask for HTML, so `GET /visit/mcp` still answers `405` and
 other paths `404`.
+
+## v0.80: the harbourmaster dispatches petitions; hero model choice
+
+The keeper's plain Allow decision starts an isolated dispatcher run by the village `harbourmaster` duty holder (or its
+stand-in), the same resident who triaged it. It selects an eligible answerer, answer or research depth, and zero to five follow-up rounds; invalid or
+failed dispatches use the deterministic harbourmaster suggestion or normal triage choice. The petition remains private,
+and visitor `check_guidance` never returns the keeper-only dispatch reason. Explicit answerer decisions remain supported.
+Petition hero commissions accept only Claude Opus 5.5, Codex Sol, or Grok 4.7 at high effort.

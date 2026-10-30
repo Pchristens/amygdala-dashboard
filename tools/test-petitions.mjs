@@ -14,7 +14,7 @@ Usage.prototype.probe = () => {};
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'amygdala-petitions-test-'));
 let w;
 try {
-  const config = [{ name: 'Lyra', agent: 'claude', model: 'claude-haiku-5-5', persona: 'Kind and thoughtful', title: 'Guide' }, { name: 'Atlas', agent: 'codex', model: 'gpt-5' }, { name: 'Other', agent: 'grok' }, { name: 'Bram', role: 'harbourmaster', agent: 'antigravity', model: 'gemini-3.8-flash-medium' }, { name: 'Moss', agent: 'grok', enabled: false }, { name: 'Gem', role: 'librarian', agent: 'antigravity', model: 'gemini-4-argon-medium' }];
+  const config = [{ name: 'Lyra', agent: 'claude', model: 'claude-haiku-5-5', persona: 'Kind and thoughtful', title: 'Guide' }, { name: 'Atlas', agent: 'codex', model: 'gpt-5' }, { name: 'Other', agent: 'grok' }, { name: 'Bram', role: 'harbourmaster', agent: 'antigravity', model: 'gemini-3.8-flash-medium' }, { name: 'Ione', role: 'watch', agent: 'claude', model: 'claude-haiku-5-5', title: 'The Watch' }, { name: 'Moss', agent: 'grok', enabled: false }, { name: 'Gem', role: 'librarian', agent: 'antigravity', model: 'gemini-4-argon-medium' }];
   w = new World(dir, config, path.join(dir, 'residents.json'));
   const v = w.visitors;
   v.triageRunner = async () => ({ answer: JSON.stringify({ greeting: 'Welcome, Father, to Willow Pier.', tier: 'considered', suggest: 'Atlas', alternates: ['Gem'], reason: 'A thoughtful guide.' }) });
@@ -133,6 +133,39 @@ try {
   assert.equal(rpc(b.token, 'check_guidance', { id: gem.id }).answer, 'A Gemini reply.');
   assert.equal(modelTier('gpt-6-astra'), 'deep');
 
+  c.turn = null; c.tick = () => {}; w.usage.limits.providers = [{ id: 'openai', windows: [{ used_percentage: 20 }] }];
+  v.dispatchRunner = async (_r, task) => { assert.match(task.triagePrompt, /PRIVATE DISPATCH QUESTION/); return { answer: JSON.stringify({ answerer: 'Atlas', depth: 'answer', rounds: 0, reason: 'A suitable guide.' }), text: 'dispatch usage' }; };
+  const dispatched = rpc(b.token, 'ask_guidance', { question: 'PRIVATE DISPATCH QUESTION' }); await v.triages.get(dispatched.id);
+  v.decide(dispatched.id, 'allow', { note: 'Approved' }); await v.dispatches.get(dispatched.id);
+  const dispatchPetition = w.s.petitions.find(x => x.id === dispatched.id);
+  assert.equal(dispatchPetition.status, 'allowed'); assert.equal(dispatchPetition.answerer, 'Atlas'); assert.equal(dispatchPetition.dispatch.by, 'Bram');
+  assert.equal(rpc(b.token, 'check_guidance', { id: dispatched.id }).dispatch, undefined);
+  assert.equal(w.s.usage.find(x => x.kind === 'dispatch').resident, 'Bram'); assert.equal(c.queue.at(-1).human, true);
+  // An answerer outside the eligible roster, or a failing run, falls back; research over 70% pressure becomes an answer.
+  c.queue.length = 0; w.usage.limits.providers = [{ id: 'codex', windows: [{ used_percentage: 20 }] }]; const g2 = v.issue('Guest Two');
+  for (const [runner, check] of [
+    [async () => ({ answer: JSON.stringify({ answerer: 'Nobody', depth: 'answer', rounds: 0, reason: 'x' }), text: '' }), d => assert(d.fallback)],
+    [async () => { throw new Error('boom'); }, d => assert(d.fallback)],
+    [async () => ({ answer: JSON.stringify({ answerer: 'Atlas', depth: 'research', rounds: 3, reason: 'Needs sources.' }), text: '' }), d => { assert.equal(d.depth, 'research'); assert.equal(d.rounds, 3); }],
+  ]) {
+    v.dispatchRunner = runner; const q = rpc(g2.token, 'ask_guidance', { question: 'another' }); await v.triages.get(q.id);
+    v.decide(q.id, 'allow', {}); await v.dispatches.get(q.id); const pet = w.s.petitions.find(x => x.id === q.id);
+    assert.equal(pet.status, 'allowed'); check(pet.dispatch); c.queue.length = 0;
+  }
+  w.usage.limits.providers = [{ id: 'codex', windows: [{ used_percentage: 75 }] }];
+  v.dispatchRunner = async () => ({ answer: JSON.stringify({ answerer: 'Atlas', depth: 'research', rounds: 3, reason: 'Needs sources.' }), text: '' });
+  { const q = rpc(g2.token, 'ask_guidance', { question: 'hot' }); await v.triages.get(q.id); v.decide(q.id, 'allow', {}); await v.dispatches.get(q.id);
+    const d = w.s.petitions.find(x => x.id === q.id).dispatch; assert.equal(d.depth, 'answer'); assert.equal(d.rounds, 0); }
+  w.usage.limits.providers = [{ id: 'codex', windows: [{ used_percentage: 20 }] }]; c.queue.length = 0;
+  c.queue.length = 0; await new Promise(resolve => setTimeout(resolve, 10)); delete c.tick;
+  const hero = rpc(b.token, 'ask_guidance', { question: 'hero request' }); await v.triages.get(hero.id);
+  w.sites.commission = async () => ({ id: 'hero' });
+  const heroState = w.s.petitions.find(x => x.id === hero.id);
+  for (const preset of [{ tool: 'claude', model: 'claude-opus-5-5' }, { tool: 'codex', model: 'gpt-6.1-sol' }, { tool: 'grok', model: 'grok-4.7', effort: 'high' }]) { heroState.status = 'pending'; assert((await v.commission(hero.id, { ...preset, brief: 'Help', site: 'library', path: '/tmp/project' })).heroId); }
+  heroState.status = 'pending';
+  await assert.rejects(() => v.commission(hero.id, { tool: 'codex', model: 'gpt-6-astra', brief: 'Help', site: 'library', path: '/tmp/project' }), /Opus, Sol, or Grok high/);
+  for (const pet of w.s.petitions.filter(x => x.passId === b.pass.id)) pet.askedAt -= 48 * 60 * 60 * 1000;
+
   c.guidanceRunner = async () => { throw new Error('timeout'); };
   const failed = rpc(b.token, 'ask_guidance', { question: 'PRIVATE QUESTION timeout' });
   await v.triages.get(failed.id);
@@ -161,4 +194,4 @@ try {
   assert(!JSON.stringify(w.snapshot()).includes('PRIVATE QUESTION'));
   assert(!createMcpHandler(w).lookFor('Lyra').includes('PRIVATE QUESTION'));
   console.log('PASS: petitions RPC, limits, isolation, manual decisions, privacy, queue, usage, pressure, failures, Watch, CLI isolation');
-} finally { if (w) { clearTimeout(w.saveTimer); clearInterval(w.seal.timer); } fs.rmSync(dir, { recursive: true, force: true }); }
+} finally { if (w) { if (w.conductor) w.conductor.tick = () => {}; clearTimeout(w.saveTimer); clearInterval(w.seal.timer); } fs.rmSync(dir, { recursive: true, force: true }); }

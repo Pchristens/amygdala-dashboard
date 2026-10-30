@@ -714,13 +714,15 @@ function openCommission(petition = null) {
   $('cm-error').hidden = !!machines.options.length;
   $('cm-submit').disabled = !machines.options.length;
   $('cm-title').value = petition ? `Visitor's labour — ${petition.visitor}` : ''; $('cm-model').value = ''; $('cm-effort').value = '';
+  $('cm-tool').innerHTML = petition ? '<option value="claude">Claude</option><option value="codex">Codex</option><option value="grok">Grok</option>' : '<option value="claude">claude</option><option value="codex">codex</option><option value="antigravity">antigravity</option><option value="gemini">gemini</option>';
   $('cm-prompt').value = petition ? `A visitor to Amygdala, ${petition.visitor}, asked for the help below. Do what is reasonable and safe within this project, and tell them plainly what you did or why you could not.` : '';
   $('cm-prompt').maxLength = petition ? Math.max(200, 3200 - String(petition.question || '').length) : 4000; // brief + fenced request + reply rules fit the 4000-character first message
   $('cm-heading').textContent = petition ? `Make ${petition.visitor}'s petition a hero` : 'Send a hero on a labour';
-  $('cm-sub').textContent = petition ? 'Your brief comes first; the hero then sees the visitor\u2019s request, fenced as untrusted input, and replies to them between <to-visitor> tags.' : 'Commission a real agent session at one of the sites across the river.';
+  $('cm-sub').textContent = petition ? 'Choose Opus, Sol, or Grok high. Your brief comes first; the hero sees the visitor’s request as untrusted input.' : 'Commission a real agent session at one of the sites across the river.';
   const MODELS = { claude: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-haiku-5-5'], codex: ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna'], antigravity: ['gemini-4-argon-medium'], gemini: ['gemini-4-argon-medium'] };
   const fillModels = () => { const dl = $('cm-model-list'); dl.textContent = ''; for (const mm of MODELS[$('cm-tool').value] || []) dl.appendChild(h('option', { value: mm })); };
-  $('cm-tool').onchange = fillModels; fillModels();
+  $('cm-tool').onchange = () => { fillModels(); if (petition) { const presets = { claude: ['claude-opus-5-5', ''], codex: ['gpt-6.1-sol', ''], grok: ['grok-4.7', 'high'] }, [model, effort] = presets[$('cm-tool').value] || ['', '']; $('cm-model').value = model; $('cm-model').readOnly = true; $('cm-effort').value = effort; $('cm-effort').disabled = true; } else { $('cm-model').readOnly = false; $('cm-effort').disabled = false; } }; fillModels();
+  if (petition) $('cm-tool').onchange();
   commissionDialog.showModal();
   $('cm-path').focus();
 }
