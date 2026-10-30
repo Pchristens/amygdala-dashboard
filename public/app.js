@@ -7,7 +7,7 @@ const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os
 import { createMap, GIFT_KINDS, giftIconSVG } from './map.js';
 import { createMap3D } from './map3d.js';
 import * as map3d from './map3d.js';
-import { createPanel, deckLink, mountHeroTerminal, residentIdentity, stewardPane, VIEW_DESTINATION, DESTINATION_VIEWS } from './panel.js';
+import { governanceWhy, createPanel, deckLink, mountHeroTerminal, residentIdentity, stewardPane, VIEW_DESTINATION, DESTINATION_VIEWS } from './panel.js';
 import { h, agentClass, relTime, avatar, toast, capitalize, commitmentEl, runeTablet } from './util.js';
 import { STAGE_NAMES, STAGE_THRESHOLDS, stageOf, stageProgress } from './trees.js';
 import { zoneOf, laLine, LA_GLYPHS } from './svg-util.js';
@@ -439,6 +439,7 @@ function openDecide(r) {
   const dialog = $('decide-dialog'), reason = $('decide-reason'), err = $('decide-error');
   $('decide-title').textContent = `Decide — ${r.title || r.project || r.offeringId}`;
   $('decide-sub').textContent = `${r.project || ''} ${String(r.sha || '').slice(0, 12)} · ${r.offeringId}`;
+  $('decide-why').replaceChildren(governanceWhy(r));
   reason.value = ''; err.hidden = true;
   for (const b of dialog.querySelectorAll('[data-verdict]')) b.onclick = async () => {
     if (reason.value.trim().length < 10) { err.textContent = 'Give a reason of at least 10 characters.'; err.hidden = false; reason.focus(); return; }

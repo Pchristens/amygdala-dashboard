@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Decisions show AI-written reasons and objections, and superseded rejected Steward work can be withdrawn from your reading list. (v0.84)
+
 - Omens no longer carry Confirm fixed, Decree or Set aside buttons (nor the decrees auto/approve switch): the smith checks each fix and the High Priest confirms it, and an omen says which step it is waiting for.
 - "Needs you" (and the ❗ count) now means a hero is asking for a permission or a ruling is yours to give; a hero that has just finished its turn reads as idle instead, and only permission prompts pulse on the map or ring the bell. (v0.83)
 - A petition the harbourmaster is still dispatching stays with the open petitions instead of under Earlier petitions.

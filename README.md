@@ -105,7 +105,7 @@ Temple with the hero's report and test results. Then, without a routine step fro
    receipt.
 
 The Steward can never override a ruling on **its own code**, on a security or data-loss concern, during an appeal, or
-after you decided. Those, and appeals that upheld a rejection, are the escalations that appear under **Needs you**.
+after you decided. Those, and appeals that upheld a rejection, are the escalations that appear under **Needs you**. These show AI-written reasons and objections; the Steward or human can withdraw a rejected Steward offering once a later offering for the same project is accepted or has a deployment receipt.
 Each just stays unshipped until you act; nothing ships by timing out. To act, use **Decide…** beside the offering in
 the Temple's **Governance** fold (also beside anything awaiting a ruling): give a reason, then Accept or Reject. Your
 decision is final and recorded in the ledger as yours.

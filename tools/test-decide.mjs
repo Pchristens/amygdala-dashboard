@@ -6,7 +6,7 @@ import { panelDocument } from './panel-dom.mjs';
 import { h } from '../public/util.js';
 
 globalThis.document = panelDocument();
-const { createPanel } = await import('../public/panel.js');
+const { createPanel, governanceWhy } = await import('../public/panel.js');
 const decided = [];
 const panel = createPanel({ onDecide: r => decided.push(r.offeringId) });
 const governance = { wakes: { used: 0 }, verified: true, ledger: [],
@@ -20,14 +20,16 @@ assert.deepEqual(decided.sort(), ['of1', 'of2']);
 
 // The dialog: a reason is required, then one call to the override route with the chosen verdict.
 const app = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-const els = { 'decide-dialog': h('dialog'), 'decide-reason': h('textarea'), 'decide-error': h('div'), 'decide-title': h('h2'), 'decide-sub': h('div') };
+const els = { 'decide-why': h('div'), 'decide-dialog': h('dialog'), 'decide-reason': h('textarea'), 'decide-error': h('div'), 'decide-title': h('h2'), 'decide-sub': h('div') };
 const accept = h('button'), reject = h('button'); accept.dataset.verdict = 'accept'; reject.dataset.verdict = 'reject';
 let shown = 0, closed = 0; Object.assign(els['decide-dialog'], { showModal() { shown++; }, close() { closed++; }, querySelectorAll: () => [reject, accept] });
 els['decide-reason'].focus = () => {};
 const calls = [], toasts = [];
-const ctx = vm.createContext({ $: id => els[id], api: async (...a) => { calls.push(a); return { ok: true }; }, okResult: r => r === true || (r && r.ok !== false), toast: t => toasts.push(t) });
+const ctx = vm.createContext({ governanceWhy, $: id => els[id], api: async (...a) => { calls.push(a); return { ok: true }; }, okResult: r => r === true || (r && r.ok !== false), toast: t => toasts.push(t) });
 vm.runInContext(app.slice(app.indexOf('function openDecide('), app.indexOf('function updateEndLabour(')), ctx);
-ctx.openDecide({ offeringId: 'of1', title: 'Synthetic', project: 'p', sha: 'abc' });
+ctx.openDecide({ offeringId: 'of1', title: 'Synthetic', project: 'p', sha: 'abc', why: { by: 'Themis', reason: '<untrusted>\nreason' }, objection: { by: 'steward', reason: 'New evidence' } });
+assert.match(els['decide-why'].textContent, /AI-written/);
+assert.match(els['decide-why'].textContent, /New evidence/);
 assert.equal(shown, 1);
 els['decide-reason'].value = 'too short'; await accept.onclick();
 assert.equal(calls.length, 0, 'no decision without a reason'); assert.equal(els['decide-error'].hidden, false);

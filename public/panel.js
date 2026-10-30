@@ -10,6 +10,16 @@ const DAY = 24 * 3600 * 1000;
 export const VIEW_DESTINATION = Object.freeze({ board: 'activity', exhibits: 'activity', tales: 'activity', residents: 'people', workshop: 'work', orders: 'work', terminal: 'work', place: 'activity', lamps: 'lamps' });
 export const DESTINATION_VIEWS = Object.freeze({ activity: ['board', 'exhibits', 'tales'], people: ['residents'], work: ['workshop', 'orders'], lamps: ['lamps'] });
 
+export function governanceWhy(r) {
+  const box = document.createElement('span'); box.className = 'need-sub';
+  const who = (by) => ({ steward: 'the Steward', human: 'you' })[by] || by;
+  for (const [key, label] of [['why', `${who(r.why?.by) || 'The Temple'}'s reason`], ['objection', `Objection (by ${who(r.objection?.by) || 'the Steward'})`], ['first', `First ruling (by ${who(r.first?.by) || 'the Temple'})`]]) {
+    if (!r[key]?.reason) continue;
+    const line = document.createElement('span'); line.className = 'dim-note need-sub'; line.textContent = `${label} (AI-written): ${r[key].reason}`; box.append(document.createElement('br'), line);
+  }
+  return box;
+}
+
 // Agent Deck lives on each machine's own loopback: on the village machine link its local heroes; through a keeper
 // (another machine viewing), link only that node's heroes, to the viewer's own Deck.
 export function deckLink(worker) {
@@ -1028,7 +1038,7 @@ export function createPanel(opts) {
     for (const d of escs) {
       const o = offeringsInZone().find((x) => x.id === d.offeringId);
       strip.appendChild(needItem(`g:${d.offeringId}`, 'offering', [h('span', { class: 'pill pill-error', text: 'your decision' }), h('span', { class: 'need-name', text: String(o?.title || d.project || d.offeringId) }),
-        h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)}` }), h('span', { class: 'need-sub', text: String(d.text || '') })], () => (o ? offeringCard(o) : h('div', { class: 'dim-note', text: String(d.text || '') }))));
+        h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)}` }), h('span', { class: 'need-sub', text: String(d.text || '') }), governanceWhy(d)], () => (o ? offeringCard(o) : h('div', { class: 'dim-note', text: String(d.text || '') }))));
     }
     els.workshop.appendChild(strip);
   }
@@ -1112,7 +1122,7 @@ export function createPanel(opts) {
     const fold = foldSection('governance', 'Governance', digest.length || null, h('span', { class: 'dim-note gov-meta', text: `wakes today ${g.wakes?.used ?? 0} · ledger ${g.verified ? 'intact' : 'BROKEN'}` }));
     if (digest.length) {
       const box = h('div', { class: 'panel-settings gov-digest' }, h('b', { text: 'For your reading' }));
-      for (const d of digest) box.append(h('p', {}, h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)} ` }), document.createTextNode(String(d.text || '')), d.escalation ? decideButton(d) : null));
+      for (const d of digest) box.append(h('p', {}, h('span', { class: 'worker-path', text: `${d.project || ''} ${shortHash(d.sha)} ` }), document.createTextNode(String(d.text || '')), d.escalation ? decideButton(d) : null, governanceWhy(d)));
       fold.append(box);
     }
     if (pending.length) {
@@ -1282,6 +1292,7 @@ export function createPanel(opts) {
     if (!g) return o.status === 'closed' ? ['closed', 'pill-stopped'] : reviewers ? ['under review', 'pill-running'] : ['awaiting first look', 'pill-waiting'];
     if (g.state === 'trivial') return [`accepted (trivial) ${sha}`, 'pill-running'];
     if (g.state === 'accepted') return [`accepted ${sha}`, 'pill-running'];
+    if (g.withdrawn) return [`withdrawn, superseded by ${g.withdrawn.supersededBy}`, 'pill-error'];
     if (g.state === 'rejected') return [`rejected ${sha}`, 'pill-error'];
     if (g.state === 'evidence') return ['pending evidence', 'pill-waiting'];
     if (g.state === 'appealed') return ['under appeal', 'pill-waiting'];

@@ -1,0 +1,30 @@
+// Synthetic village offerings; no runners, transport, runtime state or model usage.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { Governance } from '../lib/governance.js';
+const w = { s: { offerings: [] }, temple: { villageSafe: () => true }, changed() {}, config: [], hasRole: () => false };
+const G = new Governance(w, '/tmp'); G.wakesUsed = () => 0;
+const offering = (id, extra = {}) => ({ id, createdAt: extra.at || 1, project: 'project', host: 'local', gov: { key: 'project@local', sha: id, state: 'rejected', stewardOwn: true, at: 1, tests: [], rulings: [{ id: 'r1', by: 'Themis', verdict: 'reject', concern: 'none', reason: 'Needs\n  more tests. ' + 'a'.repeat(700) }], appeals: [], ...extra } });
+const old = offering('of1'), next = offering('of2', { at: 2, state: 'accepted' }); w.s.offerings.push(old, next);
+let d = G.digest().find(x => x.offeringId === old.id);
+assert.equal(d.why.reason.length, 600); assert(!/\s{2}|\n/.test(d.why.reason)); assert.equal(G.row(old).why.reason, d.why.reason);
+old.gov.appeals.push({ by: 'steward', reason: 'New\n evidence supplied', rulingId: 'r1' });
+old.gov.rulings.push({ id: 'r2', by: 'Atlas', verdict: 'reject', concern: 'none', reason: 'Still missing coverage', appeal: true });
+d = G.digest().find(x => x.offeringId === old.id);
+assert.equal(d.objection.reason, 'New evidence supplied'); assert.equal(d.why.by, 'Atlas'); assert.equal(d.first.by, 'Themis'); assert.equal(d.first.reason.length, 300);
+old.gov.override = { by: 'steward', reason: 'Steward objection' }; assert.equal(G.row(old).objection.reason, 'Steward objection'); delete old.gov.override;
+const b = { offeringId: old.id, supersededBy: next.id, reason: 'Replaced by corrected work' }, withdraw = (body = b, actor = 'steward') => G.api('withdraw', body, actor);
+for (const change of [{ stewardOwn: false }, { state: 'pending' }, { final: true }]) { Object.assign(old.gov, change); assert.throws(() => withdraw()); Object.assign(old.gov, { stewardOwn: true, state: 'rejected', final: false }); }
+assert.throws(() => withdraw({ ...b, supersededBy: undefined })); assert.throws(() => withdraw({ ...b, supersededBy: old.id })); assert.throws(() => withdraw({ ...b, reason: 'short' })); assert.throws(() => withdraw({ ...b, reason: 'x'.repeat(801) }));
+next.gov.state = 'pending'; assert.throws(() => withdraw()); next.gov.state = 'accepted';
+next.createdAt = 0; assert.throws(() => withdraw()); next.createdAt = 2;
+next.project = 'other'; assert.throws(() => withdraw()); next.project = old.project;
+const approved = JSON.stringify(G.g.approved); withdraw();
+assert.equal(old.gov.state, 'rejected'); assert.equal(old.gov.withdrawn.supersededBy, next.id); assert.equal(JSON.stringify(G.g.approved), approved); assert(!G.digest().some(x => x.offeringId === old.id)); assert.equal(G.g.ledger.at(-1).kind, 'withdraw'); assert(G.verify()); assert.throws(() => withdraw());
+const other = offering('of3'); w.s.offerings.push(other); next.gov.state = 'trivial'; G.append({ kind: 'receipt', offeringId: next.id, key: next.gov.key });
+withdraw({ ...b, offeringId: other.id }, 'human'); assert.equal(other.gov.withdrawn.by, 'human'); assert(G.verify());
+const panel = fs.readFileSync(new URL('../public/panel.js', import.meta.url), 'utf8'), app = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const renderer = panel.slice(panel.indexOf('export function governanceWhy'), panel.indexOf('export function deckLink'));
+assert(renderer.includes('textContent') && renderer.includes('objection') && renderer.includes('why') && renderer.includes('AI-written') && !renderer.includes('innerHTML'));
+assert(app.includes("replaceChildren(governanceWhy(r))")); assert(panel.includes('governanceWhy(d)'));
+console.log('governance why and withdrawal ok');
