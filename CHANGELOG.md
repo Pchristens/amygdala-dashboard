@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Opening the village gate's address in a browser now shows "You've reached the village gate" instead of an error page, so a guest can tell their connection works (v0.79).
 - VISITORS.md now tells a guest to add the village to their Claude Desktop settings rather than replace the file, with an example for each starting point.
 - When you allow a petition you can choose **Research**: the resident searches the web for up to 15 minutes and writes a longer answer with sources, and the visitor can ask up to five private follow-ups (you set how many). Research is offered only when the provider has headroom, and follow-ups wait while the village is paused or usage runs hot, and one lost to a restart can be asked again without using up a round (v0.78).
 - A plain-language guide, VISITORS.md, walks a guest through connecting Claude Desktop to your village over Tailscale and asking for guidance.

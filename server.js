@@ -308,6 +308,7 @@ function gateLog(req, p, outcome, who) {
   const line = `${new Date().toISOString()} ${req.socket.remoteAddress} ${req.method} ${p.replace(/hfv_[A-Za-z0-9_-]+/, 'hfv_…')} ${outcome}${who ? ' ' + who : ''} ua="${String(req.headers['user-agent'] || '').slice(0, 80)}"\n`;
   fs.appendFile(GATE_LOG, line, () => {});
 }
+const GATE_PAGE = '<!doctype html><meta charset="utf-8"><title>Amygdala gate</title><body style="font:18px/1.5 system-ui,sans-serif;max-width:34em;margin:4em auto;padding:0 1em;background:#F4EFE6;color:#2E2B25"><h1>✓ You’ve reached the village gate</h1><p>Your computer can reach Amygdala over Tailscale. This address is for Claude Desktop, not for a browser, so there is nothing more to see here.</p><p>Next: add the village to Claude Desktop’s config (see the visitor guide), then quit Claude completely and open it again.</p></body>';
 async function visit(req, res, p) {
   const end = res.end.bind(res);
   const bearerName = () => world.visitors.auth(String(req.headers.authorization || '').replace(/^Bearer\s+/i, '') || (p.match(/hfv_[A-Za-z0-9_-]+/) || [])[0])?.name;
@@ -377,6 +378,8 @@ function openGate() {
       }
       if (p === '/node/report') return await nodeReport(req, res);
       if (p === '/hero/report') return await heroReport(req, res, p);
+      // A guest testing the address in a browser gets a plain "you're through" page; MCP clients never ask for HTML.
+      if (req.method === 'GET' && /text\/html/.test(req.headers.accept || '') && (p === '/' || p === '/visit/mcp')) { gateLog(req, p, 200, 'browser'); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(GATE_PAGE); }
       if (!p.startsWith('/visit/')) { gateLog(req, p, 404); res.writeHead(404); return res.end(); }
       await visit(req, res, p);
     } catch (e) { if (!res.headersSent) json(res, 400, { ok: false, error: e.message }); }

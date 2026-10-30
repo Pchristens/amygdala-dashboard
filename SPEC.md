@@ -1892,3 +1892,10 @@ Research guidance remains isolated in an empty temporary directory with strict M
 Amendment (same release): a research follow-up also waits while its answerer's provider pressure is at or above 70% (or
 unknown). The queue isn't kept across restarts, so a follow-up still waiting or answering at a restart becomes `failed`
 with a note; failed follow-ups don't count against `rounds`. Follow-up runs are told to answer the newest follow-up.
+
+## v0.79: a page for browsers at the gate
+
+A `GET` to the gate's `/` or `/visit/mcp` whose `Accept` header includes `text/html` (a browser) answers `200` with a
+fixed page saying the gate is reachable and that the address is for Claude Desktop. It carries no village data and needs
+no pass. Every other request is unchanged: MCP clients don't ask for HTML, so `GET /visit/mcp` still answers `405` and
+other paths `404`.
