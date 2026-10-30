@@ -202,7 +202,7 @@ try {
   // ---------- reserved wakes respect every gate ----------
   c.pendingDuties.length = 0; c.queue.length = 0;
   const wakeFor = () => { o2.gov.wokeAt = 0; G.pump(); return c.pendingDuties.some(d => d.offeringIds?.includes(o2.id)); };
-  assert.throws(() => api('settings', { wakeBudget: 3 }, 'human'), /unknown|not/i, 'no daily cap to set (v0.64)');
+  assert.throws(() => api('settings', { wakeBudget: 3 }, 'human'), /unknown|not/i, 'examiner settings do not restore a daily wake cap (v0.64, v0.86)');
   w.setHibernate('Themis', true); assert(!wakeFor(), 'hibernating'); w.setHibernate('Themis', false);
   w.usage.limits = { providers: [{ id: 'claude', windows: [{ used_percentage: 96 }] }] }; assert(!wakeFor(), 'provider pressure'); w.usage.limits = { providers: [] };
   w.isHibernating('Themis');

@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Claude-written releases receive a second model’s examination, with the High Priest recording her own first verdict before reading its findings. (v0.86)
+
 - A hero's last message is no longer lost when its earlier messages were long: milestone reports, tales and petition replies read the end of the conversation, not the start of it.
 - Village heroes now relay committed milestone reports to the Steward’s bell for review at the Temple, including heroes on other machines. (v0.85)
 

@@ -1332,6 +1332,9 @@ export function createPanel(opts) {
       o.anchored ? h('span', { class: 'chip chip-tree', text: 'anchored', title: 'Findings are anchored to a specific commit/diff' }) : null,
       o.headCommit ? h('span', { class: 'worker-path', text: `@${shortHash(o.headCommit)}`, title: `head ${o.headCommit}${o.diffHash ? ` · diff ${o.diffHash}` : ''}` }) : null,
       h('span', { text: `${o.project || ''} @ ${o.host || 'local'} · ${relTime(o.createdAt)}${Number.isFinite(+o.size) ? ` · ${(+o.size / 1024).toFixed(1)} KB` : ''}${o.truncated ? ' · truncated' : ''}` })));
+    const ex = o.gov?.examination, ruling = o.gov?.rulings?.at(-1) || o.gov?.ruling;
+    if (ex) card.appendChild(h('div', { class: 'dim-note', text: ex.state === 'done' ? `Examined by ${ex.by}: ${ex.summary} (AI-written; ${ex.findings?.length || 0} findings)` : ex.state === 'skipped' ? `Examination skipped: ${ex.reason}` : `Awaiting ${ex.by}'s examination` }));
+    if (ruling?.draft && ruling.draft.verdict !== ruling.verdict) card.appendChild(h('div', { class: 'dim-note', text: `${ruling.by} first leaned ${ruling.draft.verdict}` }));
     if (o.note) card.appendChild(h('div', { class: 'card-quote', text: String(o.note) }));
     if (o.kind === 'scroll') {
       const text = String(o.text ?? o.content ?? o.scroll ?? '');

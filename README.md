@@ -84,6 +84,8 @@ whose model has a small allowance: they get one action tool and one action call 
 
 ## Heroes, the Steward and the Temple: how work ships
 
+Claude-written releases needing a ruling are examined by Quill before the High Priest wakes. She drafts independently before seeing the examiner’s AI-written findings. Paused, unavailable, over-budget or overdue examinations are skipped so review can continue. The human can choose the examiner with `POST /api/governance/settings {"examiner":"Quill"}`.
+
 Village heroes, including those on other machines, can end a turn with `Milestone: <name> — commit <hash> — tested: <how>` to ring the Steward’s bell for Temple review.
 
 Heroes are your agent-deck sessions. You commission one from the page (choosing the machine it starts on), or it shows up
