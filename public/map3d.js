@@ -582,8 +582,8 @@ export async function createMap3D(container, opts = {}) {
     for (const w of workers) {
       if (!w || !w.id) continue;
       const rec = upsert('god', w.id, { name: w.title || w.id, toolColor: TOOL_COLORS[w.tool] || TOOL_COLORS.other, hooded: !!w.sealed, appearance: null }, +w.x || 0, +w.y || 0, zoneOf(w), w.site);
-      setStatus(rec.F, w.stale ? 'stale' : w.status);
-      setWaiting(rec.F, w.status === 'waiting' && !w.stale);
+      setStatus(rec.F, w.stale ? 'stale' : w.status === 'waiting' && !w.needsPermission ? 'idle' : w.status);
+      setWaiting(rec.F, w.status === 'waiting' && w.needsPermission && !w.stale);
       rec.placeKind = w.home ? '' : { library: 'greatlibrary', forge: 'forge', quarry: 'quarry', temple: 'temple' }[w.site] || '';   // the Steward at home works at no site
       rec.F.label.textContent = w.sealed ? rec.F.label.textContent : String(w.title || w.id).slice(0, 26);
     }

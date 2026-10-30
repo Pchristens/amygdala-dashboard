@@ -64,7 +64,7 @@ try {
   const wakes = [];
   const watch = w.watch = new Watch(w, { duty: (...args) => { wakes.push(args); return true; } }, dir, { start: false });
   const now = Date.now();
-  w.workers = [{ id: 'hero', status: 'waiting', waitingSince: now - 11 * 60000, title: 'Fix login' }, { id: 'sealed', sealed: true, status: 'waiting', title: 'SECRET' }];
+  w.workers = [{ id: 'hero', status: 'waiting', needsPermission: true, waitingSince: now - 11 * 60000, title: 'Fix login' }, { id: 'sealed', sealed: true, status: 'waiting', title: 'SECRET' }];
   w.s.findings = [{ id: 'secret', zone: 'isle', status: 'omen', omenAt: now - 31 * 60000, claim: 'SECRET' }];
   watch.scan(now); watch.scan(now + 60000);
   assert.equal(wakes.length, 1); assert.equal(watch.state.pending.length, 2);

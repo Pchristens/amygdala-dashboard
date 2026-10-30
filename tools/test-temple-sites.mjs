@@ -8,7 +8,7 @@ const panel = createPanel({ api: async () => ({}) });
 panel.update({ zones: [{ id: 'village' }], residents: [], posts: [], exhibits: [], sites: [
   { id: 'temple', label: 'The Temple' }, { id: 'library', label: 'The Great Library' }, { id: 'forge', label: 'The Forge' },
 ], workers: [
-  { id: 'hero-a', title: 'Ada', status: 'waiting', tool: 'claude', project: 'work', host: 'local', site: 'library' },
+  { id: 'hero-a', title: 'Ada', status: 'waiting', needsPermission: true, tool: 'claude', project: 'work', host: 'local', site: 'library' },
   { id: 'hero-b', title: 'Bela', status: 'running', tool: 'codex', project: 'work', host: 'local', site: 'forge' },
 ], counsel: [{ id: 'c1', workerId: 'hero-a', status: 'new' }] });
 const workshop = document.getElementById('workshop');
@@ -18,7 +18,7 @@ assert.match(workshop.textContent, /Empty: The Temple/);
 assert.equal(workshop.querySelectorAll('.site-empty').length, 1);
 assert(!workshop.textContent.includes('nobody here'));
 const needs = workshop.querySelector('.needs-you'), row = needs.querySelector('button.need-hero');
-assert(row, 'waiting hero attention entry is a compact button');
+assert(row, 'permission prompt attention entry is a compact button');
 assert.match(row.textContent, /1 counsel/);
 assert.equal(row.querySelector('.worker-row'), null, 'needs-you does not duplicate the full hero card');
 const canonical = groups[0].querySelector('.worker-row');

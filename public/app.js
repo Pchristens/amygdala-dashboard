@@ -225,7 +225,7 @@ function buildCard(info) {
   if (type === 'worker') {
     const w = (state.workers || []).find((x) => x && x.id === id);
     if (!w) return null;
-    const st = String(w.status || 'idle');
+    const st = w.status === 'waiting' && !w.needsPermission ? 'idle' : String(w.status || 'idle');
     const stale = !!w.stale;
     const milestone = h('button', { class: 'btn btn-xs', type: 'button', text: 'Share a milestone' });
     milestone.disabled = !!w.sealed;
@@ -237,7 +237,7 @@ function buildCard(info) {
           h('span', { class: `chip ${agentClass(w.tool)}`, text: String(w.tool || 'tool') }), ' ',
           stale
             ? h('span', { class: 'pill pill-stale', text: `last seen ${relTime(w.updatedAt) || 'a while ago'}` })
-            : h('span', { class: `pill pill-${st}`, text: st === 'waiting' ? 'waiting for you' : st }), ' ', zoneChip(w)))),
+            : h('span', { class: `pill pill-${st}`, text: st === 'waiting' ? 'needs your permission' : st }), ' ', zoneChip(w)))),
       w.site && zoneOf(w) !== 'isle' ? h('div', { class: 'card-row', text: `at ${siteLabel(w.site)} · ${w.siteReason || ''}` }) : null,
       stale ? h('div', { class: 'card-row dim-note', text: 'Agent Deck could not reach this session on its last poll. It may still be running.' }) : null,
       w.sealed ? h('div', { class: 'card-row dim-note', text: 'This hero is quarantined behind the seal; its details are encrypted.' }) : null,
@@ -1254,9 +1254,9 @@ function applyState(s) {
     if (hero && header) {
       header.querySelector('h2').textContent = `Terminal — ${hero.title || hero.id}`;
       const pill = header.querySelector('.pill');
-      const status = String(hero.status || 'idle');
+      const status = hero.status === 'waiting' && !hero.needsPermission ? 'idle' : String(hero.status || 'idle');
       pill.className = `pill pill-${hero.stale ? 'stale' : status}`;
-      pill.textContent = hero.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status;
+      pill.textContent = hero.stale ? 'last seen a while ago' : status === 'waiting' ? 'needs your permission' : status;
     }
   }
   renderHeader();

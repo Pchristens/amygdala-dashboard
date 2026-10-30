@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- "Needs you" (and the ❗ count) now means a hero is asking for a permission or a ruling is yours to give; a hero that has just finished its turn reads as idle instead, and only permission prompts pulse on the map or ring the bell. (v0.83)
 - A petition the harbourmaster is still dispatching stays with the open petitions instead of under Earlier petitions.
 - End labour now works on a visitor's hero: it stops the hero at once and closes its petition link, with no wrap-up or tale (before, it refused and the hero couldn't stop itself).
 - The Residents tab no longer fills up with old petitions: only open ones show in full, and finished ones fold into "Earlier petitions", each opening to its card.

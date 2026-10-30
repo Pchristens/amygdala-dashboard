@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { spawn, bin, execFile, hostOs, deckAvailable, env } from '../lib/bin.js';
 import { spawn as spawnChild } from 'node:child_process';
+import { permissionItems, permissionScan } from '../lib/prompts.js';
 import { toWorker, mergeDeckLists } from '../lib/deck.js';
 import { extractSignals, classifyHero, isleTagged } from '../lib/heroclass.js';
 import { Sites, transcriptTail } from '../lib/sites.js';
@@ -25,7 +26,7 @@ export function reportSessions(sessions, village = []) {
   return sessions.map(s => {
     const w = toWorker(s, s.remote_name || s.ssh_host || 'local'), tagged = w.zone === 'isle' || w.isleTagged || isleTagged(w);
     const signals = scanAllowed({ ...w, id: s.id, zone: s.zone || 'village' }, village) ? classifyHero({ ...w, ...extractSignals(w.transcriptPath, w.tool) }) : undefined;
-    return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, tool: w.tool, model: w.model, archived: w.archived, lastActivityAt: w.lastActivityAt, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
+    return { id: s.id, title: String(w.title).slice(0, 160), project: String(w.project).slice(0, 160), path: w.path, group: w.group, status: w.status, needs_permission: w.needsPermission, tool: w.tool, model: w.model, archived: w.archived, lastActivityAt: w.lastActivityAt, private: w.private, quarantined: w.quarantined, sealed: w.sealed, isleTagged: tagged, ...(signals && { signals }) };
   });
 }
 // A live claude process resuming this conversation (another terminal, another tmux): a second one would garble it.
@@ -227,6 +228,8 @@ export async function main(args = process.argv.slice(2)) {
       for (const [slot, g] of pendingGhosts) { if (!islePublicKey || !isle.includes(g.heroId)) { pendingGhosts.delete(slot); continue; } const size = JSON.stringify(g.box).length; if (ghostBytes + size > 768000) continue; let group = isleGhosts.find(x => x.heroId === g.heroId); if (group?.boxes.length >= 12) continue; if (!group) { group = { heroId: g.heroId, boxes: [] }; isleGhosts.push(group); } group.boxes.push(g.box); ghostBytes += size; }
       while (pendingGhosts.size > 200) pendingGhosts.delete(pendingGhosts.keys().next().value);
       const heroOf = s => ({ ...toWorker(s, s.remote_name || s.ssh_host || 'local'), id: s.id, zone: s.zone || 'village' });
+      const asking = await permissionScan(permissionItems(sessions.map(s => ({ w: heroOf(s), tmux: s.tmux_session })), village));
+      for (const s of sessions) s.needs_permission = asking.has(s.id);
       const shells = await shellScanner.scan(sessions.filter(s => village.includes(s.id) && !s.archived).map(s => ({ w: heroOf(s), tmux: s.tmux_session })), village);
       for (const s of sessions.filter(s => village.includes(s.id) && !s.archived)) {
         const w = heroOf(s);

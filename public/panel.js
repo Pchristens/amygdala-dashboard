@@ -1000,15 +1000,15 @@ export function createPanel(opts) {
     const isQ = (w) => q.has(`${w.project}@${w.host}`) || zoneOf(w) === 'isle';
     return (state.workers || []).filter((w) => w && w.id && (zone === 'isle') === isQ(w));
   }
-  const waitingHero = (w) => zone === 'village' && w.status === 'waiting' && !w.stale;
+  const waitingHero = (w) => zone === 'village' && w.status === 'waiting' && w.needsPermission && !w.stale;
   function needsJudgement(f) { return isOmenPending(f) || f.status === 'awaiting_confirmation'; }
-  // Only what the human alone can move (v0.46): waiting heroes and governance escalations. Routine Temple work lives
+  // Only what the human alone can move (v0.46): permission prompts and governance escalations. Routine Temple work lives
   // in its own sections below, live items first.
   const escalations = () => (zone === 'village' ? state.governance?.digest || [] : []).filter((d) => d && d.escalation);
   // The header's count is the village's, whichever zone the drawer shows and even while the Temple waits for typing.
   function villageNeedsCount() {
     const q = quarantineKeys();
-    const heroes = (state.workers || []).filter((w) => w && w.id && !q.has(`${w.project}@${w.host}`) && zoneOf(w) !== 'isle' && w.status === 'waiting' && !w.stale);
+    const heroes = (state.workers || []).filter((w) => w && w.id && !q.has(`${w.project}@${w.host}`) && zoneOf(w) !== 'isle' && w.status === 'waiting' && w.needsPermission && !w.stale);
     return heroes.length + (state.governance?.digest || []).filter((d) => d && d.escalation).length;
   }
   function renderNeedsYou() {
@@ -1207,7 +1207,7 @@ export function createPanel(opts) {
   }
   // The Needs-you copy of a row gets its own ids and keys (prefix 'need') and leaves the site row's open state alone.
   function workerRow(w, { open = heroOpen.has(w.id), prefix = 'hero' } = {}) {
-    const st = String(w.status || 'idle');
+    const st = w.status === 'waiting' && !w.needsPermission ? 'idle' : String(w.status || 'idle');
     const stale = !!w.stale;
     const offer = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Lay an offering…', title: "Snapshot this session's git change as an offering for review" });
     offer.disabled = !!w.sealed;
@@ -1670,7 +1670,7 @@ export function createPanel(opts) {
     renderWorkshop();
     renderLamps();
     const workers = state.workers || [];
-    els.badgeWait.hidden = !workers.some((w) => w && w.status === 'waiting' && !w.stale);
+    els.badgeWait.hidden = !workers.some((w) => w && w.status === 'waiting' && w.needsPermission && !w.stale);
     const omens = omenCount();
     const ob = document.getElementById('badge-omen');
     if (ob) { ob.hidden = !omens; ob.textContent = String(omens); }
@@ -1765,7 +1765,7 @@ function playMelody(notes, tempo, onStep, onDone) {
 // A terminal view owns all of its network and xterm resources.
 export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   const url = deckLink(worker);
-  const status = String(worker.status || 'idle');
+  const status = worker.status === 'waiting' && !worker.needsPermission ? 'idle' : String(worker.status || 'idle');
   root.textContent = '';
   const body = h('div', { class: 'terminal-body' });
   const hint = h('div', { class: 'terminal-hint dim-note', text: `Live terminal — what you type goes to the hero. To select text to copy, hold ${/Mac/.test(navigator.platform) ? 'Option' : 'Shift'} while dragging.` });
@@ -1788,7 +1788,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
   } });
   root.append(h('div', { class: 'terminal-header' },
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
-    h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'waiting for you' : status }),
+    h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'needs your permission' : status }),
     url ? h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null,
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
     endButton), hint, connection, note, endError, body);

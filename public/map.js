@@ -680,7 +680,7 @@ export function createMap(svg, opts = {}) {
   function updateWorker(rec, w) {
     const g = rec.el;
     const st = ['running', 'waiting', 'idle', 'stopped', 'error'].includes(w.status) ? w.status : 'idle';
-    g.setAttribute('data-status', w.stale ? 'stale' : st);
+    g.setAttribute('data-status', w.stale ? 'stale' : st === 'waiting' && !w.needsPermission ? 'idle' : st);
     g.classList.toggle('hooded', !!w.sealed);
     if (w.sealed) g.querySelector('.cloak-rune').textContent = laGlyphs(w.id, 1);
     g.querySelector('.trim').setAttribute('fill', TOOL_COLORS[w.tool] || TOOL_COLORS.other);

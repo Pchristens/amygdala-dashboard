@@ -1925,3 +1925,10 @@ Contents live under `<dataDir>/petition-files/<petitionId>/<fileId>`; petition r
 Visitor `check_guidance` includes `files: [{id, name, size, lines}]` when present, only for that pass's own petitions. `get_petition_file({id, file, offset?})` selects a file by id or exact name on the caller's own petition and returns JSON text `{name, offset, nextOffset, total, text}`. Offset defaults to zero and must be a non-negative integer within the text; total and offsets count JavaScript string characters. Pages contain at most 40000 characters; `nextOffset` is null at the end. Fetch every page and save or present the joined text as the named file. Like `check_guidance`, fetching files does not spend hourly actions.
 
 File names and contents never enter the feed, board, bells, residents' context or non-human snapshots. Human petition snapshots may include file metadata; file contents are never logged. Petition cards offer Attach a file and Remove controls with inline errors.
+
+
+## v0.83: needs you means permission or ruling
+
+Workers carry a boolean `needsPermission`, true only while waiting on a detected terminal approval prompt. Local and node helpers inspect only confirmed public village, non-archived waiting sessions; private, tagged, quarantined and sealed sessions are never captured. Only the last 25 non-empty pane lines are matched; capture errors mean false and screen text is never reported or persisted. Node session reports accept optional boolean `needs_permission`; the server maps it to `needsPermission` only for waiting sessions, for display and counting only, never policy.
+
+Needs you, its header count, map pulses and waiting badges include only non-stale waiting heroes with `needsPermission`, plus governance escalations requiring the human's decision. Other waiting heroes display as idle. A newly detected permission prompt adds a “needs your permission” feed line; finishing a turn does not. The Watch's hero-waiting bell requires a permission prompt; `waitingSince` keeps its existing waiting-status timing.

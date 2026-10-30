@@ -83,7 +83,7 @@ residentRow = document.getElementById('residents').querySelector('.resident-row'
 assert(!visible(residentRow.querySelector('.resident-more')).includes('RESIDENT PERSONA') && !visible(residentRow.querySelector('.resident-more')).includes('backup-model') && !visible(residentRow.querySelector('.resident-more')).includes('weekly limit') && !visible(residentRow.querySelector('.resident-more')).includes('Allowance') && !visible(residentRow.querySelector('.resident-more')).includes('ISLE POST') && !visible(residentRow.querySelector('.resident-more')).includes('exhibits'), 'isle residents expose no expanded details');
 panel.showResident('nobody');
 
-const waiting = worker('waiting'); waiting.status = 'waiting';
+const waiting = worker('waiting'); waiting.status = 'waiting'; waiting.needsPermission = true;
 panel.update(snapshot([waiting], []));
 const need = workshop.querySelector('.need-hero');
 assert.equal(need.tagName, 'BUTTON'); assert(!visible(need).includes('/secret/path'), 'Needs-you item stays compact');

@@ -24,8 +24,9 @@ console.log('ok: header state and attention source');
   globalThis.document = panelDocument(); globalThis.window = {}; globalThis.requestAnimationFrame = fn => fn();
   const counts = []; const ui = createPanel({ api: async () => ({}), onNeedsCount: n => counts.push(n) });
   const snap = status => ({ zones: [{ id: 'village' }, { id: 'isle' }], residents: [], posts: [], exhibits: [], sites: [{ id: 'forge', label: 'The Forge' }],
-    workers: [{ id: 'hero-a', title: 'Ada', status, tool: 'codex', project: 'work', host: 'local', site: 'forge' }] });
-  ui.update(snap('waiting')); assert.equal(counts.at(-1), 1, 'a waiting village hero counts');
+    workers: [{ id: 'hero-a', title: 'Ada', status, needsPermission: true, tool: 'codex', project: 'work', host: 'local', site: 'forge' }] });
+  const idle = snap('waiting'); idle.workers[0].needsPermission = false; ui.update(idle); assert.equal(counts.at(-1), 0, 'idle waiting heroes do not count');
+  ui.update(snap('waiting')); assert.equal(counts.at(-1), 1, 'a village permission prompt counts');
   ui.setZone('isle'); ui.update(snap('waiting')); assert.equal(counts.at(-1), 1, 'the isle view keeps the village count');
   ui.setZone('village'); ui.update(snap('running'));
   const picker = document.getElementById('workshop').querySelector('select.site-picker'); picker.focus();
