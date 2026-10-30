@@ -9,8 +9,10 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Temple's sites are marked with the same line icons as the rail (a Greek temple, not a torii), and "Share a milestone" loses its emoji.
+- The gift button is a small icon on the map (lit while you place a gift), and the map hint mentions pinch-to-zoom.
 - The "need you" button keeps the village's count while you look at the isle or type in the Temple.
-- The header says "paused" once, on the Pause/Resume button, and gathers omens, counsel and waiting heroes into one "N need you" button that opens the Temple; the Lamps flame shows only when an allowance runs low.
+- The header says "paused" once, on the Pause/Resume button, and replaces the omen and counsel chips with one "N need you" button (heroes waiting on you and escalations to you) that opens the Temple; omens and counsel stay as badges on the Temple view; the Lamps flame shows only when an allowance runs low.
 - "Open in Agent Deck" links go to the hero's own session and appear only where they open: on the village machine for its own heroes, and on another machine (through its keeper) for that machine's heroes (v0.77).
 - A hero card's More section is two lines: its actions (Terminal first), then the path and site with the Move picker.
 - The drawer has four places instead of six: Activity (Board, Exhibits, Tales), People, Work (Temple, Orders) and Lamps. The rail is the one way in, with plain line icons (a Greek temple for Work instead of the torii) and keys 1–4.

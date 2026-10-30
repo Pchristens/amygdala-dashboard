@@ -227,7 +227,7 @@ function buildCard(info) {
     if (!w) return null;
     const st = String(w.status || 'idle');
     const stale = !!w.stale;
-    const milestone = h('button', { class: 'btn btn-xs', type: 'button', text: 'Share a milestone 🌸' });
+    const milestone = h('button', { class: 'btn btn-xs', type: 'button', text: 'Share a milestone' });
     milestone.disabled = !!w.sealed;
     milestone.addEventListener('click', () => openMilestone(w.project, w.host));
     return [
@@ -278,7 +278,7 @@ function buildCard(info) {
       h('div', { class: 'card-head' }, h('div', {},
         h('div', { class: 'card-name', text: 'You' }),
         h('div', { class: 'card-sub', text: place ? `at ${place.name}` : zoneOf(state.human) === 'isle' ? 'on the Far Isle' : 'wandering' }))),
-      h('div', { class: 'card-row', text: 'Click the ground to walk somewhere. Leave a gift with the button above.' }),
+      h('div', { class: 'card-row', text: 'Click the ground to walk somewhere. Leave a gift with the gift button on the map.' }),
     ];
   }
   return null;
@@ -358,7 +358,7 @@ function setGiftMode(on) {
   gift.active = on;
   giftForm.hidden = !on;
   map.setGiftMode(on);
-  $('gift-btn').textContent = on ? 'Placing a gift…' : '+ Leave a gift';
+  $('gift-btn').setAttribute('aria-pressed', String(on)); $('gift-btn').title = on ? 'Placing a gift… (click again to cancel)' : 'Leave a gift';
   if (on) closeCard();
 }
 async function placeGift(x, y) {
@@ -485,7 +485,7 @@ function openNoteDialog(cfg) {
 function openMilestone(project, host) {
   const target = { project: String(project || ''), host: String(host || 'local') };
   openNoteDialog({
-    title: 'Share a milestone 🌸', sub: `${target.project} @ ${target.host}`, placeholder: 'what happened?', submit: 'Share',
+    title: 'Share a milestone', sub: `${target.project} @ ${target.host}`, placeholder: 'what happened?', submit: 'Share',
     text: 'Something real got done out there. Tell the village in a line; the project\u2019s branch on the shared tree grows and opens blossoms.',
     onSubmit: (note) => api('/api/tree/milestone', { ...target, note }), done: 'The tree grew a little. 🌸',
   });

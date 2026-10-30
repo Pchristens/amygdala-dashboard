@@ -1003,7 +1003,7 @@ select {
 .map3d[data-phase="twilight"] .lbl-place, .map3d[data-phase="twilight"] .lbl-name, .map3d[data-phase="twilight"] .lbl-zone { color: #2A1F3A; text-shadow: 0 1px 0 rgba(255,235,245,.85), 0 0 6px rgba(255,235,245,.85); }
 .send-god { margin-left: auto; }
 .site-group .host-title { gap: 8px; }
-.site-glyph { font-size: 14px; }
+.site-glyph { display: inline-flex; color: var(--ink-2); }
 .site-purpose { margin-left: auto; font-size: 11px; color: var(--ink-dim); font-style: italic; font-family: var(--font-serif); text-align: right; }
 .site-empty { margin: 2px 0 6px 8px; }
 .site-picker { background: var(--panel-3); border: 1px solid var(--line); border-radius: 999px; padding: 1px 6px; font-size: 11px; color: var(--ink-2); max-width: 130px; }
@@ -1384,3 +1384,5 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 
 .ghost-prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ghost-action { overflow-wrap: anywhere; }
+/* The gift button is a quiet icon; pressed while a gift waits to be placed (C14). */
+.gift-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }

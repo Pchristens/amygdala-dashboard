@@ -1061,7 +1061,7 @@ export function createPanel(opts) {
       for (const [siteId, list] of activeSites) {
         const s = sites.find((x) => x.id === siteId) || { label: siteId || 'Unplaced', purpose: '' };
         const group = h('div', { class: 'host-group site-group' },
-          h('div', { class: 'host-title' }, h('span', { class: 'site-glyph', text: siteGlyph(siteId) }), h('span', { text: s.label }), h('span', { class: 'site-purpose', text: s.purpose || '' })));
+          h('div', { class: 'host-title' }, siteGlyph(siteId), h('span', { text: s.label }), h('span', { class: 'site-purpose', text: s.purpose || '' })));
         for (const [proj, plist] of groupByProject(sortW(list))) group.appendChild(projectGroup(proj, plist, false));
         els.workshop.appendChild(group);
       }
@@ -1158,7 +1158,9 @@ export function createPanel(opts) {
     const list = (state.sites || []).filter((s) => s && s.id);
     return list.length ? list : [{ id: 'temple', label: 'The Temple', purpose: '' }, { id: 'library', label: 'The Great Library', purpose: '' }, { id: 'forge', label: 'The Forge', purpose: '' }, { id: 'quarry', label: 'The Quarry', purpose: '' }];
   }
-  function siteGlyph(id) { return { temple: '⛩', library: '📜', forge: '🔥', quarry: '⛏' }[id] || '◦'; }
+  // Line-art site marks drawn like the rail's icons (C11): constant markup, never data, so innerHTML is safe here.
+  const SITE_PATHS = { temple: 'M2 7 9 3l7 4H2ZM3 14h12M2 16h14M4.5 7.5V14M7.5 7.5V14M10.5 7.5V14M13.5 7.5V14', library: 'M5 3h9v10.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V12h3ZM5 3a2 2 0 0 0-2 2v1h2M7.5 7h4.5M7.5 10h4.5', forge: 'M9 2c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0c0-2 1-3 2-4 0 1.5 1 2.5 2 2.5 0-2.5-1-4 0-7Z', quarry: 'M2.5 6.5C5 3.5 13 3.5 15.5 6.5M9 4.6 5 15.5' };
+  function siteGlyph(id) { const span = h('span', { class: 'site-glyph', 'aria-hidden': 'true' }); span.innerHTML = `<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="${SITE_PATHS[id] || 'M9 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'}"/></svg>`; return span; }
   function groupByProject(list) {
     const m = new Map();
     for (const w of list) { const proj = `${w.project || '(no project)'} @ ${w.host || 'local'}`; if (!m.has(proj)) m.set(proj, []); m.get(proj).push(w); }
@@ -1169,7 +1171,7 @@ export function createPanel(opts) {
     const qSwitch = h('button', { class: 'switch switch-sm', type: 'button', role: 'switch', 'aria-checked': isle ? 'true' : 'false', title: isle ? 'Quarantined on the isle — click to bring back' : 'Quarantine this project on the isle' });
     qSwitch.disabled = anySealed || !hasIsle();
     qSwitch.addEventListener('click', () => opts.onQuarantine?.(list[0].project, list[0].host, !isle));
-    const milestone = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Share a milestone 🌸', title: "Grow this project's branch on the shared tree" });
+    const milestone = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Share a milestone', title: "Grow this project's branch on the shared tree" });
     milestone.disabled = anySealed;
     milestone.addEventListener('click', () => opts.onMilestone?.(list[0].project, list[0].host));
     const pg = h('div', { class: 'project-group' },
