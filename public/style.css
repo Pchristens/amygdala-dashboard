@@ -12,6 +12,8 @@
   --accent: #A4362B;
   --accent-ink: #FBF5EA;
   --amber: #D9A441;
+  --omen: #B5654A;
+  --counsel: #7E8A4A;
   --glass-header: 62%;
   --glass-rail: 70%;
   --glass-drawer: 80%;
@@ -824,7 +826,7 @@ select {
 .chip-rank.rank-priest { --chip: #f0c05a; }
 
 .temple-section-title { display: flex; align-items: center; gap: 8px; font-family: var(--font-serif); font-size: 16px; margin: 14px 4px 8px; color: var(--ink); }
-.temple-section-title .count-omen { background: color-mix(in srgb, #8a7ec8 35%, var(--panel-3)); color: var(--ink); }
+.temple-section-title .count-omen { background: color-mix(in srgb, var(--omen) 35%, var(--panel-3)); color: var(--ink); }
 /* The Temple tab: a Needs-you strip first, then the heroes, then history and settings folded away. */
 .needs-title { margin-top: 6px; }
 .needs-title .count-need { background: color-mix(in srgb, var(--amber) 40%, var(--panel-3)); color: var(--ink); }
@@ -832,7 +834,7 @@ select {
 .need { margin: 0 0 6px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--panel-2); }
 .need-hero { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
 .need-hero { appearance: none; color: inherit; font: inherit; text-align: left; width: 100%; }
-.need-omen { border-color: color-mix(in srgb, #8a7ec8 55%, transparent); }
+.need-omen { border-color: color-mix(in srgb, var(--omen) 55%, transparent); }
 .need-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 10px 7px 8px; cursor: pointer; font-size: 12.5px; list-style: none; }
 .need-head::-webkit-details-marker { display: none; }
 .need-hero .need-head::before { content: none; }
@@ -870,9 +872,8 @@ select {
 .tablet-live { margin-bottom: 10px; }
 .decree-mode { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-sans); font-size: 11px; color: var(--ink-dim); }
 .decree-mode .zone-opt { padding: 1px 8px; font-size: 11px; }
-.badge-omen { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #B5654A; color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
-.omen-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid color-mix(in srgb, #8a7ec8 55%, transparent); background: color-mix(in srgb, #8a7ec8 18%, var(--panel-2)); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
-.omen-chip .omen-rune-glyph { color: #7A62C9; font-size: 13px; }
+.badge-omen { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--omen); color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
+.omen-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid color-mix(in srgb, var(--omen) 55%, transparent); background: color-mix(in srgb, var(--omen) 18%, var(--panel-2)); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
 .offering { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 10px 12px; margin: 0 0 10px; }
 .offering.closed { opacity: 0.72; }
@@ -1020,19 +1021,17 @@ select {
 .counsel { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; }
 .counsel-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-dim); font-weight: 700; margin-bottom: 4px; }
 .counsel-item { padding: 5px 8px; border-radius: 8px; background: var(--panel); margin-bottom: 4px; font-size: 12.5px; }
-.counsel-item.status-new { border: 1px solid color-mix(in srgb, var(--blue) 45%, transparent); }
+.counsel-item.status-new { border: 1px solid color-mix(in srgb, var(--counsel) 55%, transparent); }
 .counsel-item.status-dismissed, .counsel-item.status-relayed { opacity: .75; }
 .counsel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-bottom: 2px; }
 .counsel-head .post-time { margin-left: auto; }
 .counsel-text { color: var(--ink-2); overflow-wrap: anywhere; }
 .pill-counsel { --pill: var(--ink-dim); }
-.pill-counsel.counsel-new { --pill: var(--blue); }
+.pill-counsel.counsel-new { --pill: var(--counsel); }
 .pill-counsel.counsel-relayed { --pill: var(--green); }
 .pill-counsel.counsel-failed { --pill: var(--red); }
 .counsel-actions { margin-top: 4px; }
-.badge-counsel { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #7E8A4A; color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
-.counsel-chip { border-color: color-mix(in srgb, var(--blue) 55%, transparent); background: color-mix(in srgb, var(--blue) 16%, var(--panel-2)); }
-.counsel-chip .omen-rune-glyph { font-family: var(--font-sans); color: var(--blue); }
+.badge-counsel { margin-left: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--counsel); color: #fff; font-size: 10px; font-weight: 900; display: inline-grid; place-items: center; }
 .field-row { display: flex; gap: 10px; }
 .field-row .field { flex: 1; }
 .site-purpose-line { font-style: italic; font-family: var(--font-serif); margin: 2px 0 4px; }
