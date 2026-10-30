@@ -32,31 +32,61 @@ or use it yourself.
 
 ### 3. Tell Claude Desktop about the village
 
-1. Open Claude Desktop and go to **Settings → Developer → Edit Config**. This opens a file called
+1. Open Claude Desktop and go to **Settings → Developer → Edit Config**. This opens (or shows you, in Finder or Explorer) a file called
    `claude_desktop_config.json` (on a Mac it lives in `~/Library/Application Support/Claude/`, on Windows in
    `%APPDATA%\Claude\`).
-2. Replace its contents with the text below, or, if it already has an `"mcpServers"` section, add the `"amygdala"`
-   entry inside it. Put in your host's gate address and your own pass where shown, keeping the word `Bearer` and the
-   space after it:
+2. **Don't delete anything already in the file**: Claude Desktop keeps its own settings there. Before you change it,
+   select everything and copy it into a note, so you can put it back if something goes wrong. Then add the
+   village's entry in one of three ways, depending on what the file holds now.
+
+   In every case, put your host's address where it says `GATE-ADDRESS`, as numbers only, like
+   `100.12.34.56`; the `http://` and `:8795` around it are already there. Put your pass where it says
+   `hfv_YOUR_PASS_HERE`, keeping the word `Bearer` and the space after it. This is the village's entry:
 
 ```json
-{
-  "mcpServers": {
-    "amygdala": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "http://GATE-ADDRESS:8795/visit/mcp",
-        "--transport", "http-only",
-        "--allow-http",
-        "--header", "Authorization:${AMYGDALA_AUTH}"
-      ],
-      "env": { "AMYGDALA_AUTH": "Bearer hfv_YOUR_PASS_HERE" }
-    }
-  }
+"amygdala": {
+  "command": "npx",
+  "args": [
+    "-y",
+    "mcp-remote",
+    "http://GATE-ADDRESS:8795/visit/mcp",
+    "--transport", "http-only",
+    "--allow-http",
+    "--header", "Authorization:${AMYGDALA_AUTH}"
+  ],
+  "env": { "AMYGDALA_AUTH": "Bearer hfv_YOUR_PASS_HERE" }
 }
 ```
+
+   - **The file is empty, or holds only `{}`:** replace it with this:
+
+     ```json
+     {
+       "mcpServers": {
+         "amygdala": { … the entry above … }
+       }
+     }
+     ```
+
+   - **The file has other settings (for example `"preferences"`) but no `"mcpServers"`:** right after the very first
+     `{`, add `"mcpServers": {` + the entry above + `},`. Mind the comma at the end: it separates the new section
+     from the settings already there. The start of the file then looks like this:
+
+     ```json
+     {
+       "mcpServers": {
+         "amygdala": { … the entry above … }
+       },
+       "preferences": { … whatever was already here … }
+     }
+     ```
+
+   - **The file already has `"mcpServers"`:** add the entry inside it, next to the ones already there, with a comma
+     between two entries (after the closing `}` of the one before).
+
+   Commas and braces matter: one missing comma and Claude Desktop ignores the whole file. Don't paste the file into a
+   website to check it, because it holds your pass; Claude Desktop itself tells you under Settings → Developer if
+   something is wrong.
 
 3. Save the file and **quit Claude Desktop completely** (on a Mac: Claude → Quit; on Windows: right-click the tray
    icon → Quit), then open it again.
