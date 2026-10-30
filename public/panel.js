@@ -159,15 +159,18 @@ export function createPanel(opts) {
     select.append(h('option', { value: 'self', text: 'Answer myself' }));
     select.value = residents.some(r => r.name === p.triage?.suggest) ? p.triage.suggest : residents[0]?.name || 'self';
     const answer = h('textarea', { class: 'input', rows: 8, maxlength: 20000, 'aria-label': 'Your answer' });
+    const depth = h('select', { class: 'input', 'aria-label': 'Depth' }, h('option', { value: 'answer', text: 'Answer — one reply' }), h('option', { value: 'research', text: 'Research — web, longer, follow-ups' }));
+    const rounds = h('input', { class: 'input', type: 'number', min: 0, max: 5, value: 0, 'aria-label': 'Follow-ups' });
+    depth.addEventListener('change', () => { if (+rounds.value === 0 || +rounds.value === 3) rounds.value = depth.value === 'research' ? 3 : 0; });
     const note = h('textarea', { class: 'input', rows: 2, maxlength: 2000, placeholder: 'Optional note', 'aria-label': 'Optional note' });
     const error = h('div', { class: 'dialog-error', role: 'alert' });
-    select.hidden = deny;
+    select.hidden = deny; depth.hidden = deny; rounds.hidden = deny;
     const update = () => { answer.hidden = deny || select.value !== 'self'; }; select.addEventListener('change', update); update();
     const decide = async action => {
-      const result = await opts.api(`/api/petitions/${encodeURIComponent(p.id)}/${action}`, { answerer: select.value, answer: answer.value, note: note.value });
+      const result = await opts.api(`/api/petitions/${encodeURIComponent(p.id)}/${action}`, { answerer: select.value, answer: answer.value, note: note.value, depth: depth.value, rounds: +rounds.value });
       if (result?.ok === false) error.textContent = result.error; else dialog.close();
     };
-    dialog.append(h('h2', { text: `Guidance for ${p.visitor}` }), h('p', { class: 'petition-text', text: p.question }), select, answer, note, error,
+    dialog.append(h('h2', { text: `Guidance for ${p.visitor}` }), h('p', { class: 'petition-text', text: p.question }), select, depth, rounds, answer, note, error,
       h('div', { class: 'dialog-actions' }, h('button', { class: 'btn', text: 'Cancel', onClick: () => dialog.close() }), h('button', { class: 'btn', text: 'Deny', onClick: () => decide('deny') }), deny ? null : h('button', { class: 'btn btn-primary', text: 'Allow', onClick: () => decide('allow') })));
     document.body.append(dialog); dialog.addEventListener('close', () => dialog.remove(), { once: true }); dialog.showModal();
   }
@@ -199,12 +202,14 @@ export function createPanel(opts) {
     const history = petitions.filter(p => !live.includes(p.status)).slice(-20).reverse();
     for (const p of [...active, ...history]) {
       const card = h('div', { class: 'gate-pass' }, h('b', { text: p.visitor }), h('div', { text: p.about || 'Guidance' }),
-        h('div', { class: 'dim-note', text: `${new Date(p.askedAt).toLocaleString()} · ${p.status}` }), h('p', { class: 'petition-text', text: p.question }));
+        h('div', { class: 'dim-note', text: `${new Date(p.askedAt).toLocaleString()} · ${p.status}${p.depth === 'research' ? ' · research' : ''}` }), h('p', { class: 'petition-text', text: p.question }));
       if (p.status === 'pending') {
         card.append(h('p', { class: 'dim-note' }, h('small', {}, h('i', { text: p.triage?.greeting || `${harbourName()} is reading your question` }))));
         if (p.triage) card.append(h('span', { class: 'chip', text: p.triage.tier }), h('p', { class: 'dim-note', text: `${p.triage.by || harbourName()} suggests ${p.triage.suggest || 'Answer myself'} — ${p.triage.reason}` }));
       }
       if (p.answer) card.append(h('b', { text: p.answerer || 'Answer' }), h('p', { class: 'petition-text', text: p.answer }));
+      for (const f of p.followups || []) card.append(h('div', { class: 'dim-note', text: 'Visitor follow-up' }), h('p', { class: 'petition-text', text: f.question }), h('p', { class: 'petition-text', text: f.answer || f.status }));
+      if (p.rounds != null && p.status === 'answered') card.append(h('div', { class: 'dim-note', text: `${Math.max(0, p.rounds - (p.followups || []).length)} follow-ups left` }));
       if (p.note) card.append(h('p', { class: 'petition-text dim-note', text: p.note }));
       if (p.heroTitle && p.status !== 'pending') petitionHero(card, p);
       if (p.status === 'pending') card.append(h('button', { class: 'btn btn-xs', text: 'Allow…', onClick: () => petitionDecision(p) }), ' ', h('button', { class: 'btn btn-xs', text: 'Deny…', onClick: () => petitionDecision(p, true) }), ' ', h('button', { class: 'btn btn-xs', text: 'Make it a hero…', title: 'Commission a hero for this request; it can talk with the visitor', onClick: () => opts.onPetitionHero?.(p) }));

@@ -1880,3 +1880,11 @@ Keeper relay requests carry `x-amygdala-relayed: <keeper node pass id>`, and rel
 viewer's own loopback: on the village machine only for local Agent Deck heroes (`local:` ids), through a keeper only for
 heroes of the viewing node (`worker.node` equals the id, `worker.sessionId`). Other heroes get no Deck link; the in-page
 Terminal is the way in.
+
+## v0.78: research petitions and follow-ups
+
+`POST /api/petitions/<id>/allow` accepts `{answerer, answer?, note?, depth?, rounds?}`. For resident answers, `depth` is `answer` (default) or `research`; `rounds` is an integer 0–5, defaulting to 0 for answer and 3 for research. Self answers ignore depth and rounds. Research requires a Claude or Codex answerer with provider pressure below 70%. Petition records store `depth`, `rounds`, and `followups`.
+
+Visitor tool `follow_up_guidance({id,text})` accepts 1–2000 characters on the caller's own answered petition while fewer than `rounds` follow-ups exist. Follow-ups count toward the existing 20 messages per pass per UTC day limit. Each is `{question, askedAt, status, answer}` and queues a non-human guidance job that waits while the village is paused or the resident's provider runs hot. Removed or disabled answerers cannot receive follow-ups. Restarted `answering` follow-ups become `failed`.
+
+Research guidance remains isolated in an empty temporary directory with strict MCP isolation and read-only sandboxing. Claude may use only WebSearch and WebFetch; Codex uses live web search with every execution, file, editing, browser, plugin, app, and other feature disabled. It has a 15-minute timeout and 1500-word cap. Answer depth retains the tool-less five-minute, 400-word run. Follow-up text is fenced with random delimiters and labelled untrusted; the run receives the original question, prior answer, and earlier follow-ups and answers. Petition and follow-up text and answers remain private and are absent from public surfaces.

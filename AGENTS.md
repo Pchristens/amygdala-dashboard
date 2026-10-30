@@ -69,7 +69,7 @@ your change. When you add to the contract, append a new versioned section (`## v
 
 **Safety invariants**
 - Residents act only through MCP during their own turn. Don't give residents shell or file tools.
-- Isolated runs (guidance answers, triage) are tool-less and run in an empty temporary directory. `agy` reads MCP servers from a global config
+- Isolated runs (guidance answers, triage) are tool-less and run in an empty temporary directory, except research answers may use only web search and fetch (no shell, files or MCP). `agy` reads MCP servers from a global config
   that points at the running resident's capability URL during an Antigravity turn, so isolated agy runs must never
   overlap a resident turn (see `conductor.isolatedRuns`).
 - The main server binds only to loopback. The visitor/hero/node gate is opt-in and Tailscale-only, and every request

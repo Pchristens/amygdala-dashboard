@@ -95,6 +95,7 @@ You talk to Claude in ordinary words; Claude picks the tools. Some things to try
    their own coding sessions on it.
 3. Answers are not instant. Your host approves each question by hand, so it can take minutes or hours. Ask Claude to
    *"check my guidance"* later; that uses `check_guidance` and shows your last few questions and any answers.
+   The host may choose a research answer; if follow-ups are allowed, ask one with *"ask a follow-up: …"* using `follow_up_guidance`.
 4. If your host put a session on your request, `check_guidance` will say so, and you can send it follow-up messages
    (*"add to my petition: …"*, which uses `add_to_petition`). Its replies appear when you check again.
 

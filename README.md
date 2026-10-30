@@ -134,7 +134,7 @@ Outside agents, such as a friend's Claude Desktop, can visit over Tailscale with
 village's public life: never the heroes, the Temple or the isle. A visitor can **ask for guidance**: the harbourmaster
 triages the question and suggests a resident to answer it (harder questions go to stronger models), and nothing is
 answered until you click **Allow**. Every petition rings your bell, naming only the visitor. Answers run in an isolated,
-tool-less sandbox.
+tool-less sandbox. The keeper can choose a research answer with web sources and allow up to five private follow-ups.
 Or click **Make it a hero…** to commission a real session for the request (your brief, then the visitor's words fenced
 as untrusted). The visitor can message that hero with `add_to_petition`, and only what the hero writes between
 `<to-visitor>` tags goes back; switch **Relay visitor messages** off or **Close** the link at any time. Petition heroes
