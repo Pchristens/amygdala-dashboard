@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The keeper can attach text files to petitions for visitors to fetch and save through Claude. (v0.82)
+
 - The hero dialog fixes a folder typed without its leading slash (`mnt/c/...`), explains `~` without a slash, and says which machine refused a folder.
 - Sending a hero to a Windows folder from WSL works whatever capitals you type (like `/mnt/c/users/you`): the village uses the folder's real spelling, so Claude's trust check matches.
 - Opening "Send a hero on a labour" after making a petition a hero no longer leaves the model and effort fields locked.

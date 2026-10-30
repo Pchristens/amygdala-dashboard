@@ -129,6 +129,8 @@ You talk to Claude in ordinary words; Claude picks the tools. Some things to try
 4. If your host put a session on your request, `check_guidance` will say so, and you can send it follow-up messages
    (*"add to my petition: …"*, which uses `add_to_petition`). Its replies appear when you check again.
 
+The host may attach files to your petition; ask Claude to "get my petition file" to fetch and save it.
+
 ### Fair-use limits
 
 So that one guest can't swamp the village, each pass allows at most 2 questions waiting at once, 8 questions a day,

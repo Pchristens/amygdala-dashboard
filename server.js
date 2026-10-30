@@ -227,7 +227,7 @@ const server = http.createServer(async (req, res) => {
       res.on('close', () => clearInterval(heartbeat));
       return;
     }
-    // Images are the one body allowed past 1 MiB (8 MiB decoded); the gate and rate limit run before reading it.
+    // Images allow 8 MiB decoded; the gate and rate limit run before reading it.
     const termImage = p.match(/^\/api\/term\/([^/]+)\/image$/);
     if (termImage) {
       if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
@@ -244,7 +244,12 @@ const server = http.createServer(async (req, res) => {
     if (p.startsWith('/api/')) {
       if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
       if (!(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { ok: false, error: 'JSON only' });
-      const b = JSON.parse((await readBody(req)) || '{}');
+      const petitionFile = p.match(/^\/api\/petitions\/([^/]+)\/files(\/remove)?$/);
+      const b = JSON.parse((await readBody(req, petitionFile && !petitionFile[2] ? 4 << 20 : 1 << 20)) || '{}');
+      if (petitionFile) {
+        if (petitionFile[2]) { world.visitors.removeFile(petitionFile[1], b.fileId); return json(res, 200, { ok: true }); }
+        return json(res, 200, { ok: true, file: world.visitors.attachFile(petitionFile[1], b) });
+      }
       if (p === '/api/steward/settings') return json(res, 200, world.steward.settings(b));
       if (p === '/api/steward/hero') return json(res, 200, world.watch.setStewardHero(b.workerId));
       if (p === '/api/steward/claim') return json(res, 200, world.steward.claim(b));

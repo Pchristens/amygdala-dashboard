@@ -173,6 +173,20 @@ export function createPanel(opts) {
     card.append(h('label', { class: 'dim-note' }, relay, ' Relay visitor messages'), ' ',
       h('button', { class: 'btn btn-xs', text: 'Close', title: 'End the link with the visitor; the hero keeps working', onClick: () => opts.api(`/api/petitions/${encodeURIComponent(p.id)}/close`, {}) }));
   }
+  function petitionFiles(card, p) {
+    const list = h('div', { class: 'petition-files' }), error = h('div', { class: 'dialog-error' }), base = `/api/petitions/${encodeURIComponent(p.id)}/files`;
+    const draw = () => {
+      list.textContent = '';
+      for (const f of p.files || []) list.append(h('div', { class: 'petition-file' }, h('span', { text: `${f.name} · ${f.size.toLocaleString()} bytes` }), h('button', { class: 'btn btn-xs', text: 'Remove', onClick: async () => {
+        try { const r = await opts.api(`${base}/remove`, { fileId: f.id }); if (!r?.ok) throw new Error(r?.error || 'Could not remove file.'); p.files = p.files.filter(x => x.id !== f.id); error.textContent = ''; draw(); } catch (e) { error.textContent = e.message; }
+      } })));
+    };
+    const input = h('input', { type: 'file', accept: '.csv,.tsv,.txt,.md,.json', hidden: true, onChange: async () => {
+      const file = input.files[0]; if (!file) return;
+      try { const r = await opts.api(base, { name: file.name, content: await file.text() }); if (!r?.ok) throw new Error(r?.error || 'Could not attach file.'); (p.files ??= []).push(r.file); error.textContent = ''; draw(); } catch (e) { error.textContent = e.message; } finally { input.value = ''; }
+    } });
+    draw(); card.append(list, input, h('button', { class: 'btn btn-xs', text: 'Attach a file…', onClick: () => input.click() }), error);
+  }
   function renderPetitions(root) {
     const petitions = state.petitions || [], pending = petitions.filter(p => p.status === 'pending');
     const badge = $('badge-petitions'); if (badge) { badge.hidden = !pending.length; badge.textContent = String(pending.length); }
@@ -203,6 +217,7 @@ export function createPanel(opts) {
       if (p.note) card.append(h('p', { class: 'petition-text dim-note', text: p.note }));
       if (p.heroTitle && p.status !== 'pending') petitionHero(card, p);
       if (p.status === 'pending') card.append(h('button', { class: 'btn btn-xs', text: 'Allow…', onClick: () => petitionDecision(p) }), ' ', h('button', { class: 'btn btn-xs', text: 'Deny…', onClick: () => petitionDecision(p, true) }), ' ', h('button', { class: 'btn btn-xs', text: 'Make it a hero…', title: 'Commission a hero for this request; it can talk with the visitor', onClick: () => opts.onPetitionHero?.(p) }));
+      if (!['pending', 'declined', 'denied'].includes(p.status)) petitionFiles(card, p);
       root.append(card);
     }
   }

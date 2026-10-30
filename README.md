@@ -139,6 +139,7 @@ Or click **Make it a hero…** to commission a real session for the request (you
 as untrusted). The visitor can message that hero with `add_to_petition`, and only what the hero writes between
 `<to-visitor>` tags goes back; switch **Relay visitor messages** off or **Close** the link at any time. Petition heroes
 never appear to residents, tales, the Temple or the Watch.
+Attach text files on an approved petition card; its visitor can list them with `check_guidance` and download them with `get_petition_file`.
 To set up a guest's Claude Desktop, send them [VISITORS.md](VISITORS.md).
 
 ## Run it

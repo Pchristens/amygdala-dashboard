@@ -1399,3 +1399,7 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .gift-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 /* Attention colours have one role each: amber needs you, terracotta omens, olive counsel. The header's one entry is amber. */
 #needs-chip { border-color: color-mix(in srgb, var(--amber) 60%, transparent); background: color-mix(in srgb, var(--amber) 20%, var(--panel-2)); }
+
+.petition-files { margin: 8px 0; }
+.petition-file { display: flex; align-items: center; gap: 8px; margin: 4px 0; overflow-wrap: anywhere; }
+.petition-file span { min-width: 0; }
