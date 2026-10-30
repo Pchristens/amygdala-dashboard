@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A plain-language guide, VISITORS.md, walks a guest through connecting Claude Desktop to your village over Tailscale and asking for guidance.
 - Dark mode is warm stone instead of indigo, with solid panels so the sea no longer shows through, and attention colours that each mean one thing: amber needs you, terracotta omens, olive counsel.
 - The Temple's omen counts and the counsel markers use the same terracotta and olive as their badges, so no violet or blue is left meaning "omen" or "counsel".
 - The Temple's sites are marked with the same line icons as the rail (a Greek temple, not a torii), and "Share a milestone" loses its emoji.
