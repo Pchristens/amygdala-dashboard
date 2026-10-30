@@ -17,6 +17,8 @@ try {
   fs.mkdirSync(path.join(dir, 'Users', 'Ana'), { recursive: true });
   assert.equal(diskCase(path.join(dir, 'users', 'ana').toLowerCase().replace(dir.toLowerCase(), dir)), path.join(dir, 'Users', 'Ana'));
   assert.equal(diskCase(path.join(dir, 'Users', 'nope')), path.join(dir, 'Users', 'nope'), 'a missing name is left alone');
+  fs.mkdirSync(path.join(dir, 'real', 'inner'), { recursive: true }); fs.symlinkSync(path.join(dir, 'real', 'inner'), path.join(dir, 'link'));
+  assert.equal(diskCase(path.join(dir, 'link') + '/../Users'), path.join(dir, 'link') + '/../Users', "'..' is never folded lexically");
   assert.equal(diskCase('C:\\x', 'win32'), 'C:\\x');
   console.log('commission trust ok');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }
