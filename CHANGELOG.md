@@ -9,6 +9,7 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The "need you" button keeps the village's count while you look at the isle or type in the Temple.
 - The header says "paused" once, on the Pause/Resume button, and gathers omens, counsel and waiting heroes into one "N need you" button that opens the Temple; the Lamps flame shows only when an allowance runs low.
 - "Open in Agent Deck" links go to the hero's own session and appear only where they open: on the village machine for its own heroes, and on another machine (through its keeper) for that machine's heroes (v0.77).
 - A hero card's More section is two lines: its actions (Terminal first), then the path and site with the Move picker.

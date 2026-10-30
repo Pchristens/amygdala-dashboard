@@ -980,10 +980,15 @@ export function createPanel(opts) {
   // Only what the human alone can move (v0.46): waiting heroes and governance escalations. Routine Temple work lives
   // in its own sections below, live items first.
   const escalations = () => (zone === 'village' ? state.governance?.digest || [] : []).filter((d) => d && d.escalation);
+  // The header's count is the village's, whichever zone the drawer shows and even while the Temple waits for typing.
+  function villageNeedsCount() {
+    const q = quarantineKeys();
+    const heroes = (state.workers || []).filter((w) => w && w.id && !q.has(`${w.project}@${w.host}`) && zoneOf(w) !== 'isle' && w.status === 'waiting' && !w.stale);
+    return heroes.length + (state.governance?.digest || []).filter((d) => d && d.escalation).length;
+  }
   function renderNeedsYou() {
     const heroes = heroesInZone().filter(waitingHero), escs = escalations();
     const n = heroes.length + escs.length;
-    opts.onNeedsCount?.(n);
     els.workshop.appendChild(h('div', { class: 'temple-section-title needs-title' }, h('span', { text: 'Needs you' }), n ? h('span', { class: 'count count-need', text: String(n) }) : null));
     if (!n) { els.workshop.appendChild(h('div', { class: 'empty needs-none', text: 'Nothing needs you' })); return; }
     const strip = h('div', { class: 'needs-you' });
@@ -1642,6 +1647,7 @@ export function createPanel(opts) {
     const cc = counselCount();
     const cb = document.getElementById('badge-counsel');
     if (cb) { cb.hidden = !cc; cb.textContent = String(cc); }
+    opts.onNeedsCount?.(villageNeedsCount());
   }
   function refreshTimes() {
     for (const t of els.posts.querySelectorAll('.post-time')) t.textContent = relTime(+t.dataset.ts);

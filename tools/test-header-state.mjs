@@ -13,8 +13,21 @@ assert.match(app, /b\.hidden = !n; \$\('needs-chip-text'\)\.textContent = `\$\{n
 assert.match(app, /status-text'\)\.textContent = st === 'expired' \? 'Session expired — reload' : st === 'reconnecting' \? 'reconnecting…' : MOCK \? 'live \(mock\)' : 'live'/);
 assert.doesNotMatch(app.match(/\$\('status-text'\)\.textContent = ([^\n]+)/)?.[1] || '', /paused/);
 assert.match(app, /village-state'\)\.textContent = "Idle — everyone's resting"/);
-assert.match(panel, /const n = heroes\.length \+ escs\.length;\s*opts\.onNeedsCount\?\.\(n\)/);
 assert.match(app, /onNeedsCount: \(n\) => \{[\s\S]*needs-chip/);
 assert.match(app, /lg\.hidden = guidance === 'normal'/);
 assert.match(app, /\$\('pop'\)\.title = `\$\{residents\.length\} residents · \$\{workers\.length\} heroes`/);
 console.log('ok: header state and attention source');
+
+// The count is the village's: it holds in the isle view and keeps up while the Temple waits for typing (Themis residual on 4785191).
+{
+  const { panelDocument } = await import('./panel-dom.mjs'); const { createPanel } = await import('../public/panel.js');
+  globalThis.document = panelDocument(); globalThis.window = {}; globalThis.requestAnimationFrame = fn => fn();
+  const counts = []; const ui = createPanel({ api: async () => ({}), onNeedsCount: n => counts.push(n) });
+  const snap = status => ({ zones: [{ id: 'village' }, { id: 'isle' }], residents: [], posts: [], exhibits: [], sites: [{ id: 'forge', label: 'The Forge' }],
+    workers: [{ id: 'hero-a', title: 'Ada', status, tool: 'codex', project: 'work', host: 'local', site: 'forge' }] });
+  ui.update(snap('waiting')); assert.equal(counts.at(-1), 1, 'a waiting village hero counts');
+  ui.setZone('isle'); ui.update(snap('waiting')); assert.equal(counts.at(-1), 1, 'the isle view keeps the village count');
+  ui.setZone('village'); ui.update(snap('running'));
+  const picker = document.getElementById('workshop').querySelector('select.site-picker'); picker.focus();
+  ui.update(snap('waiting')); assert.equal(counts.at(-1), 1, 'the count updates while the Temple waits for typing');
+}
