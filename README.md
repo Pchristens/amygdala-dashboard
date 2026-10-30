@@ -84,6 +84,8 @@ whose model has a small allowance: they get one action tool and one action call 
 
 ## Heroes, the Steward and the Temple: how work ships
 
+Village heroes, including those on other machines, can end a turn with `Milestone: <name> — commit <hash> — tested: <how>` to ring the Steward’s bell for Temple review.
+
 Heroes are your agent-deck sessions. You commission one from the page (choosing the machine it starts on), or it shows up
 when you start it yourself. Every commissioned hero gets a standing note: when the work is done, commit it locally, name
 the commit hash in the report to the Steward, and don't push, deploy or restart servers. A hero keeps its session open

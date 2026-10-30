@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Village heroes now relay committed milestone reports to the Steward’s bell for review at the Temple, including heroes on other machines. (v0.85)
+
 - Decisions show AI-written reasons and objections, and superseded rejected Steward work can be withdrawn from your reading list. (v0.84)
 
 - Omens no longer carry Confirm fixed, Decree or Set aside buttons (nor the decrees auto/approve switch): the smith checks each fix and the High Priest confirms it, and an omen says which step it is waiting for.
