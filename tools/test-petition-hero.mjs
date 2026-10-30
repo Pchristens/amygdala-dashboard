@@ -150,6 +150,8 @@ try {
   assert(!jobs.some(j => j.kind === 'stop'));
   assert.throws(() => rpc(a.token, 'add_to_petition', { id, text: 'after close' }), /No hero/);
   // End labour stops a visitor's hero quietly: a stop job, no wrap-up send, no tale, no feed line naming the labour.
+  { const request = w.nodes.request; w.nodes.request = async () => { throw new Error('node offline'); }; pet().status = 'commissioned';
+    await assert.rejects(w.tales.endLabour(hero.id), /offline/); assert.equal(pet().status, 'commissioned', 'a failed stop leaves the petition open'); w.nodes.request = request; }
   { const before = jobs.length, feed = w.s.feed.length; pet().status = 'commissioned'; await w.tales.endLabour(hero.id); assert.equal(pet().status, 'closed', 'its petition link closes'); const mine = jobs.slice(before);
     assert.deepEqual(mine.map(j => j.kind), ['stop']); assert.equal(mine[0].payload.sessionId, hero.sessionId);
     assert(!w.s.tales.some(t => t.heroId === hero.id)); assert(!JSON.stringify(w.s.feed.slice(feed)).includes("Visitor's labour")); jobs.length = before; }
