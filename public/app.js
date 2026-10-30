@@ -413,7 +413,7 @@ function openEndLabour(w) {
   const message = $('end-labour-message');
   const submit = $('end-labour-submit');
   $('end-labour-title').textContent = `End labour — ${w.title || w.id}`;
-  const petition = (state.petitions || []).some((p) => p.heroId === w.id);
+  const petition = (state.petitions || []).some((p) => p.heroTitle && (p.heroId === w.id || p.heroTitle === w.title)); // the server's world.petitionHero test
   message.textContent = petition ? "End this visitor's labour? The hero is stopped at once and its petition link closed; a visitor's labour gets no wrap-up or tale." : "End this hero's labour? They'll be asked to wrap up, then stopped, and a tale will be written.";
   submit.hidden = false; submit.disabled = false;
   submit.onclick = async () => {

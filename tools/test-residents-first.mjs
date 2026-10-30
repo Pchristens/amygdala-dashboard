@@ -10,7 +10,7 @@ assert.match(petitions, /if \(!petitions\.length\) return;/); assert.match(petit
 assert.doesNotMatch(petitions, /No petitions yet/);
 // Finished petitions fold into one closed 'Earlier petitions' fold; only live ones show as full cards.
 assert.match(petitions, /for \(const p of active\) root\.append\(petitionCard\(p\)\)/); assert.match(petitions, /`Earlier petitions \(\$\{history\.length\}\)`/);
-assert.match(panel, /let petitionFoldOpen = false/); assert.doesNotMatch(petitions, /\[\.\.\.active, \.\.\.history\]/);
+assert.match(panel, /let petitionFoldOpen = false/); assert.match(petitions, /const live = \['pending', 'dispatching',/); assert.doesNotMatch(petitions, /\[\.\.\.active, \.\.\.history\]/);
 const gate = panel.slice(panel.indexOf('  function renderGate()'), panel.indexOf('  let exhibitView'));
 assert.match(gate, /summary', \{ text: 'Visitors & passes' \}/); assert.match(gate, /fold\.open = visitorFoldOpen/); assert.match(gate, /'Notify me'/);
 assert(!/p\.question|p\.answer|p\.note/.test(gate), 'the visitors fold never shows petition text');

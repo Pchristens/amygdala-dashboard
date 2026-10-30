@@ -200,7 +200,7 @@ export function createPanel(opts) {
     }
     if (!petitions.length) return;
     root.append(h('h2', { text: `Petitions${pending.length ? ` (${pending.length})` : ''}` }));
-    const live = ['pending', 'allowed', 'answering', 'commissioning', 'commissioned'];
+    const live = ['pending', 'dispatching', 'allowed', 'answering', 'commissioning', 'commissioned'];
     const active = petitions.filter(p => live.includes(p.status));
     const history = petitions.filter(p => !live.includes(p.status)).slice(-20).reverse();
     for (const p of active) root.append(petitionCard(p));
