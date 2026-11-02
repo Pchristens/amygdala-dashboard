@@ -499,7 +499,9 @@ batches directly. Reviewers are chosen by role, so renamed residents keep their 
 the default 20-model-run daily cap, disable it globally, or use **Audit on/off** on a hero card. Both review tiers
 count toward that cap. Reviews wait while the village is paused or provider usage is hot; critical keyword hits still
 ring an urgent bell immediately. Each hero is reviewed at most once per ten minutes. Verdicts appear as private audit
-offerings in the Temple.
+offerings in the Temple. Every hit, verdict, bell, escalation and settings change is also appended to a permanent,
+hash-chained log in `data/audit-log.jsonl` (village heroes only); **Watchtower log** in the settings searches it and
+shows whether its chain still verifies.
 The Steward's own deploy push, exactly `git push -q origin main`, is logged as *covered*, with no bell and no review,
 while one of its commits from the last 12 hours stands accepted at the Temple and is undeployed or was deployed within
 the hour. Any other push form (force, delete, mirror, refspecs) still rings.

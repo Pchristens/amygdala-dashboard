@@ -161,7 +161,7 @@ const API = {
   'POST /api/heroes/revoke': b => world.bridge.revoke(String(b.id)),
   'POST /api/quarantine': b => world.setQuarantine(String(b.project), String(b.host), !!b.on),
   'POST /api/human/gift': b => world.addObject('You', b.kind, b.note, +b.x, +b.y),
-  'POST /api/audit/settings': b => world.watchtower.settings(b),
+  'POST /api/audit/settings': (b, req) => world.watchtower.settings(b, actorOf(req)),
   'POST /api/control': b => {
     if (typeof b.paused === 'boolean') world.setPaused(b.paused);
     if (b.tickSeconds !== undefined) world.setTick(b.tickSeconds);
@@ -240,6 +240,8 @@ const server = http.createServer(async (req, res) => {
     const plog = p.match(/^\/api\/places\/([a-z0-9-]+)\/log$/);
     if (plog) return json(res, 200, { ok: true, log: world.placeLog(plog[1]) });
     if (req.method === 'GET' && p === '/api/governance') return json(res, 200, { ok: true, ...world.governance.snapshot(), ledger: world.governance.g.ledger, ledgerBase: world.governance.g.ledgerBase });
+    // The Watchtower's permanent log (v0.89): the page token only; the gate never routes /api/, and no snapshot carries it.
+    if (req.method === 'GET' && p === '/api/audit/log') return json(res, 200, { ok: true, ...world.watchtower.log.query(Object.fromEntries(url.searchParams)) });
     const trail = p.match(/^\/api\/omens\/([a-z0-9]+)\/trail$/);
     if (trail) return json(res, 200, { ok: true, trail: await world.tablet.trail(trail[1]) });
     if (p.startsWith('/api/')) {
@@ -286,7 +288,7 @@ const server = http.createServer(async (req, res) => {
       }
       const fn = API[`POST ${p}`];
       if (!fn) return json(res, 404, { ok: false, error: 'not found' });
-      const result = await fn(b);
+      const result = await fn(b, req);
       return json(res, 200, { ok: true, ...(result && typeof result === 'object' && (result.token || p === '/api/heroes/message' && result.id) ? result : {}) });
     }
     // static

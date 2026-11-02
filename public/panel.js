@@ -152,6 +152,44 @@ export function createPanel(opts) {
     dialog.addEventListener('close', () => { dialog.textContent = ''; dialog.remove(); }, { once: true });
     dialog.showModal(); name.focus();
   }
+  // The Watchtower's permanent log (v0.89): every hit with its verdicts and bells, filtered and paged by the server.
+  function auditLogDialog() {
+    const dialog = h('dialog', { class: 'dialog credits-dialog' }), list = h('div', { class: 'dig-layers', style: { maxHeight: '50vh' } }), seal = h('span', { class: 'chain-seal' }), error = h('div', { class: 'dialog-error', role: 'alert' });
+    const input = (label, props) => h('label', { class: 'field' }, h('span', { text: label }), h('input', { class: 'input', 'aria-label': label, ...props }));
+    const hero = input('Hero', { placeholder: 'Title or id' }), rule = input('Rule', { placeholder: 'e.g. sudo' }), since = input('From', { type: 'date' }), until = input('To', { type: 'date' }), q = input('Search', { placeholder: 'Text in the excerpt or verdict' });
+    const severity = h('label', { class: 'field' }, h('span', { text: 'Severity' }), h('select', { class: 'input', 'aria-label': 'Severity' }, ...['', 'critical', 'high', 'low'].map(v => h('option', { value: v, text: v || 'Any' }))));
+    const more = h('button', { class: 'btn btn-xs', type: 'button', text: 'Load more', hidden: true }); let next = null;
+    const when = ts => new Date(ts).toLocaleString();
+    const row = e => {
+      if (e.kind !== 'hit') return h('div', { class: 'record' }, h('div', { class: 'record-head', text: `${when(e.ts)} · ${e.kind === 'optout' ? `${e.heroTitle || e.heroId} ${e.optOut ? 'opted out' : 'opted back in'}` : `settings: ${Object.entries(e.changes || {}).map(([k, v]) => `${k} ${v}`).join(', ')}`} · by ${e.who}` }));
+      const box = h('div', { class: 'record' }, h('div', { class: 'record-head', text: `${when(e.at ?? e.ts)} · ${e.heroTitle || e.heroId} · ${e.rule} · ${e.severity} · ${e.status}` }));
+      if (e.why) box.append(h('div', { class: 'dim-note', text: `Covered: ${e.why}` }));
+      box.append(h('pre', { text: e.excerpt }));
+      for (const v of e.verdicts || []) box.append(h('div', { class: 'dim-note', text: `${v.reviewer} (tier ${v.tier}, AI-written): ${v.verdict}${v.escalate ? ', escalate' : ''}: ${v.summary}` }));
+      for (const x of e.escalations || []) box.append(h('div', { class: 'dim-note', text: `Escalation ${x.state} · ${when(x.ts)}` }));
+      for (const b of e.bells || []) box.append(h('div', { class: 'dim-note', text: `Bell rang (${b.severity}) · ${when(b.ts)}` }));
+      return box;
+    };
+    const load = async (more_ = false) => {
+      const params = new URLSearchParams({ limit: '50' }), day = (el, end) => el.querySelector('input').value && String(new Date(el.querySelector('input').value + (end ? 'T23:59:59.999' : 'T00:00')).getTime());
+      for (const [k, el] of [['hero', hero], ['rule', rule], ['q', q]]) { const v = el.querySelector('input').value.trim(); if (v) params.set(k, v); }
+      if (severity.querySelector('select').value) params.set('severity', severity.querySelector('select').value);
+      if (day(since)) params.set('since', day(since)); if (day(until, true)) params.set('until', day(until, true)); if (more_ && next) params.set('before', String(next));
+      const result = await opts.api(`/api/audit/log?${params}`, undefined, 'GET'); if (!dialog.open) return;
+      if (!result || result.ok === false) { error.textContent = result?.error || 'The log could not be read.'; return; }
+      error.textContent = ''; if (!more_) list.replaceChildren();
+      seal.className = `chain-seal ${result.verified ? 'ok' : 'broken'}`; seal.textContent = result.verified ? 'Log verified' : 'Warning: the log’s chain does not verify; an entry was changed or lost';
+      for (const e of result.entries || []) list.append(row(e));
+      if (!list.childNodes.length) list.append(h('p', { class: 'dim-note', text: 'Nothing logged that matches.' }));
+      next = result.next; more.hidden = next == null;
+    };
+    more.addEventListener('click', () => load(true));
+    const form = h('form', { autocomplete: 'off' }, h('div', { class: 'field-row' }, hero, rule, severity), h('div', { class: 'field-row' }, since, until, q), h('div', { class: 'dialog-actions' }, h('button', { class: 'btn btn-primary', type: 'submit', text: 'Filter' })));
+    form.addEventListener('submit', e => { e.preventDefault(); load(); });
+    dialog.append(h('div', { class: 'dig-head' }, h('h2', { text: 'Watchtower log' }), h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: '✕', 'aria-label': 'Close', onClick: () => dialog.close() })),
+      h('div', { class: 'dialog-sub', text: 'Every flag the Watchtower raised, what ran, and what the reviewers decided. Kept permanently on this machine.' }), seal, form, error, list, h('div', { class: 'dialog-actions' }, more));
+    document.body.append(dialog); dialog.addEventListener('close', () => dialog.remove(), { once: true }); dialog.showModal(); load();
+  }
   const petitionSeen = new Set();
   let petitionFoldOpen = false; const petitionRowsOpen = new Set(); // survive the redraw on every state update
   let notifyPetitions = false, titleTimer = null;
@@ -1184,6 +1222,7 @@ export function createPanel(opts) {
         settingField(controls, key, label, 'select', { 'aria-label': label, value: selected ?? choices[0]?.[0] ?? '' }, select => opts.api('/api/audit/settings', { [key]: select.value }), choices);
       }
       settingField(controls, 'dailyCap', 'Daily audit runs ', 'input', { type: 'number', min: '0', max: '200', value: s.dailyCap, 'aria-label': 'Daily audit run cap' }, cap => opts.api('/api/audit/settings', { dailyCap: +cap.value }));
+      if (!controls._logButton) { controls._logButton = h('button', { class: 'btn btn-xs', type: 'button', text: 'Watchtower log', onClick: auditLogDialog }); controls.append(h('div', {}, controls._logButton)); }
       // The last audit lines follow the settings so a glance explains why a hero was flagged.
       controls._log?.remove(); controls._log = null;
       const log = (state.audits || []).slice(-20).reverse();

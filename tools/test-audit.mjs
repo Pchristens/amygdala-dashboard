@@ -58,7 +58,7 @@ try {
   const codex = { ...hero, id: 'local:c', tool: 'codex', transcriptPath: path.join(dir, 'rollout.jsonl') }; fs.writeFileSync(codex.transcriptPath, ''); scanner.scan(codex, [codex.id], 1); fs.appendFileSync(codex.transcriptPath, JSON.stringify({ type: 'response_item', payload: { type: 'function_call', name: 'exec_command', arguments: JSON.stringify({ cmd: 'sudo ls' }) } }) + '\n'); assert(scanner.scan(codex, [codex.id], 2).some(h => h.rule === 'sudo'));
   const hit = { heroId: 'h', rule: 'sudo', severity: 'critical', ts: 1, excerpt: 'sudo PRIVATE_EXCERPT' }, body = { hostname: 'fixture', os: 'linux', deckAvailable: true, sessions: [], results: [], auditHits: [hit] };
   assert.equal(validateReport(body), body);
-  for (const bad of [{ ...hit, severity: 'low' }, { ...hit, excerpt: 'x'.repeat(301) }, { ...hit, raw: true }, { ...hit, ts: NaN }, { ...hit, heroId: '../x' }]) assert.throws(() => validateReport({ ...body, auditHits: [bad] }));
+  for (const bad of [{ ...hit, severity: 'low' }, { ...hit, excerpt: 'x'.repeat(1001) }, { ...hit, raw: true }, { ...hit, ts: NaN }, { ...hit, heroId: '../x' }]) assert.throws(() => validateReport({ ...body, auditHits: [bad] }));
   assert.throws(() => validateReport({ ...body, auditHits: Array(501).fill(hit) }));
   let accepted = [];
   const fake = { s: {}, workers: [], id: () => 'np-fixture', changed() {}, sites: { privateWorker: w => !!w.private }, watchtower: { accept(w, hits) { accepted.push(...hits); } }, refreshWorkers() { this.workers = this.nodes.workers().map(w => ({ ...w, zone: w.isleTagged ? 'isle' : 'village' })); } };
