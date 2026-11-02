@@ -52,13 +52,13 @@ try {
     if (gate === 'expiry') x.gov.examination.at -= 45 * 60000;
     if (gate === 'pressure') w.usage.limits = { providers: [{ id: 'codex', windows: [{ used_percentage: 95 }] }] };
     if (gate === 'paused') w.s.paused = true;
-    if (gate === 'budget') w.s.dailyTurnBudget = 0;
+    if (gate === 'budget') w.s.templeTurnBudget = 0;
     if (gate === 'hibernate') w.setHibernate('Quill', true);
     if (gate === 'missing') x.gov.examination.by = 'Gone';
     if (gate === 'disabled') w.s.residents.Quill.enabled = false;
     if (gate === 'provider') config[1].model = 'claude-opus-5-5';
     g.pump(); assert.equal(x.gov.examination.state, 'skipped', gate); assert(x.gov.examination.reason); assert(g.rulableBy('Themis').includes(x));
-    w.s.paused = false; w.s.dailyTurnBudget = 100; w.setHibernate('Quill', false); w.s.residents.Quill.enabled = true; config[1].model = 'gpt-6.1-sol'; delete c.pressureBlocked; w.usage.limits = { providers: [] };
+    w.s.paused = false; w.s.dailyTurnBudget = 100; w.s.templeTurnBudget = 24; w.setHibernate('Quill', false); w.s.residents.Quill.enabled = true; config[1].model = 'gpt-6.1-sol'; delete c.pressureBlocked; w.usage.limits = { providers: [] };
   }
   assert.throws(() => g.setSettings({ examiner: 'Quill' }, 'steward'), /Only the human/); assert.throws(() => g.setSettings({ examiner: 'Gone' }, 'human'), /roster/); g.setSettings({ examiner: 'Quill' }, 'human'); assert(g.verify());
   console.log('examiner checks passed');

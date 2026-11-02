@@ -1048,6 +1048,8 @@ function renderHeader() {
   if (b && Number.isFinite(+b.dailyTurnBudget)) {
     budgetEl.hidden = false;
     const used = Math.max(0, +b.usedToday || 0), total = Math.max(0, +b.dailyTurnBudget);
+    $('temple-budget-text').textContent = `Temple ${b.templeUsedToday || 0}/${b.templeTurnBudget ?? 24}`;
+    $('temple-budget-dec').disabled = b.templeTurnBudget <= 0;
     $('budget-text').textContent = `${used}/${total}`;
     const frac = total > 0 ? Math.min(1, used / total) : 1;
     $('budget-fill').style.width = `${Math.round(frac * 100)}%`;
@@ -1091,14 +1093,16 @@ for (let n = 1; n <= 24; n++) $('hours-end').appendChild(h('option', { value: n,
 const setHours = () => api('/api/control', { activeHours: { start: +$('hours-start').value, end: +$('hours-end').value } });
 $('hours-start').addEventListener('change', setHours);
 $('hours-end').addEventListener('change', setHours);
-function budgetStep(dir) {
-  const cur = Math.max(0, +state?.budget?.dailyTurnBudget || 0);
+function budgetStep(dir, key = 'dailyTurnBudget') {
+  const cur = Math.max(0, +state?.budget?.[key] || 0);
   const step = cur >= 100 ? 24 : cur >= 24 ? 12 : 6;
   const next = Math.max(0, Math.min(2000, cur + dir * step));
-  if (next !== cur) api('/api/control', { dailyTurnBudget: next });
+  if (next !== cur) api('/api/control', { [key]: next });
 }
 $('budget-dec').addEventListener('click', () => budgetStep(-1));
 $('budget-inc').addEventListener('click', () => budgetStep(1));
+$('temple-budget-dec').addEventListener('click', () => budgetStep(-1, 'templeTurnBudget'));
+$('temple-budget-inc').addEventListener('click', () => budgetStep(1, 'templeTurnBudget'));
 
 // ---------- Happening now ----------
 const happeningButton = $('happening').querySelector('.happening-title');
@@ -1502,6 +1506,7 @@ function mockApi(path, body) {
   } else if (path === '/api/control') {
     if (typeof body.paused === 'boolean') state.world.paused = body.paused;
     if (Number.isFinite(+body.tickSeconds)) state.world.tickSeconds = +body.tickSeconds;
+    if (Number.isFinite(+body.templeTurnBudget)) { state.budget = state.budget || { usedToday: 0 }; state.budget.templeTurnBudget = Math.max(0, Math.min(1000, Math.round(+body.templeTurnBudget))); }
     if (Number.isFinite(+body.dailyTurnBudget)) { state.budget = state.budget || { usedToday: 0 }; state.budget.dailyTurnBudget = +body.dailyTurnBudget; }
   } else if (path.startsWith('/api/residents/')) {
     const parts = path.split('/');

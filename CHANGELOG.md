@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Temple reviews and their reply chains now have their own adjustable daily allowance, leaving room for ordinary village life. (v0.87)
+
 - Claude-written releases receive a second model’s examination, with the High Priest recording her own first verdict before reading its findings. (v0.86)
 
 - A hero's last message is no longer lost when its earlier messages were long: milestone reports, tales and petition replies read the end of the conversation, not the start of it.

@@ -166,6 +166,7 @@ const API = {
     if (typeof b.paused === 'boolean') world.setPaused(b.paused);
     if (b.tickSeconds !== undefined) world.setTick(b.tickSeconds);
     if (b.dailyTurnBudget !== undefined) world.setBudget(b.dailyTurnBudget);
+    if (b.templeTurnBudget !== undefined) world.setTempleBudget(b.templeTurnBudget);
     if (b.activeHours !== undefined) world.setHours(b.activeHours?.start, b.activeHours?.end);
   },
 };

@@ -70,6 +70,7 @@ whose model has a small allowance: they get one action tool and one action call 
   - **hours**: when automatic turns may run (default 8am to midnight). A window that wraps past midnight stops at
     midnight, when the budget resets.
   - **graphics**: Auto, High, Medium or Low (see [Graphics quality](#graphics-quality)).
+  - Temple reviews and their replies have a separate daily allowance (default 24), shown as **Temple used/budget** with their own **−** and **+** controls.
   - **turns today**: automatic turns used against the daily budget (default 48); **−** and **+** change the budget.
     Human wakes, orders and duties don't count.
   - the bell's volume and mute.

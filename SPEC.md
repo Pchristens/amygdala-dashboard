@@ -1960,3 +1960,11 @@ Pause, hibernation, existing provider pressure limit, exhausted daily turn budge
 For a completed examination the assigned ruler first calls `draft_ruling {offering_id, sha, verdict, reason}` (accept/reject/evidence, evidence excluded on appeals; reason 8..800 characters; candidate commit validation as for rule_offering). The independent draft is stored at `gov.drafts[sha] = {by, verdict, reason, at}` and cannot be rewritten by that ruler. Until then examine_offering hides the examiner’s findings and summary even with show_findings. Afterward it labels them untrusted, AI-written. rule_offering requires this ruler’s draft for that commit and includes `draft: {verdict, reason}` in the ruling and ledger entry. Skipped or absent examinations keep the prior flow.
 
 Human governance rows and offering cards show examination state, summary, finding count and any difference between draft and final verdict. Resident and visitor snapshots omit examination, drafts and ruling drafts.
+
+## v0.87: the Temple's own allowance
+
+World state persists templeTurnBudget (default 24, rounded and clamped 0..1000) and a local-date templeTurns counter. templeTurnsToday/countTempleTurn reset by local date as routine turns do. POST /api/control accepts templeTurnBudget; snapshot budget includes templeTurnBudget and templeUsedToday.
+
+First-look wakes carry temple: true. Mention wakes inherit it from the author's context turn, including priest, smith, Watch and examination duties. Merged wakes stay Temple only when every reason is Temple. Automatic Temple jobs spend this allowance instead of dailyTurnBudget and record usage kind temple. They bypass routine pacing but respect pause, active hours, enabled state, hibernation and provider pressure; exhausted jobs remain queued until the allowance resets or increases. Routine scheduling and non-Temple mention pacing are unchanged. Human wakes and duties are free, except the examiner's examination duty, which spends the Temple allowance (it spent the routine budget before). First-look, smith-readiness and examination gates use the Temple allowance; examination retains its existing skip behavior when blocked.
+
+The page shows Temple used/budget alongside routine usage with separate budget controls.
