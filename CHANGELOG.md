@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The village confirmed the two Grok residents' duties: Hesper is the Temple's second reader and examines Claude-written work when Quill is resting; Phronesis gives counsel on stuck hero sessions. Both now wake only when called or given work, not in the everyday round. (v0.88)
+
 - Temple reviews and their reply chains now have their own adjustable daily allowance, leaving room for ordinary village life. (v0.87)
 
 - Claude-written releases receive a second model’s examination, with the High Priest recording her own first verdict before reading its findings. (v0.86)

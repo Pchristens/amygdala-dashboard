@@ -1334,6 +1334,7 @@ export function createPanel(opts) {
       h('span', { text: `${o.project || ''} @ ${o.host || 'local'} · ${relTime(o.createdAt)}${Number.isFinite(+o.size) ? ` · ${(+o.size / 1024).toFixed(1)} KB` : ''}${o.truncated ? ' · truncated' : ''}` })));
     const ex = o.gov?.examination, ruling = o.gov?.rulings?.at(-1) || o.gov?.ruling;
     if (ex) card.appendChild(h('div', { class: 'dim-note', text: ex.state === 'done' ? `Examined by ${ex.by}: ${ex.summary} (AI-written; ${ex.findings?.length || 0} findings)` : ex.state === 'skipped' ? `Examination skipped: ${ex.reason}` : `Awaiting ${ex.by}'s examination` }));
+    if (ex?.standIn) card.appendChild(h('div', { class: 'dim-note', text: `${ex.by} examined in ${ex.standIn.for}'s place (${ex.standIn.reason})` }));
     if (ruling?.draft && ruling.draft.verdict !== ruling.verdict) card.appendChild(h('div', { class: 'dim-note', text: `${ruling.by} first leaned ${ruling.draft.verdict}` }));
     if (o.note) card.appendChild(h('div', { class: 'card-quote', text: String(o.note) }));
     if (o.kind === 'scroll') {

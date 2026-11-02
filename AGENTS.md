@@ -44,7 +44,7 @@ your change. When you add to the contract, append a new versioned section (`## v
 | `tools/amygdala-order.mjs`, `tools/amygdala-steward.mjs`, `tools/amygdala-hero.ps1` | the order CLI, the Steward's bell wait, the Windows bridge hero |
 | `tools/mock-state.mjs`, `tools/reset-world.mjs` | the client-only preview fixture; reset the world (server stopped) |
 | `tools/test-*.mjs` | tests (plain Node, no framework); `tools/test-changelog.mjs` keeps `CHANGELOG.md` in step with `SPEC.md` |
-| `residents.json` | resident roster: name, agent, model, role, title, persona, enabled, lean, backup |
+| `residents.json` | resident roster: name, agent, model, role, title, persona, enabled, lean, backup, onDemand |
 | `data/` | runtime state (never commit, never read unless your task is about it; see Privacy) |
 
 ## Rules
