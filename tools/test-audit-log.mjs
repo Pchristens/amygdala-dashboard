@@ -86,6 +86,11 @@ try {
   assert.equal(q({}).verified, false); fs.writeFileSync(file, text + '\n'); assert.equal(tower.log.verify(), false, 'a stray line is not a valid entry');
   fs.writeFileSync(file, text); assert.equal(new AuditLog(dir).verify(), true);
   const deleted = text.split('\n'); deleted.splice(3, 1); fs.writeFileSync(file, deleted.join('\n')); assert.equal(new AuditLog(dir).verify(), false, 'a removed line breaks it'); fs.writeFileSync(file, text);
+  // A crash mid-append leaves a torn last line: it fails until the chain picks up after it on a line of its own; a line made unreadable in the middle still breaks the chain.
+  fs.writeFileSync(file, text + '{"seq":99999,"kind":"hi'); assert.equal(new AuditLog(dir).verify(), false, 'a torn final line fails');
+  const healed = new AuditLog(dir), after = healed.append('settings', { who: 'human', changes: { enabled: true } }); assert.equal(after.prev, JSON.parse(text.trim().split('\n').at(-1)).hash);
+  const lines2 = fs.readFileSync(file, 'utf8').split('\n'); assert.equal(JSON.parse(lines2.at(-2)).seq, after.seq, 'the next entry starts on its own line'); assert.equal(healed.verify(), true, 'the chain continues past the torn line');
+  const broken = text.split('\n'); broken[3] = broken[3].slice(0, 20); fs.writeFileSync(file, broken.join('\n')); assert.equal(new AuditLog(dir).verify(), false, 'an unreadable middle line breaks the chain'); fs.writeFileSync(file, text);
 
   // The human page only: the route sits behind the page token, the gate never routes /api/, and no snapshot carries the log.
   const server = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');

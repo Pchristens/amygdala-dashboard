@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Watchtower log stays checkable after a crash in the middle of writing an entry: the next entry starts on a fresh line instead of breaking the record for good. (v0.89)
+
 - The Watchtower now keeps a permanent, tamper-evident log of every flag it raises, with the full command excerpt (now up to 1000 characters), what its reviewers decided and whether a bell rang; open it from **Watchtower log** in the Watchtower settings to search and page back through it. (v0.89)
 
 - The village confirmed the two Grok residents' duties: Hesper is the Temple's second reader and examines Claude-written work when Quill is resting; Phronesis gives counsel on stuck hero sessions. Both now wake only when called or given work, not in the everyday round. (v0.88)
