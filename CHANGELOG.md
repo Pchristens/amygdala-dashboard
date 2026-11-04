@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- On Windows, the village no longer flashes PowerShell or command windows on your desktop when residents take turns, usage is checked or git runs: everything it starts is now launched hidden.
+
 - When a resident's turns keep failing (for example after the Claude login expires), the Watch now raises it once every two hours instead of waking herself over and over in a loop. (v0.90)
 
 - The Watchtower log stays checkable after a crash in the middle of writing an entry: the next entry starts on a fresh line instead of breaking the record for good. (v0.89)

@@ -368,7 +368,7 @@ const tailscaleAddr = () => Object.values(os.networkInterfaces()).flat().find(i 
 const GATE_PORT = +env('GATE_PORT') || 8795;
 world.gateUrl = null;   // shown to the human when issuing passes, once the gate is open
 // The commit this server runs: nodes behind it update themselves from their own origin (v0.45).
-try { world.version = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { world.version = null; }
+try { world.version = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim(); } catch { world.version = null; }
 // Started at logon, Tailscale may not have its address yet: keep looking instead of leaving the gate shut for the whole run.
 function openGate() {
   const tsAddr = tailscaleAddr();
