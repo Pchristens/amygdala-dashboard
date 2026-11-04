@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- When a resident's turns keep failing (for example after the Claude login expires), the Watch now raises it once every two hours instead of waking herself over and over in a loop. (v0.90)
+
 - The Watchtower log stays checkable after a crash in the middle of writing an entry: the next entry starts on a fresh line instead of breaking the record for good. (v0.89)
 
 - The Watchtower now keeps a permanent, tamper-evident log of every flag it raises, with the full command excerpt (now up to 1000 characters), what its reviewers decided and whether a bell rang; open it from **Watchtower log** in the Watchtower settings to search and page back through it. (v0.89)
