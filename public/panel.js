@@ -1281,6 +1281,7 @@ export function createPanel(opts) {
           offer,
           h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: 'Tell the tale', disabled: !!w.sealed, onClick: () => opts.onTellTale?.(w.id) }),
           opts.endLabourButton?.(w),
+          alertButton(w),
           state.auditSettings && zoneOf(w) === 'village' && !w.private && !w.sealed ? h('button', { class: 'btn btn-ghost btn-xs', text: state.auditSettings.optOut.includes(w.id) ? 'Audit off' : 'Audit on', onClick: () => opts.api('/api/audit/settings', { heroId: w.id, optOut: !state.auditSettings.optOut.includes(w.id) }) }) : null,
         ),
         h('div', { class: 'dim-note' },
@@ -1295,6 +1296,12 @@ export function createPanel(opts) {
     if (counsel.length) row.appendChild(counselList(counsel));
     row.addEventListener('click', (e) => { if (!e.target.closest('a, button, select, .counsel')) opts.onFocusWorker?.(w.id); });
     return row;
+  }
+  // Hero alerts (v0.91): off by default; on, the bell rings when this hero goes idle, needs permission or stops.
+  function alertButton(w) {
+    if (!state.heroAlerts || zoneOf(w) !== 'village' || w.private || w.sealed) return null;
+    const on = state.heroAlerts.includes(w.id);
+    return h('button', { class: 'btn btn-ghost btn-xs', type: 'button', text: on ? 'Notify on' : 'Notify off', 'aria-pressed': String(on), title: 'Notify me when this hero goes idle, needs permission, errors or stops', onClick: () => opts.api('/api/heroes/alert', { workerId: w.id, on: !on }) });
   }
   function sitePicker(w) {
     const sel = h('select', { class: 'site-picker', 'aria-label': 'Move this hero to another site', title: 'Move to…' });
@@ -1798,7 +1805,7 @@ function playMelody(notes, tempo, onStep, onDone) {
 }
 
 // A terminal view owns all of its network and xterm resources.
-export function mountHeroTerminal(root, worker, { token, mock, onClose, back }) {
+export function mountHeroTerminal(root, worker, { token, mock, onClose, back, alert }) {
   const url = deckLink(worker);
   const status = worker.status === 'waiting' && !worker.needsPermission ? 'idle' : String(worker.status || 'idle');
   root.textContent = '';
@@ -1825,6 +1832,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose, back }) 
     h('h2', { text: `Terminal — ${worker.title || worker.id}` }),
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'needs your permission' : status }),
     url ? h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null,
+    alert ? h('button', { class: 'btn btn-xs terminal-alert', type: 'button', text: alert.on() ? 'Notify on' : 'Notify off', 'aria-pressed': String(alert.on()), title: 'Notify me when this hero goes idle, needs permission, errors or stops', onClick: () => alert.set(!alert.on()) }) : null,
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
     endButton,
     back ? h('button', { class: 'btn btn-xs terminal-back', type: 'button', text: `← ${back.label}`, title: 'Leave the terminal for the view you came from', onClick: back.go }) : null), hint, connection, note, endError, body);

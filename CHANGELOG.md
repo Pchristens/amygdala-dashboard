@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Each hero now has a Notify switch, off by default, in its More row at the Temple and in its terminal header. Turned on, your Mac (and any open dashboard) gets a notification when that hero goes idle after working, needs your permission, hits an error or stops. (v0.91)
+
 - The terminal view has a back button on the right of its header, across from Detach and End session: it takes you back to the Temple (or whichever view you opened the terminal from).
 
 - On Windows, the village no longer flashes PowerShell or command windows on your desktop when residents take turns, usage is checked or git runs: everything it starts is now launched hidden.

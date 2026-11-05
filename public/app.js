@@ -944,6 +944,7 @@ function openTerminal(w) {
     terminalHeroId = w.id;
     terminalDispose = mountHeroTerminal($('tab-terminal'), w, {
       token: TOKEN, mock: MOCK, onClose: () => setDrawer(false),
+      alert: w.zone === 'village' && !w.private && !w.sealed && state?.heroAlerts ? { on: () => state.heroAlerts.includes(w.id), set: on => api('/api/heroes/alert', { workerId: w.id, on }) } : null,
       back: { label: $(`tabbtn-${terminalBack}`)?.firstChild?.textContent.trim() || 'Back', go: () => openView(terminalBack) },
     });
   }
@@ -1259,6 +1260,8 @@ function applyState(s) {
       const status = hero.status === 'waiting' && !hero.needsPermission ? 'idle' : String(hero.status || 'idle');
       pill.className = `pill pill-${hero.stale ? 'stale' : status}`;
       pill.textContent = hero.stale ? 'last seen a while ago' : status === 'waiting' ? 'needs your permission' : status;
+      const alert = header.querySelector('.terminal-alert'), on = (s.heroAlerts || []).includes(hero.id);
+      if (alert) { alert.textContent = on ? 'Notify on' : 'Notify off'; alert.setAttribute('aria-pressed', String(on)); }
     }
   }
   renderHeader();

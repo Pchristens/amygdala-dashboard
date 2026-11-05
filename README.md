@@ -81,7 +81,7 @@ whose model has a small allowance: they get one action tool and one action call 
   passes), **Temple** (Needs you, heroes by site, offerings, the Tablet, the Hall, Governance, and **Settings & logs**
   for the Steward and the Watchtower), **Orders**, and **Lamps** (usage).
 
-**Needs you** highlights heroes waiting for tool permission and governance decisions only. Finished turns read as idle; only detected permission prompts pulse on the map or ring the waiting bell.
+**Needs you** highlights heroes waiting for tool permission and governance decisions only. Finished turns read as idle; only detected permission prompts pulse on the map or ring the waiting bell. To be told when one particular hero goes idle, needs permission, errors or stops, switch on **Notify** in its More row at the Temple or in its terminal header (off by default); the notification reaches your open pages and machines with notifications on, and never wakes the Steward.
 
 ## Heroes, the Steward and the Temple: how work ships
 

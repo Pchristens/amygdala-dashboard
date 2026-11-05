@@ -1992,3 +1992,9 @@ The Watchtower settings carry a **Watchtower log** button that opens a filterabl
 ## v0.90: a failing turn wakes the Watch once
 
 The Watch's `turn-failed` event is keyed by resident (`turn-failed:<name>`), not by turn, so the two-hour `seen` window gives one event per resident per two hours however many of its turns fail. A Watch whose own turns fail at once (an expired CLI login) is woken once by its failure instead of re-waking itself in a loop; other residents' failures remain their own events.
+
+## v0.91: hero alerts
+
+The human can switch on alerts for a single hero. `POST /api/heroes/alert {workerId, on}` (page token) turns them on or off and returns `{ heroAlerts }`; only village heroes that are not sealed, private, isle-tagged, quarantined or a petition's hero can be switched on. The set is kept in `world.heroAlerts` (`{ <workerId>: true }`, at most 200) and every hero starts with alerts off. The human snapshot carries `heroAlerts`, the ids of watched heroes that are alertable now; other viewers don't get it.
+
+When a watched hero's status changes, the Watch rings a bell of `kind: 'hero-alert'` with `by: 'Watch'` and text `🔔 <title> <what>`: `is idle and waiting for you` (severity `info`, only straight after `running`), `needs your permission`, `hit an error` or `has stopped` (severity `attention`). Stale or archived heroes, a hero seen for the first time and a hero that has left the village never ring, and one hero rings at most once a minute. The bells are delivered like every other bell: open pages, nodes with notifications on, and the server machine's own notifications. Hero alerts are for the human alone: `GET /api/steward/wait` passes over them, so they never wake the Steward.

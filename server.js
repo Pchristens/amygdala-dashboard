@@ -154,6 +154,7 @@ const API = {
   'POST /api/nodes/notify': b => world.nodes.setNotify(b.id, b.on),
   'POST /api/nodes/revoke': b => world.nodes.revoke(String(b.id)),
   'POST /api/nodes/keeper': b => setKeeper(world, String(b.id), b.on === true),
+  'POST /api/heroes/alert': b => world.watch.setHeroAlert(b.workerId, b.on === true),
   'POST /api/heroes/revive': b => world.sites.heroAction(b.workerId, 'revive'),
   'POST /api/heroes/forget': b => world.sites.heroAction(b.workerId, 'forget'),
   'POST /api/heroes/message': b => world.messageHero(b.workerId, b.message),
