@@ -40,10 +40,15 @@ try {
   // A pump with nothing new is a retry, and retries keep their six-hour spacing.
   c.pendingDuties.length = 0; g.pump(); assert(!priestWake(held));
 
+  // A second wake adds to the hold and keeps the first one's offerings, one awaiting evidence too (fi43566).
+  const waiting = await make(); finish(waiting); waiting.gov.state = 'evidence';
+  w.s.governance.wakeHold.ids.push(waiting.id); g.wakePriest({}, 'human');
+  assert.deepEqual(w.s.governance.wakeHold.ids.sort(), [quiet.id, held.id, waiting.id].sort());
+  waiting.gov.state = 'rejected';
   // Decided offerings leave the hold; once all have, it is gone and the old rule is back.
   quiet.gov.state = 'accepted'; g.pump(); assert.deepEqual(w.s.governance.wakeHold.ids, [held.id]);
   held.gov.state = 'rejected'; g.pump(); assert.equal(w.s.governance.wakeHold, undefined);
-  const later = await make(); finish(later); assert(!priestWake(later));
+  c.pendingDuties.length = 0; const later = await make(); finish(later); assert(!priestWake(later));
 
   // The usage gates still hold: a hibernating priest is not woken, and the wake refuses.
   w.isHibernating = n => n === 'Themis';
