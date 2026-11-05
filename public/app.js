@@ -914,6 +914,7 @@ function mockPlaceLog(id) {
 // Terminal resources live only while their drawer view is open.
 let terminalHeroId = null;
 let terminalDispose = null;
+let terminalBack = 'workshop'; // the view the terminal was opened from; Back returns there
 function disposeTerminal() {
   terminalDispose?.();
   terminalDispose = null;
@@ -934,6 +935,8 @@ function syncTerminalWidth(name) {
 }
 function openTerminal(w) {
   if (!canOpenTerminal(w)) return;
+  // From the map (drawer closed) Back goes to the Temple; switching heroes inside the terminal keeps the first origin.
+  if (!drawerOpen || currentTab() !== 'terminal') terminalBack = drawerOpen ? currentTab() : 'workshop';
   closeCard();
   openView('terminal');
   if (terminalHeroId !== w.id || !terminalDispose) {
@@ -941,6 +944,7 @@ function openTerminal(w) {
     terminalHeroId = w.id;
     terminalDispose = mountHeroTerminal($('tab-terminal'), w, {
       token: TOKEN, mock: MOCK, onClose: () => setDrawer(false),
+      back: { label: $(`tabbtn-${terminalBack}`)?.firstChild?.textContent.trim() || 'Back', go: () => openView(terminalBack) },
     });
   }
 }

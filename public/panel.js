@@ -1798,7 +1798,7 @@ function playMelody(notes, tempo, onStep, onDone) {
 }
 
 // A terminal view owns all of its network and xterm resources.
-export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
+export function mountHeroTerminal(root, worker, { token, mock, onClose, back }) {
   const url = deckLink(worker);
   const status = worker.status === 'waiting' && !worker.needsPermission ? 'idle' : String(worker.status || 'idle');
   root.textContent = '';
@@ -1826,7 +1826,8 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose }) {
     h('span', { class: `pill pill-${worker.stale ? 'stale' : status}`, text: worker.stale ? 'last seen a while ago' : status === 'waiting' ? 'needs your permission' : status }),
     url ? h('a', { class: 'btn btn-xs', href: url, target: '_blank', rel: 'noopener', text: 'Open in Agent Deck ↗' }) : null,
     h('button', { class: 'btn btn-xs', type: 'button', text: 'Detach', onClick: onClose }),
-    endButton), hint, connection, note, endError, body);
+    endButton,
+    back ? h('button', { class: 'btn btn-xs terminal-back', type: 'button', text: `← ${back.label}`, title: 'Leave the terminal for the view you came from', onClick: back.go }) : null), hint, connection, note, endError, body);
   if (mock) {
     body.append(h('div', { class: 'terminal-placeholder', text: `Mock terminal for ${worker.title || worker.id} — the live session appears here.` }));
     return () => { root.textContent = ''; };
