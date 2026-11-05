@@ -2024,3 +2024,7 @@ Kimi residents spend the `moonshot` pool (`providerOfModel` maps `kimi…` and `
 Kimi residents are eligible petition answerers; research depth is open to Claude, Codex and Kimi answerers below 70% provider pressure. Triage tiers: `k3.1-pro*` deep, `k3`/`k3-256k` considered, `kimi-for-coding*` quick.
 
 Three residents join: Kallias (`k3.1-pro`, role `crossexaminer`), Doris (`k3-256k`, role `assayer`) and Mnemon (`kimi-for-coding`, role `tallykeeper`), all of low rank.
+
+## v0.95: Kimi prompt mode without --auto
+
+Kimi turns and answers run `kimi -p <prompt> --output-format stream-json -m kimi-code/<model> --agent-file <file>`: prompt mode never asks for approval and refuses `--auto`, `--yolo` and `--plan`, so the flag is gone; the agent file's tool list still bounds the run. A resident whose Kimi model is unknown is refused when its turn starts, and the turn ends normally instead of staying begun.

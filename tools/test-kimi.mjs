@@ -53,7 +53,7 @@ try {
   assert.deepEqual(kimiTools(), []); assert.deepEqual(kimiTools({ mcp: true }), ['mcp__amygdala__*']);
 
   // Arguments: the managed alias and the agent file; an unknown model is refused rather than silently falling back.
-  assert.deepEqual(kimiArgs('hi', { model: 'k3.1-pro', agent: '/a.md' }), ['-p', 'hi', '--output-format', 'stream-json', '-m', 'kimi-code/k3.1-pro', '--auto', '--agent-file', '/a.md']);
+  assert.deepEqual(kimiArgs('hi', { model: 'k3.1-pro', agent: '/a.md' }), ['-p', 'hi', '--output-format', 'stream-json', '-m', 'kimi-code/k3.1-pro', '--agent-file', '/a.md']);
   assert.throws(() => kimiArgs('hi', { model: 'k9', agent: '/a.md' }), /Unknown Kimi model/);
   assert.equal(kimiAnswer('{"role":"assistant","content":"first"}\n{"role":"tool","content":"x"}\nnoise\n{"role":"assistant","content":"","tool_calls":[]}\n{"role":"assistant","content":"last"}\n'), 'last');
   assert.equal(kimiAnswer('{"role":"meta"}'), undefined);
@@ -70,6 +70,11 @@ try {
     assert.deepEqual(JSON.parse(tools), web ? ['mcp__amygdala__*', 'WebSearch'] : ['mcp__amygdala__*']);
     b.teardown(); assert(!fs.existsSync(path.join(cwd, '.kimi-home', 'credentials')));
   }
+  // Prompt mode refuses --auto (it never asks for approval anyway).
+  assert(!kimiArgs('hi', { model: 'k3', agent: '/a.md' }).some(a => ['--auto', '--yolo', '--plan'].includes(a)));
+  // fi43821: an unknown model doesn't throw while the turn is built (outside run's try), only in setup (inside it).
+  const bad = AGENTS.kimi({ name: 'X', agent: 'kimi', model: 'k9', persona: 'p' }, url, path.join(root, 'bad'), [], { view: '' });
+  assert.throws(() => bad.setup(), /Unknown Kimi model/); assert(!fs.existsSync(path.join(root, 'bad', '.kimi-home')));
   assert(aliasesOf({ name: 'Kallias', agent: 'kimi', model: 'k3.1-pro' }).includes('kimi'));
 
   // Petition answers: no village tools; research may search and fetch, a plain answer gets no tools at all.
