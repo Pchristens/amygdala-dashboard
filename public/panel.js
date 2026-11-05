@@ -1202,7 +1202,7 @@ export function createPanel(opts) {
     const woke = Math.max(0, ...pending.map(r => +r.wokeAt || 0)), wakes = gov.wakes || {};
     const note = h('span', { class: 'dim-note gov-wake-note', text: ` ${woke ? `woken ${relTime(woke)}` : 'not woken yet'} · on her own at ${wakes.autoAt || 5} waiting or ${wakes.maxWaitHours || 12} h` });
     const button = h('button', { class: 'btn btn-xs gov-wake', type: 'button', text: `Wake ${who} (${waiting})`, title: `Wake ${who} now to rule on everything waiting`,
-      onClick: async () => { button.disabled = true; const r = await opts.api('/api/governance/wake', {}); button.disabled = false; if (r?.ok !== false && r?.resident) note.textContent = ` waking ${r.resident} for ${r.offerings}…`; } });
+      onClick: async () => { button.disabled = true; const r = await opts.api('/api/governance/wake', {}); button.disabled = false; if (r?.ok !== false && r?.resident) note.textContent = ` waking ${r.resident} for ${r.offerings}${r.examining ? `; she wakes again for ${r.examining} still being examined` : ''}…`; } });
     return h('span', { class: 'gov-wake-row' }, button, note);
   }
   // The human's own decision, final: for anything awaiting a ruling, or an escalation that only the human can settle.

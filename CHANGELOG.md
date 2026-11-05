@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Waking Themis by hand now lasts until the work is done: offerings still with Quill are held, and she wakes again by herself for each one when its examination finishes, until every one is decided. (v0.93)
+
 - On a phone or tablet, swipe up or down in a hero's terminal to scroll back through its output (the same history a mouse wheel scrolls on the Mac). Typing takes you back to the bottom.
 
 - The phone page no longer sticks at "connecting…": it now starts over the plain-http Tailscale address too.

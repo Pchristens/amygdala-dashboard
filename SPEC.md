@@ -2006,3 +2006,9 @@ The human's phone can reach the dashboard through the Tailscale gate. `POST /api
 On the gate, a request with a valid `amy_phone` cookie, addressed to the gate's own host and port and not under `/node/`, `/hero/` or `/visit/`, is relayed to the loopback dashboard like a keeper's (viewer `phone`, cookie removed), so the phone gets the same page and API as the human. Without the cookie the gate behaves as before.
 
 `?lite=1`, and by default any page relayed for the phone (`?lite=0` opts out), is the lite page: no map is built and three.js is never fetched (the 3D map is now imported only when it is built), the drawer fills the page and stays open (closing it from the terminal goes back to the view it came from), and the intro doesn't play. A header button switches between lite and the full map by reloading with `lite=0` or `lite=1`.
+
+## v0.93: a hand wake holds until the offerings are decided
+
+`POST /api/governance/wake` now also accepts offerings still under examination (`pending` with `examination.state: 'pending'`); it fails with "Nothing awaits the High Priest." only when neither those nor rulable offerings exist, and returns `{ resident, offerings, examining }`. The wake records `governance.wakeHold = { at, ids }`: every offering rulable or under examination at that moment (added to any earlier hold).
+
+While an offering is held, `pump` wakes the High Priest for it as soon as it is `pending` and rulable, without the five-offering or 12-hour threshold, and an examination that ended (`examination.doneAt`, now also set when an examination is skipped) after her last wake on it counts as new work rather than a retry, so the six-hour retry spacing does not hold it back. A pump with nothing new keeps the six-hour spacing. Offerings leave the hold once final or in a state other than `pending` or `evidence`; an empty hold is removed. Hibernation, availability and provider usage gates are unchanged.

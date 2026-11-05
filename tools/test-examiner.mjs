@@ -22,7 +22,7 @@ try {
   const mcp = createMcpHandler(w), token = 'examiner-test-turn';
   const rpc = (name, args, cap = token) => new Promise(resolve => mcp({ method: 'POST' }, { writeHead() {}, end: s => resolve(JSON.parse(s)) }, JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }), cap));
   const o = await make(); assert.equal(o.gov.examination.state, 'pending'); assert(c.pendingDuties.some(d => d.examinationId === o.id));
-  g.pump(); assert(!c.pendingDuties.some(d => d.offeringIds?.includes(o.id))); assert.throws(() => g.wakePriest({}, 'human'), /Nothing awaits/);
+  g.pump(); assert(!c.pendingDuties.some(d => d.offeringIds?.includes(o.id))); assert.deepEqual(g.wakePriest({}, 'human'), { resident: 'Themis', offerings: 0, examining: 1 }); assert(!c.pendingDuties.some(d => d.offeringIds?.includes(o.id)), 'a hand wake waits for the examination');
   assert.throws(() => g.finishExamination('Themis', { offering_id: o.id, summary: 'No defects found.' }), /assigned/);
   o.gov.release = { paths: ['earlier.js'] }; fs.writeFileSync(g.releaseFile(o), '+const earlierDefect = true;');
   w.temple.examine('Quill', o.id);
