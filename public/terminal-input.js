@@ -79,3 +79,27 @@ export function terminalImages({ term, upload, status, read = fileBase64 }) {
     dispose() { stopped = true; },
   };
 }
+// Touch scrolling: the hero's history lives in tmux (the page only sees redraws), and xterm turns no swipe into a wheel.
+// A swipe sends the same SGR wheel reports a desktop wheel does, so tmux scrolls (entering copy mode, leaving it again at
+// the bottom). Typing first scrolls back down, so keys reach the hero rather than copy mode.
+export const SWIPE_STEP = 60; // px per wheel report; tmux scrolls five lines for each
+export function terminalSwipe({ send, size }) {
+  let y = null, moved = 0, swiping = false, up = 0;
+  const wheel = (dir, n) => { const { cols, rows } = size(), at = `${Math.max(1, cols >> 1)};${Math.max(1, rows >> 1)}`; send(`\x1b[<${dir ? 64 : 65};${at}M`.repeat(n)); };
+  return {
+    start(event) { if (event.touches?.length !== 1) { y = null; return; } y = event.touches[0].clientY; moved = 0; swiping = false; },
+    move(event) {
+      if (y == null || event.touches?.length !== 1) return;
+      const now = event.touches[0].clientY; moved += now - y; y = now;
+      if (!swiping && Math.abs(moved) < 8) return;
+      swiping = true; event.preventDefault(); event.stopPropagation();
+      const n = Math.trunc(moved / SWIPE_STEP); if (!n) return;
+      moved -= n * SWIPE_STEP;
+      if (n > 0) { up += n; wheel(true, n); } else { const d = Math.min(-n, up); up -= d; if (d) wheel(false, d); }
+    },
+    end(event) { if (swiping) { event.preventDefault(); event.stopPropagation(); } y = null; swiping = false; },
+    // Before keys: back to the bottom (a wheel-down past it is dropped by tmux), with two spare steps.
+    typed() { if (up) { wheel(false, up + 2); up = 0; } },
+    get scrolled() { return up; },
+  };
+}

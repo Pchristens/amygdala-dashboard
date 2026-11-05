@@ -1,4 +1,4 @@
-import { terminalInput, terminalKeys, terminalImages } from './terminal-input.js';
+import { terminalInput, terminalKeys, terminalImages, terminalSwipe } from './terminal-input.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Side panel: Board / Exhibits / Residents / Workshop tabs, with a Village / Isle zone switch.
 import { h, agentClass, relTime, avatar, capitalize, commitmentEl, safeCssColor, runeTablet, toRunes } from './util.js';
@@ -1932,7 +1932,12 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose, back, al
     };
   };
   connect();
-  const dataListener = term.onData(data => { if (!disposed && !ended) transport.data(data); });
+  // Swipes scroll the hero's tmux history; a Windows console (no tmux) keeps xterm's own handling.
+  const swipe = worker.os === 'windows' && !worker.node ? null : terminalSwipe({ send: data => { if (!disposed && !ended) transport.data(data); }, size: () => ({ cols: term.cols, rows: term.rows }) });
+  const touch = swipe && { touchstart: swipe.start, touchmove: swipe.move, touchend: swipe.end, touchcancel: swipe.end };
+  if (touch) for (const [kind, fn] of Object.entries(touch)) mount.addEventListener(kind, fn, { capture: true, passive: false });
+  if (touch && globalThis.matchMedia?.('(pointer: coarse)').matches) hint.textContent = 'Live terminal — what you type goes to the hero. Swipe up or down to scroll back through its output.';
+  const dataListener = term.onData(data => { if (!disposed && !ended) { swipe?.typed(); transport.data(data); } });
   frame = requestAnimationFrame(() => { resize(); term.focus(); });
   return () => {
     disposed = true;

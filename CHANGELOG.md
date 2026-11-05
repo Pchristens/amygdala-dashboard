@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- On a phone or tablet, swipe up or down in a hero's terminal to scroll back through its output (the same history a mouse wheel scrolls on the Mac). Typing takes you back to the bottom.
+
 - The phone page no longer sticks at "connecting…": it now starts over the plain-http Tailscale address too.
 
 - You can use the village from your phone: under Visitors & passes, **Let a phone in…** makes a one-time link (good for ten minutes) to open on the phone, which then stays signed in for 30 days over Tailscale. The phone gets a lite page with just the four tabs and hero terminals, no map; **Show map** loads it if you want it. **Sign out phones** ends every phone session. Adding `?lite=1` gives the same map-free page on any computer. (v0.92)
