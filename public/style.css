@@ -25,6 +25,7 @@
   --codex: #3F8F74;
   --antigravity: #7A62C9;
   --grok: #4F6FA6;
+  --kimi: #A8623F;
   --gemini: #3E7FA6;
   --other: #7D7367;
   --human: #9A6B1F;
@@ -65,6 +66,7 @@
   --codex: #A9D8C4;
   --antigravity: #C4B5F0;
   --grok: #8DA2C4;
+  --kimi: #D9B8A0;
   --gemini: #9FC5F0;
   --other: #B8B0A6;
   --human: #F3D9A4;
@@ -97,6 +99,7 @@
   --codex: #A9D8C4;
   --antigravity: #C4B5F0;
   --grok: #8DA2C4;
+  --kimi: #D9B8A0;
   --gemini: #9FC5F0;
   --other: #B8B0A6;
   --human: #F3D9A4;
@@ -321,6 +324,7 @@ select {
 .chip-codex { --chip: var(--codex); }
 .chip-antigravity { --chip: var(--antigravity); }
 .chip-grok { --chip: var(--grok); }
+.chip-kimi { --chip: var(--kimi); }
 .chip-gemini { --chip: var(--gemini); }
 .chip-other { --chip: var(--other); }
 

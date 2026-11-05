@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- Three Kimi residents join the village as checks on the other model families: Kallias (Kimi K3.1 Pro), the Cross-Examiner, reads Claude and Codex heroes' code at the Temple; Doris (K3), the Assayer, tests other residents' findings; Mnemon (K2.8), the Tally-Keeper, checks tales and digests against the real work. Like Claude and Codex residents they can search the web when you ask them something directly, and they can answer petitions (with web search and fetch for research ones). Their Kimi plan usage shows in the Lamps tab and pauses them when it runs hot. Sign in on the server machine once with `kimi login --region global`. (v0.94)
+
 - Waking Themis a second time no longer forgets offerings the first wake was holding for her.
 
 - Waking Themis by hand now lasts until the work is done: offerings still with Quill are held, and she wakes again by herself for each one when its examination finishes, until every one is decided. (v0.93)

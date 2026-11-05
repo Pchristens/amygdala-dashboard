@@ -99,13 +99,13 @@ try {
   assert.match(newest.args[1], /Answer the newest follow-up/);
   assert(!JSON.stringify([w.s.posts, w.s.feed]).includes('PRIVATE FOLLOW-UP'));
   c.queue = []; c.turn = { name: 'busy' };
-  assert.throws(() => c.validateGuidance('Other'), /Claude or Codex/);
+  assert.throws(() => c.validateGuidance('Other'), /Claude, Codex, Gemini or Kimi/);
   w.usage.limits.providers = [{ id: 'claude', windows: [{ used_percentage: 95 }] }, { id: 'codex', windows: [{ used_percentage: 90 }] }];
   assert.throws(() => c.validateGuidance('Lyra'), /85%/); assert.throws(() => c.validateGuidance('Atlas'), /85%/);
   const sample = { visitor: 'Guest', question: 'family decision' };
   c.turn = null;
   const agyResearch = rpc(b.token, 'ask_guidance', { question: 'research for agy' }); await v.triages.get(agyResearch.id);
-  assert.throws(() => v.decide(agyResearch.id, 'allow', { answerer: 'Gem', depth: 'research' }), /below 70%|Claude or Codex/);
+  assert.throws(() => v.decide(agyResearch.id, 'allow', { answerer: 'Gem', depth: 'research' }), /below 70%|Claude, Codex or Kimi/);
   w.usage.limits.providers = [{ id: 'claude', windows: [{ used_percentage: 70 }] }];
   assert.throws(() => v.decide(agyResearch.id, 'allow', { answerer: 'Lyra', depth: 'research' }), /below 70%/);
   v.decide(agyResearch.id, 'deny');

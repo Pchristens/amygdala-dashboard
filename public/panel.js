@@ -1000,7 +1000,7 @@ export function createPanel(opts) {
   function residentByName(n) { return (state.residents || []).find((r) => r && r.name === n); }
   function providerChip(provider, label) {
     const p = String(provider || '').toLowerCase();
-    const cls = p.includes('anthropic') ? 'chip-claude' : p.includes('openai') ? 'chip-codex' : p.includes('google') || p.includes('gemini') ? 'chip-gemini' : p.includes('xai') || p.includes('grok') ? 'chip-grok' : 'chip-other';
+    const cls = p.includes('anthropic') ? 'chip-claude' : p.includes('openai') ? 'chip-codex' : p.includes('google') || p.includes('gemini') ? 'chip-gemini' : p.includes('xai') || p.includes('grok') ? 'chip-grok' : p.includes('moonshot') || p.includes('kimi') ? 'chip-kimi' : 'chip-other';
     return h('span', { class: `chip ${cls}`, text: String(label || provider || '?') });
   }
   function rankChip(name) {
@@ -1647,7 +1647,7 @@ export function createPanel(opts) {
       h('span', { class: `pill ${sessions?.status === 'measured' ? 'pill-running' : 'pill-stale'}`, text: String(sessions?.status || 'unmeasured') }),
       h('span', { text: sessions?.note ? ` ${sessions.note}` : ' The heroes\u2019 real sessions are not metered by Amygdala.' })));
   }
-  function providerAlias(k) { return { anthropic: 'claude', openai: 'codex', google: 'antigravity', xai: 'grok' }[String(k).toLowerCase()] || String(k).toLowerCase(); }
+  function providerAlias(k) { return { anthropic: 'claude', openai: 'codex', google: 'antigravity', xai: 'grok', moonshot: 'kimi' }[String(k).toLowerCase()] || String(k).toLowerCase(); }
   function amphoraCard(label, remaining, windows, stale, note) {
     const card = h('div', { class: `amphora-card ${remaining == null ? 'unknown' : ''} ${stale ? 'stale' : ''}` });
     const fill = remaining == null ? 0 : remaining / 100;

@@ -243,7 +243,7 @@ const PHASE_TINT = {
   twilight: ['#B06A8C', 0.45],
   night: ['#1F2A5C', 0.85],
 };
-const TOOL_COLORS = { claude: '#e7a26b', codex: '#a9d8c4', antigravity: '#c4b5f0', grok: '#8da2c4', gemini: '#9fc5f0', other: '#b8b0a6' };
+const TOOL_COLORS = { claude: '#e7a26b', codex: '#a9d8c4', antigravity: '#c4b5f0', grok: '#8da2c4', kimi: '#d9b8a0', gemini: '#9fc5f0', other: '#b8b0a6' };
 
 // ---------- Map ----------
 export function createMap(svg, opts = {}) {

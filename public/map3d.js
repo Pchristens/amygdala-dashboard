@@ -26,7 +26,7 @@ import { treeSignature } from './trees.js';
 
 export const WORLD = { w: 1000, h: 760 };
 const VILLAGE = { x: 0, y: 0, w: 1000, h: 760 };
-const TOOL_COLORS = { claude: '#e7a26b', codex: '#a9d8c4', antigravity: '#c4b5f0', grok: '#8da2c4', gemini: '#9fc5f0', other: '#b8b0a6' };
+const TOOL_COLORS = { claude: '#e7a26b', codex: '#a9d8c4', antigravity: '#c4b5f0', grok: '#8da2c4', kimi: '#d9b8a0', gemini: '#9fc5f0', other: '#b8b0a6' };
 // Light script: continuous, keyed on the real sun's altitude (degrees); morning and evening keys differ so dawn is
 // peach and dusk is rose. Direction comes from the real azimuth; below the horizon a fixed moon takes over.
 const LK = (alt, sky0, sky1, fog, water, sunC, sunI, hemiS, hemiG, hemiI, lamps, bloom, points, pools, exposure, fill) => ({ alt, sky0: new THREE.Color(sky0), sky1: new THREE.Color(sky1), fog: new THREE.Color(fog), water: new THREE.Color(water), sunC: new THREE.Color(sunC), sunI, hemiS: new THREE.Color(hemiS), hemiG: new THREE.Color(hemiG), hemiI, lamps, bloom, points, pools, exposure, fill });

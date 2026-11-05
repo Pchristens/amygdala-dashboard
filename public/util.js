@@ -21,7 +21,7 @@ export function h(tag, props = {}, ...children) {
   return e;
 }
 
-export const AGENTS = ['claude', 'codex', 'antigravity', 'grok', 'gemini'];
+export const AGENTS = ['claude', 'codex', 'antigravity', 'grok', 'kimi', 'gemini'];
 export function agentClass(agent) {
   return AGENTS.includes(agent) ? `chip-${agent}` : 'chip-other';
 }
