@@ -71,5 +71,8 @@ try {
   assert(!/^import .*map3d\.js/m.test(app), 'no static import of the 3D map'); assert.match(app, /map3d = await import\('\.\/map3d\.js'\)/);
   assert.match(app, /\['then', 'setQuality', 'playIntro'\]\.includes\(k\) \? undefined/);
   assert.match(app, /if \(LITE && !open\) \{ open = true;/, 'lite never closes the drawer onto an empty page');
+  // The phone loads the page over plain http (not a secure context), where crypto.randomUUID is missing: an unguarded
+  // call at load left the page stuck at "connecting…".
+  for (const f of ['app.js', 'panel.js']) assert(!/crypto\.randomUUID\(\)/.test(fs.readFileSync(path.join(root, 'public', f), 'utf8')), `${f}: guard crypto.randomUUID`);
   console.log('phone ok');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }

@@ -1090,7 +1090,8 @@ function renderHeader() {
 $('lamp-glyph').addEventListener('click', () => openView('lamps'));
 $('toggle-pause').addEventListener('click', () => api('/api/control', { paused: !state?.world?.paused }));
 const updateBells = createBells($('bell-settings'));
-const bellPageId = crypto.randomUUID();
+// randomUUID exists only in secure contexts; the phone reaches the page over plain http on the Tailscale address.
+const bellPageId = crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 const bellPresence = () => { if (!SHOT && !MOCK) void api('/api/bells/presence', { id: bellPageId, visible: !document.hidden }); };
 function positionGear() {
   const pop = $('gear-pop'); if (pop.hidden) return;
@@ -1493,7 +1494,7 @@ function mockApi(path, body) {
       const pass = { id: `pass${mockSeq++}`, name: body.name, label: body.label, zone: body.zone || 'village', createdAt: now, expiresAt: now + body.hours * 3600000, lastSeen: null, revoked: false };
       state[key].push(pass);
       applyState(state);
-      return Promise.resolve({ ok: true, pass, token: `mock-only-${crypto.randomUUID()}` });
+      return Promise.resolve({ ok: true, pass, token: `mock-only-${crypto.randomUUID?.() ?? Date.now()}` });
     }
   } else if (path === '/api/tales/end') {
     const w = state.workers.find((x) => x.id === body.workerId);

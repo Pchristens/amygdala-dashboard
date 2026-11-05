@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The phone page no longer sticks at "connecting…": it now starts over the plain-http Tailscale address too.
+
 - You can use the village from your phone: under Visitors & passes, **Let a phone in…** makes a one-time link (good for ten minutes) to open on the phone, which then stays signed in for 30 days over Tailscale. The phone gets a lite page with just the four tabs and hero terminals, no map; **Show map** loads it if you want it. **Sign out phones** ends every phone session. Adding `?lite=1` gives the same map-free page on any computer. (v0.92)
 
 - Each hero now has a Notify switch, off by default, in its More row at the Temple and in its terminal header. Turned on, your Mac (and any open dashboard) gets a notification when that hero goes idle after working, needs your permission, hits an error or stops. (v0.91)
