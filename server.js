@@ -17,6 +17,7 @@ import { Starwatch } from './lib/starwatch.js';
 import { Watch } from './lib/watch.js';
 import { Conductor } from './lib/conductor.js';
 import { KEEPER_PREFIX, keeperAuth, relay, setKeeper } from './lib/keeper.js';
+import { Phones, PHONE_COOKIE } from './lib/phone.js';
 import { startDeckSync } from './lib/deck.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -52,6 +53,7 @@ const mcp = createMcpHandler(world);
 const conductor = new Conductor(world, { baseUrl: BASE, dataDir: DATA });
 world.watchtower = new Watchtower(world, conductor);
 world.watch = new Watch(world, conductor, DATA);
+world.phones = new Phones(world);
 world.steward = new Steward(world);
 world.starwatch = new Starwatch(world, conductor);
 startDeckSync(world);
@@ -154,6 +156,8 @@ const API = {
   'POST /api/nodes/notify': b => world.nodes.setNotify(b.id, b.on),
   'POST /api/nodes/revoke': b => world.nodes.revoke(String(b.id)),
   'POST /api/nodes/keeper': b => setKeeper(world, String(b.id), b.on === true),
+  'POST /api/phone/link': (b, req) => world.phones.issue(actorOf(req)),
+  'POST /api/phone/signout': (b, req) => world.phones.signOut(actorOf(req)),
   'POST /api/heroes/alert': b => world.watch.setHeroAlert(b.workerId, b.on === true),
   'POST /api/heroes/revive': b => world.sites.heroAction(b.workerId, 'revive'),
   'POST /api/heroes/forget': b => world.sites.heroAction(b.workerId, 'forget'),
@@ -290,7 +294,7 @@ const server = http.createServer(async (req, res) => {
       const fn = API[`POST ${p}`];
       if (!fn) return json(res, 404, { ok: false, error: 'not found' });
       const result = await fn(b, req);
-      return json(res, 200, { ok: true, ...(result && typeof result === 'object' && (result.token || p === '/api/heroes/message' && result.id) ? result : {}) });
+      return json(res, 200, { ok: true, ...(result && typeof result === 'object' && (result.token || p === '/api/heroes/message' && result.id || p === '/api/phone/link' && result.url) ? result : {}) });
     }
     // static
     const file = path.join(PUBLIC, p === '/' ? 'index.html' : p);
@@ -318,6 +322,8 @@ function gateLog(req, p, outcome, who) {
   const line = `${new Date().toISOString()} ${req.socket.remoteAddress} ${req.method} ${p.replace(/hfv_[A-Za-z0-9_-]+/, 'hfv_…')} ${outcome}${who ? ' ' + who : ''} ua="${String(req.headers['user-agent'] || '').slice(0, 80)}"\n`;
   fs.appendFile(GATE_LOG, line, () => {});
 }
+// The phone's sign-in page: the code rides in the fragment, so it never reaches a log, a history entry or a referrer.
+const PHONE_PAGE = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Amygdala</title><body style="font:17px/1.5 system-ui,sans-serif;max-width:30em;margin:3em auto;padding:0 16px;background:#F4EFE6;color:#2E2B25"><h1 style="font-weight:600">Amygdala</h1><p id="m">Signing this phone in…</p><script>(async()=>{const c=location.hash.slice(1);history.replaceState(null,"",location.pathname);const m=document.getElementById("m");if(!c){m.textContent="Open the link made on the dashboard (Visitors & passes → Let a phone in).";return}try{const r=await fetch("/phone/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:c})});const j=await r.json();if(!r.ok)throw new Error(j.error);location.replace("/?lite=1")}catch(e){m.textContent=e.message||"Could not sign in."}})()</script></body>';
 const GATE_PAGE = '<!doctype html><meta charset="utf-8"><title>Amygdala gate</title><body style="font:18px/1.5 system-ui,sans-serif;max-width:34em;margin:4em auto;padding:0 1em;background:#F4EFE6;color:#2E2B25"><h1>✓ You’ve reached the village gate</h1><p>Your computer can reach Amygdala over Tailscale. This address is for Claude Desktop, not for a browser, so there is nothing more to see here.</p><p>Next: add the village to Claude Desktop’s config (see the visitor guide), then quit Claude completely and open it again.</p></body>';
 async function visit(req, res, p) {
   const end = res.end.bind(res);
@@ -386,6 +392,17 @@ function openGate() {
         const body = JSON.parse(await readBody(req, 256 << 10)), gone = new AbortController(); res.on('close', () => gone.abort());
         return json(res, 200, await world.nodes.termWait(pass, body, { signal: gone.signal }));
       }
+      // The human's phone (v0.92): a one-time link becomes a session cookie, and the cookie reaches the dashboard.
+      if (p === '/phone' && req.method === 'GET') { gateLog(req, p, 200, 'phone'); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); return res.end(PHONE_PAGE); }
+      if (p === '/phone/login') {
+        if (req.method !== 'POST' || !(req.headers['content-type'] || '').includes('application/json')) return json(res, 405, { ok: false });
+        let login; try { login = world.phones.login(JSON.parse(await readBody(req, 4096)).code); } catch (e) { gateLog(req, p, 401); return json(res, 401, { ok: false, error: e.message }); }
+        gateLog(req, p, 200, 'phone');
+        res.setHeader('Set-Cookie', `${PHONE_COOKIE}=${login.sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${login.maxAge}`);
+        return json(res, 200, { ok: true });
+      }
+      // Only to the gate's own address (a rebound name carries no cookie anyway), and never the node, hero or visitor routes.
+      if (!/^\/(node|hero|visit)\//.test(p) && (req.headers.host || '').toLowerCase() === `${tsAddr}:${GATE_PORT}` && world.phones.auth(req)) { delete req.headers.cookie; return relay(req, res, PORT, req.url, 'phone'); }
       if (p === '/node/report') return await nodeReport(req, res);
       if (p === '/hero/report') return await heroReport(req, res, p);
       // A guest testing the address in a browser gets a plain "you're through" page; MCP clients never ask for HTML.

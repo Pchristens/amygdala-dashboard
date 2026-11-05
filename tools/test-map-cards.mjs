@@ -6,7 +6,7 @@ const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
 const handlers=[],calls=[],card={info:null,pinned:false};
 const cardEl={hidden:true,textContent:'',children:[],classList:{toggle(){}},addEventListener(){},append(...x){this.children.push(...x)},appendChild(x){this.children.push(x)},contains(n){return !!n&&this.children.includes(n)}};
 const document={activeElement:null,querySelector:()=>null,addEventListener:(type,fn)=>{if(type==='keydown')handlers.push(fn)}};
-const context=vm.createContext({card,cardEl,document,state:{},gift:{active:false},map:{pulseAt:()=>calls.push('pulse'),setHover:x=>calls.push(['hover',x])},api:()=>calls.push('move'),placeGift:()=>calls.push('gift'),setGiftMode:()=>calls.push('cancel gift'),h:(tag,props)=>({tag,...props}),buildCard:()=>[],cardPlaceName:()=>null,repositionCard(){},drawerOpen:true,setDrawer(open){context.drawerOpen=open;calls.push('drawer')},panel:{},zoneNav:{dataset:{}}});
+const context=vm.createContext({LITE: false, card,cardEl,document,state:{},gift:{active:false},map:{pulseAt:()=>calls.push('pulse'),setHover:x=>calls.push(['hover',x])},api:()=>calls.push('move'),placeGift:()=>calls.push('gift'),setGiftMode:()=>calls.push('cancel gift'),h:(tag,props)=>({tag,...props}),buildCard:()=>[],cardPlaceName:()=>null,repositionCard(){},drawerOpen:true,setDrawer(open){context.drawerOpen=open;calls.push('drawer')},panel:{},zoneNav:{dataset:{}}});
 vm.runInContext(app.slice(app.indexOf('const mapOpts ='),app.indexOf('async function makeMap')),context);
 vm.runInContext(app.slice(app.indexOf('function pinCard('),app.indexOf('// The map\'s place label')),context);
 const keyStart=app.indexOf("document.addEventListener('keydown'",app.indexOf('// resize by dragging'));

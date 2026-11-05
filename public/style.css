@@ -1408,3 +1408,15 @@ body.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); tran
 .petition-history .petition-row { border-top: 1px solid var(--line-soft); padding: 6px 0; }
 .petition-history .petition-row > summary { cursor: pointer; overflow-wrap: anywhere; }
 .gate-pass .petition-text { max-height: 14em; overflow: auto; }
+
+/* Lite (v0.92): no map; the drawer is the page, from the header down to the rail. */
+body.lite .map-wrap, body.lite .map-toolbar, body.lite .happening, body.lite .drawer-close, body.lite .drawer-handle { display: none !important; }
+body.lite { --drawer-w: calc(100vw - var(--rail-w) - 16px); background: var(--panel); }
+body.lite .drawer { left: auto; transition: none; }
+body.lite.drawer-open .rail { transform: translateX(calc(-1 * var(--drawer-w))); }
+@media (max-width: 900px) {
+  body.lite .drawer { top: var(--header-h); bottom: 56px; height: auto; left: 0; border-radius: 0; border-top: none; }
+  body.lite.drawer-open .rail { transform: none; }
+  body.lite .topbar .meta, body.lite .topbar .tagline { display: none; }
+}
+.phone-link { width: 100%; margin: 6px 0; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }

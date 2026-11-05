@@ -10,7 +10,7 @@ const tabs = ['activity', 'people', 'work', 'lamps'].map(destination => ({ datas
 const handlers = [], calls = [];
 const rail = { querySelectorAll: () => tabs };
 const document = { activeElement: null, querySelector: () => null, querySelectorAll: selector => selector === '.rail-tab' ? tabs : [], addEventListener: (type, fn) => { if (type === 'keydown') handlers.push(fn); } };
-const context = vm.createContext({ document, rail, openView: view => calls.push([true, view]), openDestination: dest => calls.push([true, ({ activity: 'board', people: 'residents', work: 'workshop', lamps: 'lamps' })[dest]]), setDrawer: (open, tab) => calls.push([open, tab]), drawerOpen: false, card: { info: null }, gift: { active: false }, DESTINATION_VIEWS: { activity: ['board','exhibits','tales'], people: ['residents'], work: ['workshop','orders'], lamps: ['lamps'] } });
+const context = vm.createContext({ LITE: false, document, rail, openView: view => calls.push([true, view]), openDestination: dest => calls.push([true, ({ activity: 'board', people: 'residents', work: 'workshop', lamps: 'lamps' })[dest]]), setDrawer: (open, tab) => calls.push([open, tab]), drawerOpen: false, card: { info: null }, gift: { active: false }, DESTINATION_VIEWS: { activity: ['board','exhibits','tales'], people: ['residents'], work: ['workshop','orders'], lamps: ['lamps'] } });
 vm.runInContext(app.slice(keyStart, keyEnd), context);
 for (const key of ['1', '2', '3', '4']) handlers[0]({ key, preventDefault() {} });
 assert.deepEqual(calls, [[true, 'board'], [true, 'residents'], [true, 'workshop'], [true, 'lamps']]);

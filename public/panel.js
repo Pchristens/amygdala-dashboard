@@ -193,6 +193,7 @@ export function createPanel(opts) {
   const petitionSeen = new Set();
   let petitionFoldOpen = false; const petitionRowsOpen = new Set(); // survive the redraw on every state update
   let notifyPetitions = false, titleTimer = null;
+  let phoneLink = null; // the last one-time phone link, kept across re-renders until it expires
   let visitorFoldOpen = false;
   const baseTitle = document.title;
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { clearInterval(titleTimer); titleTimer = null; document.title = baseTitle; } });
@@ -299,6 +300,24 @@ export function createPanel(opts) {
     renderGate();
     } }));
     const date = (ts) => ts ? new Date(ts).toLocaleString() : 'never';
+    // Phone sign-in (v0.92): a one-time link, opened on the phone within ten minutes, signs it in for 30 days.
+    const phones = state.phone?.sessions || [], link = h('div', { class: 'dim-note' });
+    const showLink = () => {
+      link.textContent = '';
+      if (!phoneLink || phoneLink.expiresAt <= Date.now()) return;
+      const url = phoneLink.url;
+      link.append(h('div', { text: 'Open this on your phone within ten minutes; it works once. It signs the phone in to the panels and terminals (the map loads only if you ask).' }), h('input', { class: 'phone-link', readonly: true, value: url, onClick: (e) => e.target.select() }),
+        h('button', { class: 'btn btn-xs', type: 'button', text: 'Copy', onClick: () => navigator.clipboard?.writeText(url) }));
+    };
+    content.append(h('div', { class: 'temple-section-title', text: 'Phone' }),
+      h('button', { class: 'btn btn-xs', type: 'button', text: 'Let a phone in…', title: 'Make a one-time sign-in link to open on your phone', onClick: async () => {
+        const r = await opts.api('/api/phone/link', {});
+        if (r?.ok === false || !r?.url) { phoneLink = null; link.textContent = r?.error || 'Could not make a link.'; return; }
+        phoneLink = { url: r.url, expiresAt: r.expiresAt }; showLink();
+      } }),
+      phones.length ? h('button', { class: 'btn btn-xs', type: 'button', text: `Sign out phones (${phones.length})`, onClick: () => opts.api('/api/phone/signout', {}) }) : null,
+      h('p', { class: 'dim-note', text: phones.length ? phones.map((x) => `Signed in ${date(x.createdAt)} · last seen ${date(x.lastSeenAt)}`).join(' · ') : 'No phone signed in.' }), link);
+    showLink();
     for (const [kind, key, title] of [['visitors', 'visitorPasses', 'Visitor'], ['heroes', 'heroPasses', 'Hero'], ['nodes', 'nodes', 'Node']]) {
       content.append(h('div', { class: 'temple-section-title', text: `${title} passes` }), h('button', { class: 'btn btn-xs', type: 'button', text: `Issue a ${title.toLowerCase()} pass…`, onClick: () => issuePass(kind) }));
       const list = state[key] || [];

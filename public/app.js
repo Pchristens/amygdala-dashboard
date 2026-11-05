@@ -5,8 +5,6 @@ const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os
 // Amygdala front end entry: state, SSE, header controls, map callbacks, cards, gifts, feed,
 // the Far Isle navigation, shared-tree cards, milestones, and the rune seal.
 import { createMap, GIFT_KINDS, giftIconSVG } from './map.js';
-import { createMap3D } from './map3d.js';
-import * as map3d from './map3d.js';
 import { governanceWhy, createPanel, deckLink, mountHeroTerminal, residentIdentity, stewardPane, VIEW_DESTINATION, DESTINATION_VIEWS } from './panel.js';
 import { h, agentClass, relTime, avatar, toast, capitalize, commitmentEl, runeTablet } from './util.js';
 import { STAGE_NAMES, STAGE_THRESHOLDS, stageOf, stageProgress } from './trees.js';
@@ -75,6 +73,9 @@ const svg = $('map');
 const wrap = $('map-wrap');
 const zoneNav = $('zone-nav');
 const FLAT = params.get('flat') === '1';
+// Lite (v0.92): the drawer's views and terminals without the map; the phone gets it unless it asks for ?lite=0.
+const LITE = params.get('lite') === '1' || (params.get('lite') !== '0' && document.querySelector('meta[name="hf-relayed"]')?.getAttribute('content') === 'phone');
+let map3d = {}; // loaded only when the 3D map is built, so lite pages never fetch three.js
 const mapOpts = {
   onFrame() { repositionCard(); },
   onGroundClick(x, y) {
@@ -101,9 +102,15 @@ const mapOpts = {
   },
 };
 async function makeMap() {
+  if (LITE) {
+    // Every map call is a no-op; the two whose results are read get harmless shapes.
+    $('map3d').hidden = true; svg.hidden = true;
+    return new Proxy({}, { get: (_, k) => k === 'project' ? () => ({ left: 0, top: 0 }) : k === 'quality' ? () => ({ pref: 'auto' }) : ['then', 'setQuality', 'playIntro'].includes(k) ? undefined : () => {} }); // no then: it is awaited
+  }
   if (!FLAT) {
     try {
-      const m = await createMap3D($('map3d'), mapOpts);
+      map3d = await import('./map3d.js');
+      const m = await map3d.createMap3D($('map3d'), mapOpts);
       window.__dbg?.('3D map created');
       svg.hidden = true; svg.style.display = 'none';
       return m;
@@ -958,6 +965,8 @@ const DRAWER_KEY = 'hf.drawer';
 function loadPref() { try { return JSON.parse(localStorage.getItem(DRAWER_KEY) || '{}') || {}; } catch (_) { return {}; } }
 function savePref(p) { try { localStorage.setItem(DRAWER_KEY, JSON.stringify({ ...loadPref(), ...p })); } catch (_) { /* private mode */ } }
 function setDrawer(open, tab) {
+  // Lite has nothing behind the drawer: closing it goes back from the terminal, or stays put.
+  if (LITE && !open) { open = true; if (!tab && currentTab() === 'terminal') tab = terminalBack; }
   if (tab && tab !== 'place') currentTabBeforePlace = tab;
   drawerOpen = !!open;
   if (!drawerOpen) disposeTerminal();
@@ -1002,6 +1011,14 @@ document.addEventListener('keydown', (e) => {
   if (Number.isInteger(index) && index >= 0 && index < tabs.length) { openDestination(tabs[index].dataset.destination); e.preventDefault(); }
 });
 { const pref = loadPref(); if (pref.open) setDrawer(true, pref.tab === 'terminal' ? 'board' : pref.tab); else setDrawer(false); }
+if (LITE && !loadPref().open) setDrawer(true, 'workshop'); // lite starts on the Temple
+document.body.classList.toggle('lite', LITE);
+// The map is a page load away: lite pages offer it, and a phone that opened it can go back to lite.
+if (LITE || document.querySelector('meta[name="hf-relayed"]')?.getAttribute('content') === 'phone') {
+  const t = $('lite-toggle'); t.hidden = false; t.textContent = LITE ? 'Show map' : 'Hide map';
+  t.title = LITE ? 'Load the village map (heavier on a phone)' : 'Just the panels and terminals';
+  t.addEventListener('click', () => { const q = new URLSearchParams(location.search); q.set('lite', LITE ? '0' : '1'); location.search = q.toString(); });
+}
 // credits
 $('credits-btn').addEventListener('click', async () => {
   const d = $('credits-dialog'); d.showModal();
@@ -1192,6 +1209,7 @@ function playIntro() {
 }
 $('replay-intro').addEventListener('click', () => { setGear(false); playIntro(); });
 function maybeIntro() {
+  if (LITE) return;
   if (SHOT && params.get('intro') !== '1') return;
   let seen = false;
   try { const stored = localStorage.getItem('amygdala.intro.v2'); seen = stored?.startsWith('seen:') && Number(stored.slice(5)) >= (state.world?.createdAt ?? 0); } catch (_) { /* show once this session */ }

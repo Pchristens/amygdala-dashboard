@@ -335,6 +335,15 @@ page token stays the same (`data/page-token`; delete it to rotate).
 
 Node helpers also report Grok usage every 30 minutes; a fresh server probe takes precedence.
 
+### Your phone
+
+A phone can't run the keeper relay, so it signs in at the gate instead (the gate must be open, and the phone must be
+on your tailnet). On the dashboard, open **Visitors & passes → Let a phone in…**, copy the link and open it on the
+phone within ten minutes; it works once and keeps the phone signed in for 30 days with a cookie. The phone gets the
+lite page: the four tabs and hero terminals, no map (**Show map** loads it). **Sign out phones** ends every phone
+session at once. Anyone holding a signed-in phone has the whole dashboard, as you do, so sign out a lost phone.
+`?lite=1` gives the same map-free page on a computer.
+
 ### The keeper relay
 
 The main server listens only on its own loopback. To open the dashboard from another machine, mark that machine's node
