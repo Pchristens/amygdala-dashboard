@@ -1941,7 +1941,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose, back, al
   frame = requestAnimationFrame(() => { resize(); term.focus(); });
   return () => {
     disposed = true;
-    transport.dispose(); images.dispose(); clearTimeout(noteTimer); cancelAnimationFrame(frame);
+    transport.dispose(); images.dispose(); swipe?.dispose(); clearTimeout(noteTimer); cancelAnimationFrame(frame);
     clearTimeout(retry); source.close(); controller.abort(); observer.disconnect();
     dataListener.dispose(); term.dispose(); root.textContent = '';
   };

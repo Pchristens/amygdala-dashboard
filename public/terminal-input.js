@@ -82,24 +82,40 @@ export function terminalImages({ term, upload, status, read = fileBase64 }) {
 // Touch scrolling: the hero's history lives in tmux (the page only sees redraws), and xterm turns no swipe into a wheel.
 // A swipe sends the same SGR wheel reports a desktop wheel does, so tmux scrolls (entering copy mode, leaving it again at
 // the bottom). Typing first scrolls back down, so keys reach the hero rather than copy mode.
-export const SWIPE_STEP = 60; // px per wheel report; tmux scrolls five lines for each
-export function terminalSwipe({ send, size }) {
-  let y = null, moved = 0, swiping = false, up = 0;
+export const SWIPE_STEP = 40; // px per wheel report; tmux scrolls five lines for each
+// A fast swipe goes further (up to 4x), and a flick keeps going after the finger lifts, slowing like a native scroll:
+// each report waits on the phone's round trip, so one-for-one tracking alone made long histories a crawl.
+const FLING_MIN = 0.4, FLING_STOP = 0.05, FRICTION = 0.94, FRAME = 16, STILL_MS = 80;
+export const swipeGain = v => 1 + Math.min(3, Math.max(0, Math.abs(v) - 0.3) * 2.5);
+export function terminalSwipe({ send, size, now = () => performance.now(), schedule = setTimeout, cancel = clearTimeout }) {
+  let y = null, t = 0, v = 0, moved = 0, swiping = false, up = 0, fling = null;
   const wheel = (dir, n) => { const { cols, rows } = size(), at = `${Math.max(1, cols >> 1)};${Math.max(1, rows >> 1)}`; send(`\x1b[<${dir ? 64 : 65};${at}M`.repeat(n)); };
+  // Finger travel (px, down positive) into wheel reports; false once scrolling down has reached the bottom.
+  const travel = dy => {
+    moved += dy * swipeGain(v);
+    const n = Math.trunc(moved / SWIPE_STEP); if (!n) return true;
+    moved -= n * SWIPE_STEP;
+    if (n > 0) { up += n; wheel(true, n); return true; }
+    const d = Math.min(-n, up); up -= d; if (d) wheel(false, d); return up > 0;
+  };
+  const stop = () => { if (fling) { cancel(fling); fling = null; } };
+  const glide = () => { fling = null; v *= FRICTION; if (Math.abs(v) < FLING_STOP || !travel(v * FRAME)) { moved = 0; return; } fling = schedule(glide, FRAME); };
   return {
-    start(event) { if (event.touches?.length !== 1) { y = null; return; } y = event.touches[0].clientY; moved = 0; swiping = false; },
+    start(event) { stop(); if (event.touches?.length !== 1) { y = null; return; } y = event.touches[0].clientY; t = now(); v = 0; moved = 0; swiping = false; },
     move(event) {
       if (y == null || event.touches?.length !== 1) return;
-      const now = event.touches[0].clientY; moved += now - y; y = now;
-      if (!swiping && Math.abs(moved) < 8) return;
-      swiping = true; event.preventDefault(); event.stopPropagation();
-      const n = Math.trunc(moved / SWIPE_STEP); if (!n) return;
-      moved -= n * SWIPE_STEP;
-      if (n > 0) { up += n; wheel(true, n); } else { const d = Math.min(-n, up); up -= d; if (d) wheel(false, d); }
+      const cur = event.touches[0].clientY, at = now(), dy = cur - y, dt = Math.max(1, at - t);
+      y = cur; t = at; v = 0.7 * (dy / dt) + 0.3 * v;
+      if (!swiping) { moved += dy; if (Math.abs(moved) < 8) return; swiping = true; const first = moved; moved = 0; event.preventDefault(); event.stopPropagation(); travel(first); return; }
+      event.preventDefault(); event.stopPropagation(); travel(dy);
     },
-    end(event) { if (swiping) { event.preventDefault(); event.stopPropagation(); } y = null; swiping = false; },
-    // Before keys: back to the bottom (a wheel-down past it is dropped by tmux), with two spare steps.
-    typed() { if (up) { wheel(false, up + 2); up = 0; } },
+    end(event) {
+      if (swiping) { event.preventDefault(); event.stopPropagation(); if (now() - t < STILL_MS && Math.abs(v) >= FLING_MIN) fling = schedule(glide, FRAME); }
+      y = null; swiping = false;
+    },
+    // Before keys: stop any fling and go back to the bottom (a wheel-down past it is dropped by tmux), two spare steps.
+    typed() { stop(); if (up) { wheel(false, up + 2); up = 0; } },
+    dispose: stop,
     get scrolled() { return up; },
   };
 }
