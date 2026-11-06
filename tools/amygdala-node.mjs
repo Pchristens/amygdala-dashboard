@@ -19,6 +19,7 @@ import { Sites, transcriptTail } from '../lib/sites.js';
 const exec = promisify(execFile);
 import { createInterface } from 'node:readline';
 import { probeGrok, probeCodex } from '../lib/fleet.js';
+export const codexDue = (observedAt, sent, sentAt, now = Date.now()) => observedAt > sent || now - sentAt > 600000;
 import { decodeImage, savePaste, pasteDir } from '../lib/pastes.js';
 import { snapshotOf, digest, commitLines, fixView, run } from '../lib/snapshot.js';
 import { releaseFacts } from '../lib/governance.js';
@@ -154,7 +155,7 @@ export async function main(args = process.argv.slice(2)) {
   let isle = [], islePublicKey = null, isleHeroPrefix = '';
   let audit = { enabled: false, optOut: [] };
   let bellAck = 0;
-  let village = [], results = [], lastUsage = 0, lastGrok = 0, lastCodex = 0, codexSent = 0, latestSessions = [], steward = null, live = false, lastLive = 0, inflight = 0, updating = false, lastUpdate = 0;
+  let village = [], results = [], lastUsage = 0, lastGrok = 0, lastCodex = 0, codexSent = 0, codexSentAt = 0, latestSessions = [], steward = null, live = false, lastLive = 0, inflight = 0, updating = false, lastUpdate = 0;
   // Up five minutes after an update: the new code holds, so forget the commit to roll back to.
   setTimeout(() => fs.rm(path.join(REPO, '.git', PREV), { force: true }, () => {}), 300000).unref();
   const terminals = new Map(), endedHere = new Set(); let output = [], pendingGrok = null, pendingCodex = null, held = false;
@@ -215,8 +216,10 @@ export async function main(args = process.argv.slice(2)) {
       if (Date.now() - lastGrok > 1800000) { lastGrok = Date.now(); probeGrok(os.homedir()).then(u => { if (u) pendingGrok = u; }).catch(() => {}); }
       if (pendingGrok) { usage = pendingGrok; pendingGrok = null; }
       // Codex keeps its allowance in its own session logs on this machine; the server can't see them, so pass the newest on.
-      if (Date.now() - lastCodex > 60000) { lastCodex = Date.now(); probeCodex().then(u => { if (u && u.observedAt > codexSent) pendingCodex = { id: 'codex', windows: u.windows, observedAt: u.observedAt }; }).catch(() => {}); }
-      if (!usage && pendingCodex) { usage = pendingCodex; codexSent = pendingCodex.observedAt; pendingCodex = null; }
+      // The same reading goes again every ten minutes: the server holds readings in memory, so after a restart it would
+      // otherwise show a stale log until Codex next ran here (the server keeps only the newest it has seen).
+      if (Date.now() - lastCodex > 60000) { lastCodex = Date.now(); probeCodex().then(u => { if (u && codexDue(u.observedAt, codexSent, codexSentAt)) pendingCodex = { id: 'codex', windows: u.windows, observedAt: u.observedAt }; }).catch(() => {}); }
+      if (!usage && pendingCodex) { usage = pendingCodex; codexSent = pendingCodex.observedAt; codexSentAt = Date.now(); pendingCodex = null; }
       for (const id of scanner.cache.keys()) if (!village.includes(id)) scanner.cache.delete(id);
       auditScanner.retain(audit.enabled ? sessions.filter(s => !s.archived && village.includes(s.id) && !audit.optOut.includes(s.id)).map(s => s.id) : []);
       const apprentices = [], auditHits = [], isleGhosts = [];

@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The Codex amphora no longer shows a stale, full reading after the server restarts: machines that run Codex now send their latest reading again every ten minutes, not only when it changes.
+
 - The oil amphorae show each Antigravity pool on its own (Gemini, Claude and GPT, Argon), so a spent pool no longer makes Antigravity look empty while the Gemini models still have plenty left.
 
 - A terminal swipe that the phone interrupts (a notification, a system gesture) no longer sets the terminal gliding.
