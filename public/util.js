@@ -108,3 +108,16 @@ export function capitalize(s) {
   s = String(s || '');
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
+
+// One amphora per allowance. Antigravity reports separate pools (Gemini, Claude and GPT, Argon) that gate different
+// models, so each pool gets its own, filled by its fullest window: a spent pool no resident uses must not empty the rest.
+export function amphorae(p) {
+  const wins = (Array.isArray(p?.windows) ? p.windows : []).filter(w => w && w.used_percentage != null && Number.isFinite(+w.used_percentage));
+  const label = String(p?.label || p?.id || ''), pools = [...new Set(wins.map(w => w.pool || ''))];
+  const groups = wins.some(w => w.pool) ? pools.map(pool => [pool, wins.filter(w => (w.pool || '') === pool)]) : [['', wins]];
+  return groups.map(([pool, ws]) => {
+    const primary = ws.reduce((a, b) => !a || +b.used_percentage > +a.used_percentage ? b : a, null);
+    return { label: pool ? `${label} · ${pool}` : label, remaining: primary ? Math.max(0, Math.min(100, 100 - +primary.used_percentage)) : null,
+      windows: pool ? ws.map(w => ({ ...w, label: String(w.label || w.kind || '').replace(`${pool} · `, '') })) : ws };
+  });
+}

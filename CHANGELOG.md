@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- The oil amphorae show each Antigravity pool on its own (Gemini, Claude and GPT, Argon), so a spent pool no longer makes Antigravity look empty while the Gemini models still have plenty left.
+
 - A terminal swipe that the phone interrupts (a notification, a system gesture) no longer sets the terminal gliding.
 
 - Swipe-scrolling a hero's terminal on the phone is much faster: a quick swipe goes further than a slow one, a flick keeps gliding after you lift your finger and slows to a stop, and touching again stops it.

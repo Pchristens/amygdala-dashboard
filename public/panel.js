@@ -1,7 +1,7 @@
 import { terminalInput, terminalKeys, terminalImages, terminalSwipe } from './terminal-input.js';
 const osLabel = os => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' }[os] || '');
 // Side panel: Board / Exhibits / Residents / Workshop tabs, with a Village / Isle zone switch.
-import { h, agentClass, relTime, avatar, capitalize, commitmentEl, safeCssColor, runeTablet, toRunes } from './util.js';
+import { h, agentClass, relTime, avatar, capitalize, commitmentEl, safeCssColor, runeTablet, toRunes, amphorae } from './util.js';
 import { zoneOf } from './svg-util.js';
 
 const CHANNELS = ['commons', 'projects', 'discoveries', 'play'];
@@ -1570,11 +1570,10 @@ export function createPanel(opts) {
     root.appendChild(h('div', { class: 'temple-section-title' }, h('span', { text: 'Oil remaining' }), h('span', { class: 'dim-note lamps-note', text: limits?.observedAt ? `account-level · observed ${relTime(limits.observedAt)}` : 'account-level' })));
     const row = h('div', { class: 'amphora-row' });
     for (const p of provs) {
-      const wins = Array.isArray(p.windows) ? p.windows.filter((w) => w && w.used_percentage != null && Number.isFinite(+w.used_percentage)) : [];
-      const primary = wins.reduce((a, b) => !a || +b.used_percentage > +a.used_percentage ? b : a, null);
-      const remaining = primary ? Math.max(0, Math.min(100, 100 - +primary.used_percentage)) : null;
-      row.appendChild(amphoraCard(String(p.label || p.id), remaining, wins, !!p.stale));
-      row.lastChild.appendChild(h('div', { class: 'amphora-win', text: `Source: ${p.source || limits.source || 'provider report'} · observed ${relTime(p.observedAt || limits.observedAt) || 'unknown'}` }));
+      for (const a of amphorae(p)) {
+        row.appendChild(amphoraCard(a.label, a.remaining, a.windows, !!p.stale));
+        row.lastChild.appendChild(h('div', { class: 'amphora-win', text: `Source: ${p.source || limits.source || 'provider report'} · observed ${relTime(p.observedAt || limits.observedAt) || 'unknown'}` }));
+      }
     }
     for (const k of unreported) row.appendChild(amphoraCard(k, null, [], false, 'not reported'));
     if (!provs.length && !unreported.length) row.appendChild(h('div', { class: 'dim-note', text: 'No provider has reported an allowance.' }));
