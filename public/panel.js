@@ -1934,7 +1934,7 @@ export function mountHeroTerminal(root, worker, { token, mock, onClose, back, al
   connect();
   // Swipes scroll the hero's tmux history; a Windows console (no tmux) keeps xterm's own handling.
   const swipe = worker.os === 'windows' && !worker.node ? null : terminalSwipe({ send: data => { if (!disposed && !ended) transport.data(data); }, size: () => ({ cols: term.cols, rows: term.rows }) });
-  const touch = swipe && { touchstart: swipe.start, touchmove: swipe.move, touchend: swipe.end, touchcancel: swipe.end };
+  const touch = swipe && { touchstart: swipe.start, touchmove: swipe.move, touchend: swipe.end, touchcancel: swipe.cancel };
   if (touch) for (const [kind, fn] of Object.entries(touch)) mount.addEventListener(kind, fn, { capture: true, passive: false });
   if (touch && globalThis.matchMedia?.('(pointer: coarse)').matches) hint.textContent = 'Live terminal — what you type goes to the hero. Swipe up or down to scroll back through its output.';
   const dataListener = term.onData(data => { if (!disposed && !ended) { swipe?.typed(); transport.data(data); } });

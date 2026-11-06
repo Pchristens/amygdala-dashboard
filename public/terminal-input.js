@@ -113,6 +113,8 @@ export function terminalSwipe({ send, size, now = () => performance.now(), sched
       if (swiping) { event.preventDefault(); event.stopPropagation(); if (now() - t < STILL_MS && Math.abs(v) >= FLING_MIN) fling = schedule(glide, FRAME); }
       y = null; swiping = false;
     },
+    // A cancelled touch (the browser took it over) ends the swipe without a glide (fi43987).
+    cancel() { y = null; swiping = false; },
     // Before keys: stop any fling and go back to the bottom (a wheel-down past it is dropped by tmux), two spare steps.
     typed() { stop(); if (up) { wheel(false, up + 2); up = 0; } },
     dispose: stop,

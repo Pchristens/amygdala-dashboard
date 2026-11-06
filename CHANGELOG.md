@@ -9,6 +9,8 @@ date. `node tools/test-changelog.mjs` checks that every `## vX.Y` section in SPE
 
 ## Unreleased
 
+- A terminal swipe that the phone interrupts (a notification, a system gesture) no longer sets the terminal gliding.
+
 - Swipe-scrolling a hero's terminal on the phone is much faster: a quick swipe goes further than a slow one, a flick keeps gliding after you lift your finger and slows to a stop, and touching again stops it.
 
 - Kimi residents' turns start properly now (they failed at once on a flag Kimi refuses), and a misspelled Kimi model in `residents.json` ends that resident's turn cleanly instead of leaving it hanging. (v0.95)

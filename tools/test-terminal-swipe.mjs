@@ -45,6 +45,8 @@ assert.equal(sw.scrolled, 0); assert.equal(reports(sent, 65), scrolled); assert.
 // Typing while scrolled stops a glide and returns to the bottom first (two spare steps); not scrolled, nothing extra.
 drag(0, 400, 40); sw.end(ev(0)); assert.equal(timers.size, 1); const at = sw.scrolled; sent.length = 0; sw.typed();
 assert.equal(timers.size, 0); assert.equal(reports(sent, 65), at + 2); sw.typed(); assert.equal(sent.length, 1);
+// A cancelled fast drag (fi43987) doesn't glide, and the next swipe starts fresh.
+drag(0, 400, 40); sw.cancel(ev(0)); assert.equal(timers.size, 0);
 // Dispose stops a glide.
 drag(0, 400, 40); sw.end(ev(0)); sw.dispose(); assert.equal(timers.size, 0);
 // panel.js wires it with non-passive capture listeners, skips Windows consoles, calls typed() before input, disposes it.
@@ -52,5 +54,5 @@ const panel = fs.readFileSync(new URL('../public/panel.js', import.meta.url), 'u
 assert.match(panel, /worker\.os === 'windows' && !worker\.node \? null : terminalSwipe\(/);
 assert.match(panel, /\{ capture: true, passive: false \}/);
 assert.match(panel, /swipe\?\.typed\(\); transport\.data\(data\);/);
-assert.match(panel, /swipe\?\.dispose\(\);/);
+assert.match(panel, /swipe\?\.dispose\(\);/); assert.match(panel, /touchcancel: swipe\.cancel \}/);
 console.log('terminal swipe ok');
